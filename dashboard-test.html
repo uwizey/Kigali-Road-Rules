@@ -1,0 +1,264 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kigali RoadRules | Dashboard</title>
+     <!-- <link rel="stylesheet" href="css/modeselection.css"> -->
+     <link rel="stylesheet" href="css/components.css">
+     <link rel="stylesheet" href="css/dashboard-test.css">
+
+<style>
+
+</style>
+</head>
+
+<body>
+<header class="header">
+    <div class="logo" onclick="window.location.href='index.html'">
+        <img src="assets/logo.png" alt="logo" onerror="this.style.display='none'">
+    </div>
+
+    <div class="site-name">
+        Kigali <br><span>RoadRules</span>
+    </div>
+
+    <nav class="links">
+        <a href="modeselection.html#about">Who are we</a>
+        <a href="modeselection.html#contact">Contact Us</a>
+        <a href="index.html">Log Out</a>
+        <span class="user-email" id="userEmail">user@email.com</span>
+    </nav>
+    
+    <!-- Mobile Menu Toggle (hamburger) -->
+    <div class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+</header>
+
+<!-- ===== DASHBOARD CONTAINER ===== -->
+<div class="dashboard-container">
+    
+    <!-- Second Top Bar (Visible on all screens) -->
+    <div class="mobile-top-bar">
+        <div class="left-section">
+            <div class="menu-icon" onclick="toggleSidebar()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        
+        <div class="action-links">
+            <button class="action-btn" onclick="handleProgress()">
+                <span>My Progress</span>
+            </button>
+            <button class="action-btn" onclick="handleBookmarks()">
+                <span>Bookmarks</span>
+            </button>
+            <button class="action-btn primary" onclick="handleTakeTest()">
+                <span>Take Test</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Sidebar Overlay (for mobile) -->
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+    
+    <!-- ===== LEFT SIDEBAR NAVIGATION ===== -->
+    <aside class="left-sidebar">
+        
+        <!-- Topic 1: Traffic Signs -->
+        <div class="topic-item">
+            <button class="topic-header" onclick="toggleTopic(this)">
+                Traffic Signs
+                <span class="arrow">▶</span>
+            </button>
+            <div class="subtopics">
+                <button class="subtopic-btn" onclick="showContent('warning-signs')">Warning Signs</button>
+                <button class="subtopic-btn" onclick="showContent('regulatory-signs')">Regulatory Signs</button>
+                <button class="subtopic-btn" onclick="showContent('information-signs')">Information Signs</button>
+            </div>
+        </div>
+
+        <!-- Topic 2: Road Rules -->
+        <div class="topic-item">
+            <button class="topic-header" onclick="toggleTopic(this)">
+                Road Rules
+                <span class="arrow">▶</span>
+            </button>
+            <div class="subtopics">
+                <button class="subtopic-btn" onclick="showContent('speed-limits')">Speed Limits</button>
+                <button class="subtopic-btn" onclick="showContent('right-of-way')">Right of Way</button>
+                <button class="subtopic-btn" onclick="showContent('parking-rules')">Parking Rules</button>
+                <button class="subtopic-btn" onclick="showContent('lane-discipline')">Lane Discipline</button>
+            </div>
+        </div>
+
+        <!-- Topic 3: Safety Guidelines -->
+        <div class="topic-item">
+            <button class="topic-header" onclick="toggleTopic(this)">
+                Safety Guidelines
+                <span class="arrow">▶</span>
+            </button>
+            <div class="subtopics">
+                <button class="subtopic-btn" onclick="showContent('seatbelt-safety')">Seatbelt Safety</button>
+                <button class="subtopic-btn" onclick="showContent('pedestrian-safety')">Pedestrian Safety</button>
+                <button class="subtopic-btn" onclick="showContent('motorcycle-safety')">Motorcycle Safety</button>
+            </div>
+        </div>
+
+        <!-- Topic 4: Penalties -->
+        <div class="topic-item">
+            <button class="topic-header" onclick="toggleTopic(this)">
+                Penalties & Fines
+                <span class="arrow">▶</span>
+            </button>
+            <div class="subtopics">
+                <button class="subtopic-btn" onclick="showContent('traffic-violations')">Traffic Violations</button>
+                <button class="subtopic-btn" onclick="showContent('fine-structure')">Fine Structure</button>
+                <button class="subtopic-btn" onclick="showContent('license-suspension')">License Suspension</button>
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- ===== MAIN CONTENT AREA ===== -->
+    <main class="main-content">
+
+        <!-- Welcome Section (Default) -->
+        <section class="content-section active" id="welcome">
+            <div class="content-card">
+                <h2>Welcome to Kigali RoadRules Dashboard</h2>
+                <p>Select a topic from the left sidebar to get started. Learn about traffic signs, road rules, safety guidelines, and penalties in Rwanda.</p>
+                <p>Use the navigation menu to explore different topics and their subtopics.</p>
+            </div>
+        </section>
+
+        <!-- Warning Signs -->
+        <section class="content-section" id="warning-signs">
+            <div class="content-card">
+                <h2>Warning Signs</h2>
+                <p>Warning signs alert drivers to potential hazards on the road ahead. These signs are typically diamond-shaped with a yellow background.</p>
+                <p>Common warning signs include curves ahead, intersection warnings, pedestrian crossings, and animal crossing zones.</p>
+            </div>
+        </section>
+
+        <!-- Regulatory Signs -->
+        <section class="content-section" id="regulatory-signs">
+            <div class="content-card">
+                <h2>Regulatory Signs</h2>
+                <p>Regulatory signs inform drivers of traffic laws and regulations that must be obeyed. These include stop signs, yield signs, and speed limit signs.</p>
+                <p>Failure to comply with regulatory signs can result in fines and penalties.</p>
+            </div>
+        </section>
+
+        <!-- Information Signs -->
+        <section class="content-section" id="information-signs">
+            <div class="content-card">
+                <h2>Information Signs</h2>
+                <p>Information signs provide useful information about services, destinations, and distances. These include direction signs, distance markers, and facility signs.</p>
+                <p>They help drivers navigate efficiently and plan their routes.</p>
+            </div>
+        </section>
+
+        <!-- Speed Limits -->
+        <section class="content-section" id="speed-limits">
+            <div class="content-card">
+                <h2>Speed Limits</h2>
+                <p>Speed limits in Kigali vary depending on the type of road and area. Urban areas typically have lower speed limits than highways.</p>
+                <p>Always observe posted speed limit signs and adjust your speed according to road and weather conditions.</p>
+            </div>
+        </section>
+
+        <!-- Right of Way -->
+        <section class="content-section" id="right-of-way">
+            <div class="content-card">
+                <h2>Right of Way</h2>
+                <p>Understanding right of way rules is crucial for safe driving. At intersections without traffic signals, vehicles on the main road have priority.</p>
+                <p>Always yield to pedestrians at crosswalks and emergency vehicles with sirens.</p>
+            </div>
+        </section>
+
+        <!-- Parking Rules -->
+        <section class="content-section" id="parking-rules">
+            <div class="content-card">
+                <h2>Parking Rules</h2>
+                <p>Parking is only allowed in designated parking areas. Never park in front of driveways, fire hydrants, or emergency exits.</p>
+                <p>Pay attention to parking signs indicating time limits and payment requirements.</p>
+            </div>
+        </section>
+
+        <!-- Lane Discipline -->
+        <section class="content-section" id="lane-discipline">
+            <div class="content-card">
+                <h2>Lane Discipline</h2>
+                <p>Maintain proper lane discipline by staying in your lane and using turn signals when changing lanes.</p>
+                <p>The left lane is typically for faster-moving traffic and overtaking. Always check blind spots before changing lanes.</p>
+            </div>
+        </section>
+
+        <!-- Seatbelt Safety -->
+        <section class="content-section" id="seatbelt-safety">
+            <div class="content-card">
+                <h2>Seatbelt Safety</h2>
+                <p>Wearing a seatbelt is mandatory for all vehicle occupants in Rwanda. Seatbelts significantly reduce the risk of injury in accidents.</p>
+                <p>Ensure all passengers, including those in the back seat, are properly buckled up before driving.</p>
+            </div>
+        </section>
+
+        <!-- Pedestrian Safety -->
+        <section class="content-section" id="pedestrian-safety">
+            <div class="content-card">
+                <h2>Pedestrian Safety</h2>
+                <p>As a driver, always be alert for pedestrians, especially near schools, markets, and residential areas.</p>
+                <p>Yield to pedestrians at crosswalks and reduce speed in areas with high pedestrian traffic.</p>
+            </div>
+        </section>
+
+        <!-- Motorcycle Safety -->
+        <section class="content-section" id="motorcycle-safety">
+            <div class="content-card">
+                <h2>Motorcycle Safety</h2>
+                <p>Motorcycle riders must wear helmets at all times. Use headlights even during the day for better visibility.</p>
+                <p>Avoid riding between lanes and maintain a safe distance from other vehicles.</p>
+            </div>
+        </section>
+
+        <!-- Traffic Violations -->
+        <section class="content-section" id="traffic-violations">
+            <div class="content-card">
+                <h2>Traffic Violations</h2>
+                <p>Common traffic violations include speeding, running red lights, drunk driving, and using mobile phones while driving.</p>
+                <p>These violations endanger lives and result in serious penalties.</p>
+            </div>
+        </section>
+
+        <!-- Fine Structure -->
+        <section class="content-section" id="fine-structure">
+            <div class="content-card">
+                <h2>Fine Structure</h2>
+                <p>Traffic fines in Rwanda vary based on the severity of the violation. Minor offenses may result in warnings, while serious violations carry heavy fines.</p>
+                <p>Repeated violations can lead to license suspension or vehicle impoundment.</p>
+            </div>
+        </section>
+
+        <!-- License Suspension -->
+        <section class="content-section" id="license-suspension">
+            <div class="content-card">
+                <h2>License Suspension</h2>
+                <p>Serious traffic violations can result in temporary or permanent license suspension.</p>
+                <p>Driving under the influence, reckless driving, and accumulation of multiple violations are common reasons for license suspension.</p>
+            </div>
+        </section>
+
+    </main>
+
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/dashboard-test.js"></script>
+</body>
+</html>

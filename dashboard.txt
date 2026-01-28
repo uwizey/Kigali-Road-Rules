@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kigali RoadRules | Dashboard</title>
+<style>
+:root {
+    --primary:#0097b2;
+    --primary-dark: #1e40af;
+    --white: #ffffff;
+    --black: #0F172A;
+    --gray: #4b5563;
+    --border: #e5e7eb;
+    --radius: 5px;
+    --shadow: 0 8px 20px rgba(0,0,0,0.08);
+    --shadow-lg: 0 12px 30px rgba(0,0,0,0.12);
+    --speed: 0.3s ease;
+    --main-weight:500;
+}
+
+/* ===== RESET ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f9fafb;
+}
+
+/* ===== NAVBAR ===== */
+.header {
+    display: flex;
+    align-items: center;
+    padding: 8px 8%;
+    background: rgba(240, 247, 255, 0.9);
+    backdrop-filter: blur(10px);
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 1px solid var(--border);
+    transition: var(--speed);
+}
+
+.logo {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--speed);
+}
+
+.logo img {
+    max-height: 70px;
+}
+
+.site-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--black);
+    margin-left: 14px;
+    line-height: 1.1;
+}
+
+.site-name span {
+    color: var(--primary);
+}
+
+.links {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    margin-left: auto;
+}
+
+.links a {
+    color: var(--gray);
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: var(--speed);
+}
+
+.links a:hover {
+    color: var(--primary);
+}
+
+.user-email {
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* ===== DASHBOARD LAYOUT ===== */
+.dashboard-container {
+    display: flex;
+    margin-top: 119px; /* Main nav (86px) + Second nav (with no gap) */
+    min-height: calc(100vh - 119px);
+}
+
+/* ===== LEFT SIDEBAR ===== */
+.left-sidebar {
+    width: 280px;
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    overflow-y: auto;
+    position: fixed;
+    height: calc(100vh - 119px); /* Adjusted for both navbars */
+    top: 119px; /* No gap - sits right below second nav */
+}
+
+/* Topic Item */
+.topic-item {
+    margin-bottom: 5px;
+}
+
+/* Main Topic Button */
+.topic-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--black);
+    transition: var(--speed);
+}
+
+.topic-header:hover {
+    background: rgba(0, 151, 178, 0.1);
+    color: var(--primary);
+}
+
+.topic-header.active {
+    background: rgba(0, 151, 178, 0.15);
+    color: var(--primary);
+}
+
+/* Arrow Icon */
+.arrow {
+    transition: transform var(--speed);
+    font-size: 12px;
+}
+
+.topic-header.active .arrow {
+    transform: rotate(90deg);
+}
+
+/* Subtopics Container */
+.subtopics {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+}
+
+.subtopics.open {
+    max-height: 500px; /* Adjust based on content */
+}
+
+/* Subtopic Button */
+.subtopic-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 20px 10px 40px;
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--gray);
+    transition: var(--speed);
+}
+
+.subtopic-btn:hover {
+    background: rgba(0, 151, 178, 0.08);
+    color: var(--primary);
+}
+
+.subtopic-btn.active {
+    background: rgba(0, 151, 178, 0.12);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* ===== MAIN CONTENT AREA ===== */
+.main-content {
+    flex: 1;
+    margin-left: 280px; /* Width of sidebar */
+    padding: 30px 40px;
+}
+
+/* Removed Top Bar - no longer needed */
+
+/* Content Sections */
+.content-section {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.content-section.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.content-card {
+    background: var(--white);
+    padding: 30px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+}
+
+.content-card h2 {
+    color: var(--black);
+    margin-bottom: 15px;
+    font-size: 24px;
+}
+
+.content-card p {
+    color: var(--gray);
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+/* Mobile Top Bar (Second Nav) */
+.mobile-top-bar {
+    display: none;
+    background: var(--white);
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border);
+    position: fixed;
+    top: 96px; /* Below main navbar */
+    left: 0;
+    right: 0;
+    z-index: 999;
+    align-items: center;
+    gap: 15px;
+}
+
+.menu-icon {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.menu-icon span {
+    display: block;
+    height: 3px;
+    background: var(--primary);
+    border-radius: 2px;
+    transition: var(--speed);
+}
+
+.mobile-top-bar h3 {
+    color: var(--black);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Sidebar Overlay for mobile */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 998;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .mobile-top-bar {
+        display: flex;
+    }
+    
+    .dashboard-container {
+        margin-top: 147px; /* Main nav + mobile top bar */
+    }
+    
+    .left-sidebar {
+        position: fixed;
+        left: -280px; /* Hidden off-screen */
+        top: 96px; /* Below main navbar */
+        width: 280px;
+        height: calc(100vh - 96px);
+        z-index: 999;
+        transition: left 0.3s ease;
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .left-sidebar.active {
+        left: 0; /* Slide in */
+    }
+    
+    .main-content {
+        margin-left: 0;
+        padding: 20px 15px;
+    }
+    
+    .top-bar {
+        padding: 15px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<header class="header">
+    <div class="logo" onclick="window.location.href='index.html'">
+        <img src="assets/logo.png" alt="logo" onerror="this.style.display='none'">
+    </div>
+
+    <div class="site-name">
+        Kigali <br><span>RoadRules</span>
+    </div>
+
+    <nav class="links">
+        <a href="#about">Who are we</a>
+        <a href="#contact">Contact Us</a>
+        <a href="index.html">Log Out</a>
+        <span class="user-email" id="userEmail">user@email.com</span>
+    </nav>
+    
+    <!-- Mobile Menu Toggle (hamburger) -->
+    <div class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+</header>
+
+<!-- ===== DASHBOARD CONTAINER ===== -->
+<div class="dashboard-container">
+    
+    <!-- Second Top Bar (Visible on all screens) -->
+    <div class="mobile-top-bar">
+        <div class="left-section">
+            <div class="menu-icon" onclick="toggleSidebar()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        
+        <div class="action-links">
+            <button class="action-btn" onclick="handleProgress()">
+                <span>My Progress</span>
+            </button>
+            <button class="action-btn" onclick="handleBookmarks()">
+                <span>Bookmarks</span>
+            </button>
+            <button class="action-btn primary" onclick="handleTakeTest()">
+                <span>Take Test</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Sidebar Overlay (for mobile) -->
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+    
+    <!-- ===== LEFT SIDEBAR NAVIGATION ===== -->
+    <aside class="left-sidebar">
+        
+        <!-- Topic 1: Traffic Signs -->
+        <div class="topic-item">
+            <button class="topic-header" onclick="toggleTopic(this)">
+                Traffic Signs
+                <span class="arrow">▶</span>
+            </button>
+            <div class="subtopics">
+                <button class="subtopic-btn" onclick="showContent('warning-signs')">Warning Signs</button>
+                <button class="subtopic-btn" onclick="showContent('regulatory-signs')">Regulatory Signs</button>
+                <button class="subtopic-btn" onclick="showContent('information-signs')">Information Signs</button>
+            </div>
+        </div>
+
+        <!-- Topic 2: Road Rules -->
+        <div class="topic-item">
+            <button class="topic-header" onclick="toggleTopic(this)">
+                Road Rules
+                <span class="arrow">▶</span>
+            </button>
+            <div class="subtopics">
+                <button class="subtopic-btn" onclick="showContent('speed-limits')">Speed Limits</button>
+                <button class="subtopic-btn" onclick="showContent('right-of-way')">Right of Way</button>
+                <button class="subtopic-btn" onclick="showContent('parking-rules')">Parking Rules</button>
+                <button class="subtopic-btn" onclick="showContent('lane-discipline')">Lane Discipline</button>
+            </div>
+        </div>
+
+        <!-- Topic 3: Safety Guidelines -->
+        <div class="topic-item">
+            <button class="topic-header" onclick="toggleTopic(this)">
+                Safety Guidelines
+                <span class="arrow">▶</span>
+            </button>
+            <div class="subtopics">
+                <button class="subtopic-btn" onclick="showContent('seatbelt-safety')">Seatbelt Safety</button>
+                <button class="subtopic-btn" onclick="showContent('pedestrian-safety')">Pedestrian Safety</button>
+                <button class="subtopic-btn" onclick="showContent('motorcycle-safety')">Motorcycle Safety</button>
+            </div>
+        </div>
+
+        <!-- Topic 4: Penalties -->
+        <div class="topic-item">
+            <button class="topic-header" onclick="toggleTopic(this)">
+                Penalties & Fines
+                <span class="arrow">▶</span>
+            </button>
+            <div class="subtopics">
+                <button class="subtopic-btn" onclick="showContent('traffic-violations')">Traffic Violations</button>
+                <button class="subtopic-btn" onclick="showContent('fine-structure')">Fine Structure</button>
+                <button class="subtopic-btn" onclick="showContent('license-suspension')">License Suspension</button>
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- ===== MAIN CONTENT AREA ===== -->
+    <main class="main-content">
+
+        <!-- Welcome Section (Default) -->
+        <section class="content-section active" id="welcome">
+            <div class="content-card">
+                <h2>Welcome to Kigali RoadRules Dashboard</h2>
+                <p>Select a topic from the left sidebar to get started. Learn about traffic signs, road rules, safety guidelines, and penalties in Rwanda.</p>
+                <p>Use the navigation menu to explore different topics and their subtopics.</p>
+            </div>
+        </section>
+
+        <!-- Warning Signs -->
+        <section class="content-section" id="warning-signs">
+            <div class="content-card">
+                <h2>Warning Signs</h2>
+                <p>Warning signs alert drivers to potential hazards on the road ahead. These signs are typically diamond-shaped with a yellow background.</p>
+                <p>Common warning signs include curves ahead, intersection warnings, pedestrian crossings, and animal crossing zones.</p>
+            </div>
+        </section>
+
+        <!-- Regulatory Signs -->
+        <section class="content-section" id="regulatory-signs">
+            <div class="content-card">
+                <h2>Regulatory Signs</h2>
+                <p>Regulatory signs inform drivers of traffic laws and regulations that must be obeyed. These include stop signs, yield signs, and speed limit signs.</p>
+                <p>Failure to comply with regulatory signs can result in fines and penalties.</p>
+            </div>
+        </section>
+
+        <!-- Information Signs -->
+        <section class="content-section" id="information-signs">
+            <div class="content-card">
+                <h2>Information Signs</h2>
+                <p>Information signs provide useful information about services, destinations, and distances. These include direction signs, distance markers, and facility signs.</p>
+                <p>They help drivers navigate efficiently and plan their routes.</p>
+            </div>
+        </section>
+
+        <!-- Speed Limits -->
+        <section class="content-section" id="speed-limits">
+            <div class="content-card">
+                <h2>Speed Limits</h2>
+                <p>Speed limits in Kigali vary depending on the type of road and area. Urban areas typically have lower speed limits than highways.</p>
+                <p>Always observe posted speed limit signs and adjust your speed according to road and weather conditions.</p>
+            </div>
+        </section>
+
+        <!-- Right of Way -->
+        <section class="content-section" id="right-of-way">
+            <div class="content-card">
+                <h2>Right of Way</h2>
+                <p>Understanding right of way rules is crucial for safe driving. At intersections without traffic signals, vehicles on the main road have priority.</p>
+                <p>Always yield to pedestrians at crosswalks and emergency vehicles with sirens.</p>
+            </div>
+        </section>
+
+        <!-- Parking Rules -->
+        <section class="content-section" id="parking-rules">
+            <div class="content-card">
+                <h2>Parking Rules</h2>
+                <p>Parking is only allowed in designated parking areas. Never park in front of driveways, fire hydrants, or emergency exits.</p>
+                <p>Pay attention to parking signs indicating time limits and payment requirements.</p>
+            </div>
+        </section>
+
+        <!-- Lane Discipline -->
+        <section class="content-section" id="lane-discipline">
+            <div class="content-card">
+                <h2>Lane Discipline</h2>
+                <p>Maintain proper lane discipline by staying in your lane and using turn signals when changing lanes.</p>
+                <p>The left lane is typically for faster-moving traffic and overtaking. Always check blind spots before changing lanes.</p>
+            </div>
+        </section>
+
+        <!-- Seatbelt Safety -->
+        <section class="content-section" id="seatbelt-safety">
+            <div class="content-card">
+                <h2>Seatbelt Safety</h2>
+                <p>Wearing a seatbelt is mandatory for all vehicle occupants in Rwanda. Seatbelts significantly reduce the risk of injury in accidents.</p>
+                <p>Ensure all passengers, including those in the back seat, are properly buckled up before driving.</p>
+            </div>
+        </section>
+
+        <!-- Pedestrian Safety -->
+        <section class="content-section" id="pedestrian-safety">
+            <div class="content-card">
+                <h2>Pedestrian Safety</h2>
+                <p>As a driver, always be alert for pedestrians, especially near schools, markets, and residential areas.</p>
+                <p>Yield to pedestrians at crosswalks and reduce speed in areas with high pedestrian traffic.</p>
+            </div>
+        </section>
+
+        <!-- Motorcycle Safety -->
+        <section class="content-section" id="motorcycle-safety">
+            <div class="content-card">
+                <h2>Motorcycle Safety</h2>
+                <p>Motorcycle riders must wear helmets at all times. Use headlights even during the day for better visibility.</p>
+                <p>Avoid riding between lanes and maintain a safe distance from other vehicles.</p>
+            </div>
+        </section>
+
+        <!-- Traffic Violations -->
+        <section class="content-section" id="traffic-violations">
+            <div class="content-card">
+                <h2>Traffic Violations</h2>
+                <p>Common traffic violations include speeding, running red lights, drunk driving, and using mobile phones while driving.</p>
+                <p>These violations endanger lives and result in serious penalties.</p>
+            </div>
+        </section>
+
+        <!-- Fine Structure -->
+        <section class="content-section" id="fine-structure">
+            <div class="content-card">
+                <h2>Fine Structure</h2>
+                <p>Traffic fines in Rwanda vary based on the severity of the violation. Minor offenses may result in warnings, while serious violations carry heavy fines.</p>
+                <p>Repeated violations can lead to license suspension or vehicle impoundment.</p>
+            </div>
+        </section>
+
+        <!-- License Suspension -->
+        <section class="content-section" id="license-suspension">
+            <div class="content-card">
+                <h2>License Suspension</h2>
+                <p>Serious traffic violations can result in temporary or permanent license suspension.</p>
+                <p>Driving under the influence, reckless driving, and accumulation of multiple violations are common reasons for license suspension.</p>
+            </div>
+        </section>
+
+    </main>
+
+</div>
+
+<script>
+// ===== TOGGLE MOBILE MENU (Top Nav) =====
+function toggleMobileMenu() {
+    const links = document.querySelector('.links');
+    links.style.display = links.style.display === 'flex' ? 'none' : 'flex';
+    
+    // Position mobile menu below header
+    if (links.style.display === 'flex') {
+        links.style.position = 'fixed';
+        links.style.top = '86px';
+        links.style.left = '0';
+        links.style.right = '0';
+        links.style.background = 'var(--white)';
+        links.style.flexDirection = 'column';
+        links.style.padding = '20px';
+        links.style.boxShadow = 'var(--shadow)';
+        links.style.borderBottom = '1px solid var(--border)';
+        links.style.zIndex = '1001';
+    }
+}
+
+// ===== TOGGLE SIDEBAR FOR MOBILE =====
+function toggleSidebar() {
+    const sidebar = document.querySelector('.left-sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
+// ===== CLOSE SIDEBAR =====
+function closeSidebar() {
+    const sidebar = document.querySelector('.left-sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    sidebar.classList.remove('active');
+    overlay.classList.remove('active');
+}
+
+// ===== ACTION BUTTON HANDLERS (Placeholders for later) =====
+function handleProgress() {
+    console.log('My Progress clicked');
+    alert('My Progress feature - Coming soon!');
+}
+
+function handleBookmarks() {
+    console.log('Bookmarks clicked');
+    alert('Bookmarks feature - Coming soon!');
+}
+
+function handleTakeTest() {
+    console.log('Take Test clicked');
+    alert('Take Test feature - Coming soon!');
+}
+
+// ===== TOGGLE TOPIC (EXPAND/COLLAPSE) =====
+function toggleTopic(topicHeader) {
+    // Get the subtopics container (next sibling of the button)
+    const subtopics = topicHeader.nextElementSibling;
+    
+    // Check if this topic is currently active
+    const isActive = topicHeader.classList.contains('active');
+    
+    // Close all other topics first
+    const allHeaders = document.querySelectorAll('.topic-header');
+    const allSubtopics = document.querySelectorAll('.subtopics');
+    
+    allHeaders.forEach(header => header.classList.remove('active'));
+    allSubtopics.forEach(sub => sub.classList.remove('open'));
+    
+    // If it wasn't active, open it
+    if (!isActive) {
+        topicHeader.classList.add('active');
+        subtopics.classList.add('open');
+    }
+}
+
+// ===== SHOW CONTENT BASED ON SUBTOPIC =====
+function showContent(sectionId) {
+    // Hide all content sections
+    const allSections = document.querySelectorAll('.content-section');
+    allSections.forEach(section => section.classList.remove('active'));
+    
+    // Show the selected section
+    const selectedSection = document.getElementById(sectionId);
+    if (selectedSection) {
+        selectedSection.classList.add('active');
+    }
+    
+    // Highlight active subtopic
+    const allSubtopics = document.querySelectorAll('.subtopic-btn');
+    allSubtopics.forEach(btn => btn.classList.remove('active'));
+    
+    // Find and highlight the clicked subtopic
+    event.target.classList.add('active');
+    
+    // Close sidebar on mobile after selection
+    if (window.innerWidth <= 768) {
+        closeSidebar();
+    }
+}
+
+// ===== INITIALIZE =====
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard loaded successfully');
+    
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', function(e) {
+        const links = document.querySelector('.links');
+        const toggle = document.querySelector('.mobile-menu-toggle');
+        
+        if (window.innerWidth <= 768 && links.style.display === 'flex') {
+            if (!links.contains(e.target) && !toggle.contains(e.target)) {
+                links.style.display = 'none';
+            }
+        }
+    });
+});
+</script>
+
+</body>
+</html>

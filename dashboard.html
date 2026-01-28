@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <title>Document</title>
+</head>
+<body>
+  <header class="header">
+    <div class="logo" onclick="window.location.href='index.html'">
+        <img src="assets/logo.png" alt="logo" onerror="this.style.display='none'">
+    </div>
+
+    <div class="site-name">
+        Kigali <br><span>RoadRules</span>
+    </div>
+
+    <nav class="links">
+        <a href="modeselection.html#about">Who are we</a>
+        <a href="modeselection.html#contact">Contact Us</a>
+        <a href="index.html">Log Out</a>
+        <span class="user-email" id="userEmail">user@email.com</span>
+    </nav>
+    
+    <div class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+</header>
+
+<div class="dash-topbar">
+    <button class="menu-btn" id="menuBtn">☰</button>
+    <h3 class="dash-title">Dashboard</h3>
+</div>
+
+<div class="dash-layout">
+    <aside class="sidebar" id="sidebar">
+        <nav id="topicsNav">
+            <!-- Topics will be dynamically loaded here -->
+            <!-- Example structure: -->
+            <div class="topic">
+                <div class="topic-header" onclick="toggleTopic(this)">
+                    <span>Overview</span>
+                    <span class="topic-icon">▶</span>
+                </div>
+                <div class="subtopics">
+                    <a href="#" class="subtopic-link" onclick="loadContent(event, 'overview', 'intro')">Introduction</a>
+                    <a href="#" class="subtopic-link" onclick="loadContent(event, 'overview', 'getting-started')">Getting Started</a>
+                    <a href="#" class="subtopic-link" onclick="loadContent(event, 'overview', 'basics')">Road Basics</a>
+                </div>
+            </div>
+
+            <div class="topic">
+                <div class="topic-header" onclick="toggleTopic(this)">
+                    <span>Traffic Signs</span>
+                    <span class="topic-icon">▶</span>
+                </div>
+                <div class="subtopics">
+                    <a href="#" class="subtopic-link" onclick="loadContent(event, 'traffic-signs', 'warning')">Warning Signs</a>
+                    <a href="#" class="subtopic-link" onclick="loadContent(event, 'traffic-signs', 'regulatory')">Regulatory Signs</a>
+                    <a href="#" class="subtopic-link" onclick="loadContent(event, 'traffic-signs', 'information')">Information Signs</a>
+                </div>
+            </div>
+
+            <div class="topic">
+                <div class="topic-header" onclick="toggleTopic(this)">
+                    <span>Road Rules</span>
+                    <span class="topic-icon">▶</span>
+                </div>
+                <div class="subtopics">
+                    <a href="#" class="subtopic-link" onclick="loadContent(event, 'road-rules', 'speed-limits')">Speed Limits</a>
+                    <a href="#" class="subtopic-link" onclick="loadContent(event, 'road-rules', 'right-of-way')">Right of Way</a>
+                    <a href="#" class="subtopic-link" onclick="loadContent(event, 'road-rules', 'parking')">Parking Rules</a>
+                </div>
+            </div>
+
+            <div class="topic">
+                <div class="topic-header" onclick="toggleTopic(this)">
+                    <span>Practice Tests</span>
+                    <span class="topic-icon">▶</span>
+                </div>
+                <div class="subtopics">
+                    <a href="#" class="subtopic-link" onclick="loadContent(event, 'practice', 'beginner')">Beginner Level</a>
+                    <a href="#" class="subtopic-link" onclick="loadContent(event, 'practice', 'intermediate')">Intermediate Level</a>
+                    <a href="#" class="subtopic-link" onclick="loadContent(event, 'practice', 'advanced')">Advanced Level</a>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <div class="overlay" id="overlay"></div>
+
+    <main class="dash-content" id="mainContent">
+        <h1>Welcome to Kigali RoadRules</h1>
+        <p>Select a topic from the sidebar to begin learning.</p>
+    </main>
+</div>
+
+<script src="js/dashboard.js"></script>
+</body>
+</html>
