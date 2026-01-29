@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Question Manager Pro</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        background-color: #f8fafc;
+        color: #1e293b;
+        height: 100vh;
+        overflow: hidden;
+      }
+      #app {
+        display: flex;
+        height: 100vh;
+        width: 100%;
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 260px;
+        background-color: #0f172a;
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+      }
+      .sidebar-header {
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .logo-box {
+        background-color: #6366f1;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: bold;
+      }
+      .nav-menu {
+        flex: 1;
+        padding: 16px;
+      }
+      .nav-btn {
+        width: 100%;
+        text-align: left;
+        padding: 12px 16px;
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+        margin-bottom: 8px;
+      }
+      .nav-btn.active {
+        background-color: #6366f1;
+        color: white;
+      }
+      .sidebar-footer {
+        padding: 16px;
+        border-top: 1px solid #1e293b;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .footer-btn {
+        width: 100%;
+        padding: 10px;
+        background-color: #1e293b;
+        border: none;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .new-item-btn {
+        background-color: #10b981;
+        font-weight: 600;
+      }
+
+      /* Main Content */
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .top-bar {
+        height: 64px;
+        background-color: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 32px;
+        flex-shrink: 0;
+      }
+      .header-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+
+      /* Viewport Layout */
+      .viewport {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        overflow: hidden;
+      }
+      .view {
+        width: 100%;
+        max-width: 700px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .hidden {
+        display: none !important;
+      }
+
+      /* Card Styles */
+      .page-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        max-height: 85vh;
+        width: 100%;
+      }
+      .card-header {
+        padding: 20px 30px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fcfcfd;
+        border-radius: 16px 16px 0 0;
+      }
+      .card-body {
+        padding: 30px;
+        overflow-y: auto;
+        flex: 1;
+      }
+      .card-footer {
+        padding: 20px 30px;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .step-indicator {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748b;
+        background: #f1f5f9;
+        padding: 4px 12px;
+        border-radius: 99px;
+      }
+      .nav-controls {
+        display: flex;
+        gap: 10px;
+      }
+      .nav-arrow {
+        background: #f1f5f9;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #475569;
+        transition: 0.2s;
+      }
+      .nav-arrow:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+      }
+      .nav-arrow:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      /* Form Inputs */
+      .q-textarea {
+        width: 100%;
+        border: none;
+        font-size: 22px;
+        font-weight: 600;
+        outline: none;
+        resize: none;
+        margin-bottom: 20px;
+        color: #0f172a;
+        min-height: 100px;
+      }
+      .option-row {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 12px;
+        background: #f8fafc;
+        padding: 10px 15px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+      }
+      .option-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        outline: none;
+        font-size: 15px;
+      }
+      .topic-select {
+        background: white;
+        border: 1px solid #cbd5e1;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 13px;
+        outline: none;
+      }
+
+      .primary-btn {
+        background: #6366f1;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .primary-btn:hover {
+        background: #4f46e5;
+      }
+      .delete-btn {
+        color: #ef4444;
+        font-size: 12px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .save-btn {
+        color: #10b981;
+        font-size: 12px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        padding: 10px;
+        border: 1px solid #10b981;
+        border-radius: 6px;
+        transition: 0.2s;
+      }
+      .save-btn:hover {
+        background: #f0fdf4;
+      }
+
+      .img-box {
+        width: 100%;
+        height: 120px;
+        background: #f1f5f9;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border: 2px dashed #cbd5e1;
+        cursor: pointer;
+        position: relative;
+      }
+      .img-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      /* Category Specific */
+      .cat-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: #6366f1;
+        margin-bottom: 10px;
+        border: none;
+        text-align: center;
+        outline: none;
+        width: 100%;
+        background: transparent;
+      }
+      .subtopics-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 20px;
+      }
+      .sub-pill {
+        background: #e0e7ff;
+        color: #4338ca;
+        padding: 6px 16px;
+        border-radius: 99px;
+        font-size: 14px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .sub-action {
+        cursor: pointer;
+        opacity: 0.7;
+        font-size: 11px;
+      }
+      .sub-action:hover {
+        opacity: 1;
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #0f172a;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        z-index: 1000;
+        animation: fadeUp 0.3s;
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .popup {
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        position: fixed;
+        background-color: rgba(79, 70, 229, 0.4);
+        backdrop-filter: blur(8px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+      }
+      .boxpop {
+        width: 400px;
+        background-color: white;
+        padding: 30px;
+        border-radius: 16px;
+        text-align: center;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      }
+      
+      .input-group {
+        display: flex; 
+        gap: 10px; 
+        margin-bottom: 20px;
+      }
+      .input-group input {
+        flex: 1;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo-box">Q</div>
+          <h1 style="font-size: 1.2rem;">QuestionBank</h1>
+        </div>
+        <nav class="nav-menu">
+          <button id="nav-editor" class="nav-btn active">Editor</button>
+          <button id="nav-categories" class="nav-btn">Categories</button>
+        </nav>
+        <div class="sidebar-footer">
+          <button id="btn-add-q-side" class="footer-btn new-item-btn">
+            + New Question
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="top-bar">
+          <div class="header-title" id="view-title">Question Editor</div>
+        </header>
+
+        <div class="viewport">
+          <!-- QUESTION EDITOR -->
+          <section id="view-editor" class="view">
+            <div class="page-card">
+              <div class="card-header">
+                <span class="step-indicator" id="q-counter">Question 0 of 0</span>
+                <select id="q-topic-select" class="topic-select"></select>
+              </div>
+              <div class="card-body" id="q-card-body">
+                <textarea
+                  id="q-text"
+                  class="q-textarea"
+                  placeholder="Enter question text..."
+                ></textarea>
+                <div
+                  class="img-box"
+                  onclick="document.getElementById('q-file').click()"
+                >
+                  <img id="q-img-preview" src="" class="hidden" />
+                  <span id="img-placeholder">Click to upload image</span>
+                  <input type="file" id="q-file" class="hidden" accept="image/*" />
+                </div>
+                <div id="q-options-list"></div>
+              </div>
+              <div class="card-footer">
+                <div style="display: flex; gap: 15px; align-items: center">
+                  <button class="save-btn" id="btn-save-q">Save Question</button>
+                  <button class="delete-btn" id="btn-del-q">Delete</button>
+                </div>
+                <div class="nav-controls">
+                  <button class="nav-arrow" id="prev-q">←</button>
+                  <button class="nav-arrow" id="next-q">→</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- CATEGORY MANAGER -->
+          <section id="view-categories" class="view hidden">
+            <div class="page-card">
+              <div class="card-header">
+                <span class="step-indicator" id="cat-counter">Topic 1 of 1</span>
+                <button class="primary-btn" style="font-size: 11px; padding: 5px 10px" id="toggle-new-topic">
+                  + New Topic
+                </button>
+              </div>
+              <div class="card-body">
+                <!-- New Topic Form (Collapsible) -->
+                <div id="new-topic-container" class="hidden" style="margin-bottom: 25px; padding: 15px; background: #f1f5f9; border-radius: 12px;">
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <input type="text" id="new-topic-name-in" placeholder="New Topic Name...">
+                        <button class="primary-btn" id="btn-create-topic">Create</button>
+                    </div>
+                </div>
+
+                <div class="cat-item-container" id="cat-view-content">
+                  <input type="text" class="cat-title" id="cat-display-name" placeholder="Topic Name" />
+                  <button class="primary-btn" id="btn-update-cat" style="margin: 0 auto 20px; display: block; font-size: 12px;">Update Name</button>
+                  
+                  <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 20px;">
+                  
+                  <div style="text-align: center; font-weight: 600; font-size: 13px; color: #64748b; margin-bottom: 10px;">Subtopics</div>
+                  <div class="subtopics-grid" id="cat-subs-list"></div>
+                  
+                  <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center;">
+                    <input type="text" id="new-sub-in" placeholder="New subtopic..." style="padding:10px; border-radius:8px; border:1px solid #e2e8f0; width: 200px;">
+                    <button class="primary-btn" id="btn-add-sub">Add</button>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <button class="delete-btn" id="btn-del-cat">Delete Topic</button>
+                <div class="nav-controls">
+                  <button class="nav-arrow" id="prev-cat">←</button>
+                  <button class="nav-arrow" id="next-cat">→</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <!-- Edit Subtopic Popup -->
+    <div class="popup" id="popup">
+      <div class="boxpop">
+        <h2 style="margin-bottom: 20px; font-size: 1.2rem;">Edit Subtopic</h2>
+        <input type="text" id="edit-sub-in" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;" />
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button class="primary-btn" id="btn-confirm-edit">Update</button>
+            <button class="primary-btn" id="closePop" style="background: #94a3b8">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="exam.js" type="module"></script>
+  </body>
+</html>

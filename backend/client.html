@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz App - Client</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #fff; /* clean white background */
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      text-align: center;
+      padding: 2rem;
+      background: linear-gradient(to right, #ff105f, #ffad06); /* accent gradient */
+      color: #fff;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+    }
+    .quiz-container {
+      max-width: 600px;
+      margin: 2rem auto;
+      background: #fff; /* white card */
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    .question {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .options {
+      list-style: none;
+      padding: 0;
+    }
+    .options li {
+      margin: 0.5rem 0;
+    }
+    .options button {
+      width: 100%;
+      padding: 0.8rem;
+      border: none;
+      border-radius: 5px;
+      background: #f9f9f9;
+      color: #333;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .options button:hover {
+      background: #eee;
+      transform: scale(1.02);
+    }
+    .next-btn {
+      margin-top: 1.5rem;
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(to right, #ff105f, #ffad06); /* accent gradient */
+      border: none;
+      border-radius: 5px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      color: #fff;
+      transition: opacity 0.3s, transform 0.2s;
+    }
+    .next-btn:hover {
+      opacity: 0.9;
+      transform: scale(1.02);
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      background: #f9f9f9;
+      color: #333;
+      border-top: 2px solid #ff105f;
+    }
+    .progress-bar {
+      height: 10px;
+      background: #eee;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+    .progress {
+      height: 100%;
+      width: 40%; /* example progress */
+      background: linear-gradient(to right, #ff105f, #ffad06);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Welcome to the Quiz App</h1>
+    <p>Test your knowledge and have fun!</p>
+  </header>
+
+  <div class="quiz-container">
+    <div class="question">Q1: What is the capital of France?</div>
+    <ul class="options">
+      <li><button>Berlin</button></li>
+      <li><button>Madrid</button></li>
+      <li><button>Paris</button></li>
+      <li><button>Rome</button></li>
+    </ul>
+    <button class="next-btn">Next Question</button>
+
+    <!-- Progress bar accent -->
+    <div class="progress-bar">
+      <div class="progress"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Quiz App. All rights reserved.</p>
+  </footer>
+</body>
+</html>

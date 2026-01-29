@@ -1,4 +1,18 @@
 // ===== SAMPLE DATA =====
+import { FetchData, PostData, DeleteData, UpdateData } from "../js/api/crud.js";
+
+document.getElementById("btn-logout").addEventListener("click", async () => {
+    const response =(await FetchData("/logout", true))
+    if (response.success) {
+
+        localStorage.removeItem("token");
+        alert("Succeessfull Logout");
+         window.location.href = "../auth/login.html";
+    }
+    else {
+        alert("logout failed")
+    }
+})
 let topics = [
     {
         id: 1,

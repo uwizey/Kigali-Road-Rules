@@ -1,5 +1,20 @@
-     // Sidebar toggle functionality
-    const menuBtn = document.getElementById('menuBtn');
+import { FetchData, PostData, DeleteData, UpdateData } from "../js/api/crud.js";
+
+document.getElementById("btn-logout").addEventListener("click", async () => {
+    const response =(await FetchData("/logout", true))
+    if (response.success) {
+
+        localStorage.removeItem("token");
+        alert("Succeessfull Logout");
+         window.location.href = "../auth/login.html";
+    }
+    else {
+        console.log(response)
+    }
+})     // Sidebar toggle functionality
+    
+
+const menuBtn = document.getElementById('menuBtn');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('overlay');
 
