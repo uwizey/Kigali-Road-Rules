@@ -35,11 +35,12 @@
         }
 
         body {
-            /* background-color: var(--bg-light); */
+            background-color: var(--bg-light);
             color: var(--black);
             line-height: 1.6;
             overflow-x: hidden;
-            background: rgba(240, 247, 255, 0.9);
+             /* background: rgba(240, 247, 255, 0.95); */
+            /* background: rgba(240, 247, 255, 0.9); */
         }
 
         /* ========== HEADER ========== */
@@ -47,12 +48,15 @@
             display: flex;
             align-items: center;
             padding: 8px 8%;
-            position: fixed;
+            /* position: fixed; */
             width: 100%;
             top: 0;
             z-index: 1000;
             border-bottom: 1px solid var(--border);
             transition: var(--speed);
+            background: rgb(240, 247, 255);
+            
+            
         }
         .header.hide{
             transform: translateY(-100%);

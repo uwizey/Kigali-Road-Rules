@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/user-dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>User Dashboard - Kigali RoadRules</title>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="logo" onclick="window.location.href='../index.html'">
+            <img src="../assets/logo.png" alt="logo" onerror="this.style.display='none'">
+        </div>
+
+        <div class="site-name">
+            Kigali <br><span>RoadRules</span>
+        </div>
+
+        <nav class="links">
+            <a href="modeselection.html#about">Who are we</a>
+            <a href="modeselection.html#contact">Contact Us</a>
+            <a href="../index.html" id="btn-logout">Log Out</a>
+            <span class="user-email" id="userEmail">user@email.com</span>
+        </nav>
+        
+        <div class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </header>
+
+    <!-- MODE SELECTOR BAR -->
+ <div class="dash-topbar">
+    <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    <h3 class="dash-title" id="dashTitle">Dashboard - Content Mode</h3>
+    
+    <div class="mode-selector-container">
+        <button class="mode-btn active" id="contentModeBtn" onclick="switchMode('content')">
+            <i class="fas fa-book-open"></i>
+            <span>Content Mode</span>
+        </button>
+        <button class="mode-btn" id="qaModeBtn" onclick="switchMode('qa')">
+            <i class="fas fa-question-circle"></i>
+            <span>Q&A Mode</span>
+        </button>
+    </div>
+</div>
+
+    <!-- MAIN LAYOUT -->
+    <div class="dash-layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <!-- CONTENT MODE SIDEBAR -->
+            <div id="contentSidebar" class="sidebar-content active">
+                <div class="sidebar-header">
+                    <i class="fas fa-book"></i>
+                    <h3>Learning Content</h3>
+                </div>
+                <nav id="topicsNav">
+                    <!-- Topics will be dynamically loaded from backend -->
+                    <div class="topic">
+                        <div class="topic-header" onclick="toggleTopic(this)">
+                            <span>Overview</span>
+                            <span class="topic-icon"><i class="fas fa-chevron-right"></i></span>
+                        </div>
+                        <div class="subtopics">
+                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'overview', 'intro')">
+                                <i class="fas fa-file-alt"></i> Introduction
+                            </a>
+                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'overview', 'getting-started')">
+                                <i class="fas fa-file-alt"></i> Getting Started
+                            </a>
+                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'overview', 'basics')">
+                                <i class="fas fa-file-alt"></i> Road Basics
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="topic">
+                        <div class="topic-header" onclick="toggleTopic(this)">
+                            <span>Traffic Signs</span>
+                            <span class="topic-icon"><i class="fas fa-chevron-right"></i></span>
+                        </div>
+                        <div class="subtopics">
+                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'traffic-signs', 'warning')">
+                                <i class="fas fa-file-alt"></i> Warning Signs
+                            </a>
+                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'traffic-signs', 'regulatory')">
+                                <i class="fas fa-file-alt"></i> Regulatory Signs
+                            </a>
+                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'traffic-signs', 'information')">
+                                <i class="fas fa-file-alt"></i> Information Signs
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="topic">
+                        <div class="topic-header" onclick="toggleTopic(this)">
+                            <span>Road Rules</span>
+                            <span class="topic-icon"><i class="fas fa-chevron-right"></i></span>
+                        </div>
+                        <div class="subtopics">
+                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'road-rules', 'speed-limits')">
+                                <i class="fas fa-file-alt"></i> Speed Limits
+                            </a>
+                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'road-rules', 'right-of-way')">
+                                <i class="fas fa-file-alt"></i> Right of Way
+                            </a>
+                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'road-rules', 'parking')">
+                                <i class="fas fa-file-alt"></i> Parking Rules
+                            </a>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+
+            <!-- Q&A MODE SIDEBAR -->
+            <div id="qaSidebar" class="sidebar-content">
+                <div class="sidebar-header">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h3>Practice Quizzes</h3>
+                </div>
+                <nav id="quizTopicsNav">
+                    <!-- Quiz topics will be dynamically loaded from backend -->
+                    <div class="quiz-topic-item" onclick="startQuiz('overview')">
+                        <div class="quiz-topic-icon">
+                            <i class="fas fa-map"></i>
+                        </div>
+                        <div class="quiz-topic-info">
+                            <h4>Overview</h4>
+                            <p>10 Questions</p>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+
+                    <div class="quiz-topic-item" onclick="startQuiz('traffic-signs')">
+                        <div class="quiz-topic-icon">
+                            <i class="fas fa-traffic-light"></i>
+                        </div>
+                        <div class="quiz-topic-info">
+                            <h4>Traffic Signs</h4>
+                            <p>15 Questions</p>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+
+                    <div class="quiz-topic-item" onclick="startQuiz('road-rules')">
+                        <div class="quiz-topic-icon">
+                            <i class="fas fa-road"></i>
+                        </div>
+                        <div class="quiz-topic-info">
+                            <h4>Road Rules</h4>
+                            <p>12 Questions</p>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+
+                    <div class="quiz-topic-item" onclick="startQuiz('all-topics')">
+                        <div class="quiz-topic-icon">
+                            <i class="fas fa-list-check"></i>
+                        </div>
+                        <div class="quiz-topic-info">
+                            <h4>Full Practice Test</h4>
+                            <p>20 Questions</p>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </nav>
+
+                <div class="quiz-stats">
+                    <h4>Your Stats</h4>
+                    <div class="stat-row">
+                        <span>Tests Taken:</span>
+                        <strong>24</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>Average Score:</span>
+                        <strong>85%</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>Best Score:</span>
+                        <strong>95%</strong>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- OVERLAY -->
+        <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="dash-content" id="mainContent">
+            <!-- CONTENT MODE VIEW -->
+            <div id="contentModeView" class="mode-view active">
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-icon">
+                        <i class="fas fa-book-reader"></i>
+                    </div>
+                    <h1>Welcome to Kigali RoadRules</h1>
+                    <p>Select a topic from the sidebar to begin learning about road safety and traffic rules.</p>
+                    <div class="quick-stats">
+                        <div class="quick-stat-card">
+                            <i class="fas fa-bookmark"></i>
+                            <div>
+                                <h3>12</h3>
+                                <p>Bookmarks</p>
+                            </div>
+                        </div>
+                        <div class="quick-stat-card">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <h3>4.5h</h3>
+                                <p>Study Time</p>
+                            </div>
+                        </div>
+                        <div class="quick-stat-card">
+                            <i class="fas fa-check-circle"></i>
+                            <div>
+                                <h3>8/12</h3>
+                                <p>Completed</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTENT DISPLAY AREA (Hidden initially) -->
+                <div id="contentDisplay" class="content-display" style="display: none;">
+                    <div class="content-header">
+                        <button class="back-btn" onclick="backToWelcome()">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <h2 id="contentTitle">Loading...</h2>
+                        <div class="content-actions">
+                            <button class="action-btn" onclick="bookmarkContent()">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                            <button class="action-btn" onclick="printContent()">
+                                <i class="fas fa-print"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- FORMAT 1: TEXT-BASED CONTENT -->
+                    <div id="textFormat" class="content-format">
+                        <div class="text-content">
+                            <!-- Will be populated from backend -->
+                        </div>
+                    </div>
+
+                    <!-- FORMAT 2: IMAGE-BASED CONTENT -->
+                    <div id="imageFormat" class="content-format" style="display: none;">
+                        <div class="image-content">
+                            <!-- Will be populated from backend -->
+                        </div>
+                    </div>
+
+                    <!-- FORMAT 3: MIXED CONTENT (Text + Images + Explanations) -->
+                    <div id="mixedFormat" class="content-format" style="display: none;">
+                        <div class="mixed-content">
+                            <!-- Will be populated from backend -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Q&A MODE VIEW -->
+            <div id="qaModeView" class="mode-view">
+                <!-- QUIZ START SCREEN -->
+                <div id="quizStartScreen" class="quiz-start-screen">
+                    <div class="quiz-start-icon">
+                        <i class="fas fa-clipboard-question"></i>
+                    </div>
+                    <h1>Practice Quiz</h1>
+                    <p>Test your knowledge with practice questions.</p>
+                    <p class="quiz-instructions">Select a topic from the sidebar to begin your quiz.</p>
+                </div>
+
+                <!-- QUIZ INTERFACE -->
+                <div id="quizInterface" class="quiz-interface" style="display: none;">
+                    <!-- Quiz Progress Bar -->
+                    <div class="quiz-progress-bar">
+                        <div class="progress-info">
+                            <span>Question <span id="currentQuestion">1</span> of <span id="totalQuestions">10</span></span>
+                            <span class="quiz-timer"><i class="fas fa-clock"></i> <span id="quizTimer">00:00</span></span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 10%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Question Card -->
+                    <div class="question-card">
+                        <div class="question-header">
+                            <span class="question-topic-badge" id="questionTopic">Traffic Signs</span>
+                        </div>
+                        
+                        <div class="question-content">
+                            <h2 class="question-text" id="questionText">What does a red octagonal sign indicate?</h2>
+                            
+                            <!-- Question Image (if available) -->
+                            <div class="question-image-container" id="questionImageContainer" style="display: none;">
+                                <img id="questionImage" src="" alt="Question Image">
+                            </div>
+                        </div>
+
+                        <!-- Answer Options -->
+                        <div class="answer-options" id="answerOptions">
+                            <div class="answer-option" onclick="selectAnswer('A')">
+                                <input type="radio" name="answer" id="answerA" value="A">
+                                <label for="answerA">
+                                    <span class="option-letter">A</span>
+                                    <span class="option-text" id="optionAText">Stop sign</span>
+                                </label>
+                            </div>
+
+                            <div class="answer-option" onclick="selectAnswer('B')">
+                                <input type="radio" name="answer" id="answerB" value="B">
+                                <label for="answerB">
+                                    <span class="option-letter">B</span>
+                                    <span class="option-text" id="optionBText">Yield sign</span>
+                                </label>
+                            </div>
+
+                            <div class="answer-option" onclick="selectAnswer('C')">
+                                <input type="radio" name="answer" id="answerC" value="C">
+                                <label for="answerC">
+                                    <span class="option-letter">C</span>
+                                    <span class="option-text" id="optionCText">Speed limit</span>
+                                </label>
+                            </div>
+
+                            <div class="answer-option" onclick="selectAnswer('D')">
+                                <input type="radio" name="answer" id="answerD" value="D">
+                                <label for="answerD">
+                                    <span class="option-letter">D</span>
+                                    <span class="option-text" id="optionDText">No parking</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="quiz-nav-buttons">
+                            <button class="quiz-btn secondary" id="prevBtn" onclick="previousQuestion()" disabled>
+                                <i class="fas fa-arrow-left"></i> Previous
+                            </button>
+                            <button class="quiz-btn primary" id="nextBtn" onclick="nextQuestion()" disabled>
+                                Next <i class="fas fa-arrow-right"></i>
+                            </button>
+                            <button class="quiz-btn success" id="submitBtn" onclick="submitQuiz()" style="display: none;">
+                                <i class="fas fa-check"></i> Submit Quiz
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ RESULTS SCREEN -->
+                <div id="quizResults" class="quiz-results" style="display: none;">
+                    <div class="results-header">
+                        <div class="results-icon" id="resultsIcon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <h1>Quiz Complete!</h1>
+                        <p class="results-message" id="resultsMessage">Great job!</p>
+                    </div>
+
+                    <div class="results-score">
+                        <div class="score-circle">
+                            <svg width="200" height="200">
+                                <circle cx="100" cy="100" r="90" fill="none" stroke="#e5e7eb" stroke-width="12"/>
+                                <circle id="scoreCircle" cx="100" cy="100" r="90" fill="none" stroke="#0097b2" stroke-width="12" 
+                                        stroke-dasharray="565.48" stroke-dashoffset="141.37" transform="rotate(-90 100 100)"/>
+                            </svg>
+                            <div class="score-text">
+                                <h2 id="scorePercentage">80%</h2>
+                                <p id="scoreRatio">8/10</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="results-breakdown">
+                        <div class="breakdown-item correct">
+                            <i class="fas fa-check-circle"></i>
+                            <div>
+                                <h3 id="correctCount">8</h3>
+                                <p>Correct</p>
+                            </div>
+                        </div>
+                        <div class="breakdown-item incorrect">
+                            <i class="fas fa-times-circle"></i>
+                            <div>
+                                <h3 id="incorrectCount">2</h3>
+                                <p>Incorrect</p>
+                            </div>
+                        </div>
+                        <div class="breakdown-item time">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <h3 id="totalTime">5:42</h3>
+                                <p>Time Taken</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="results-actions">
+                        <button class="quiz-btn secondary" onclick="reviewAnswers()">
+                            <i class="fas fa-eye"></i> Review Answers
+                        </button>
+                        <button class="quiz-btn primary" onclick="retakeQuiz()">
+                            <i class="fas fa-redo"></i> Retake Quiz
+                        </button>
+                        <button class="quiz-btn" onclick="backToQuizSelection()">
+                            <i class="fas fa-home"></i> Back to Topics
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/user-dashboard.js"></script>
+</body>
+</html>

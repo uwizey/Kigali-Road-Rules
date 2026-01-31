@@ -1,6 +1,4 @@
-import { FetchData, PostData, DeleteData, UpdateData } from "../js/api/crud.js";
-
-
+import { FetchData, PostData, DeleteData, UpdateData } from "../js/api/crud.js"
 const logoutbtn = document.getElementById("btn-logout");
 if (logoutbtn) {
     logoutbtn.addEventListener("click", async () => {
