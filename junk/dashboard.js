@@ -11,7 +11,9 @@ document.getElementById("btn-logout").addEventListener("click", async () => {
     else {
         console.log(response)
     }
-})     // Sidebar toggle functionality
+})
+
+// Sidebar toggle functionality   
     
 
 const menuBtn = document.getElementById('menuBtn');
