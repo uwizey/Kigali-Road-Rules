@@ -118,34 +118,48 @@ def Topics():
         logging.error(f"Unexpected error: {str(e)}")
         return jsonify({"status": False, "message": "Unexpected error occurred"}), 500
 
+@app.route("/topic/<int:topic_id>", methods=["GET"])
+@role_required("admin")
+def get_single_topic(topic_id):
+    try:
+        topic = Topic.query.get(topic_id)
+        if not topic:
+            return jsonify({"status": False, "message": "Topic not found"}), 404
 
+        # If you want nested children, reuse your build_topic_tree
+        topic_data = build_topic_tree(topic)
+
+        return jsonify({"status": True, "topic": topic_data}), 200
+
+    except SQLAlchemyError as e:
+        logging.error(f"Database error: {str(e)}")
+        return jsonify({"status": False, "message": "Database error occurred"}), 500
+
+    except Exception as e:
+        logging.error(f"Unexpected error: {str(e)}")
+        return jsonify({"status": False, "message": "Unexpected error occurred"}), 500
+ 
+
+import json
+import base64
+from flask import request, jsonify
 
 @app.route("/question", methods=["POST"])
 @role_required("admin")
-def question_route():
+def create_question():
     try:
-        payload = request.form
+        # FormData fields
+        statement = request.form.get("statement")   # question text
+        topic_name = request.form.get("topic")      # optional topic name
+        topic_id = request.form.get("topicId")      # numeric/string id
+        correct_answer = request.form.get("correctAnswer")  # e.g. "B" or answer_id
+        raw_options = request.form.get("options")   # JSON string of options {A: "...", B: "...", ...}
 
-        # Step 1: Parse fields
-        content = payload.get("content")
-        topic_id = payload.get("topic")
-        raw_options = payload.get("options")
-        correct_index = int(payload.get("correctIndex"))
+        # Validate required fields
+        if not statement or not topic_id or not raw_options:
+            return jsonify({"status": False, "message": "Statement, topicId, and options are required"}), 400
 
-        if not content or not topic_id or not raw_options:
-            return jsonify({"status": False, "message": "Missing required fields"}), 400
-
-        # Parse options safely
-        import json
-        try:
-            options = json.loads(raw_options) if isinstance(raw_options, str) else raw_options
-        except Exception:
-            return jsonify({"status": False, "message": "Invalid options format"}), 400
-
-        if not isinstance(options, list) or correct_index >= len(options):
-            return jsonify({"status": False, "message": "Invalid options or correct index"}), 400
-
-        # Step 2: Handle optional image
+        # Handle image upload if present
         image_data = None
         mimetype = None
         if "image" in request.files:
@@ -153,131 +167,61 @@ def question_route():
             mimetype = file.mimetype
             image_data = file.read()
 
-        # Step 3: Create question
+        # Create new question
         new_question = Question(
-            content=content,
+            content=statement,
             topic_id=topic_id,
-            mimetype=mimetype,
-            correct_answer_id=None,
-            image_data=image_data
+            correct_answer_id=None,  # will set later
+            image_data=image_data,
+            mimetype=mimetype
         )
         db.session.add(new_question)
-        db.session.flush()
+        db.session.flush()  # get question_id before committing
 
-        # Step 4: Create options
-        created_options = []
-        for idx, opt_text in enumerate(options):
-            option = AnswerOption(
+        # Parse options (FormData sends as JSON string)
+        try:
+            options = json.loads(raw_options) if isinstance(raw_options, str) else raw_options
+        except Exception:
+            return jsonify({"status": False, "message": "Invalid options format"}), 400
+
+        created_options = {}
+        for key, text in options.items():  # keys like "A", "B", "C", "D"
+            if not text:
+                continue
+            answer_option = AnswerOption(
                 question_id=new_question.question_id,
-                option_text=opt_text
+                option_text=text
             )
-            db.session.add(option)
+            db.session.add(answer_option)
             db.session.flush()
-            created_options.append(option)
+            created_options[key] = answer_option.answer_id
 
-        # Step 5: Link correct answer
-        correct_option = created_options[correct_index]
-        new_question.correct_answer_id = correct_option.answer_id
+        # Set correct answer if provided
+        if correct_answer:
+            # If correctAnswer is a letter (A/B/C/D), map to created option
+            if correct_answer in created_options:
+                new_question.correct_answer_id = created_options[correct_answer]
+            else:
+                # If it's already an answer_id, trust it
+                try:
+                    correct_id = int(correct_answer)
+                    if correct_id in created_options.values():
+                        new_question.correct_answer_id = correct_id
+                except ValueError:
+                    pass
 
         db.session.commit()
 
         return jsonify({
             "status": True,
-            "message": "Question created successfully"
+            "message": "Question created successfully",
+            "question_id": new_question.question_id
         }), 201
 
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error creating question: {str(e)}")
         return jsonify({"status": False, "message": "Error creating question"}), 500
-
-import base64
-@app.route("/questions/<int:question_id>", methods=["GET", "PUT", "DELETE"])
-@app.route("/question/<int:question_id>", methods=["GET", "PUT", "DELETE"])
-@role_required("admin")
-def question_detail(question_id):
-    try:
-        question = Question.query.get_or_404(question_id)
-
-        if request.method == "GET":
-            # Convert image_data to base64 if present
-            image_base64 = None
-            if question.image_data:
-                image_base64 = base64.b64encode(question.image_data).decode("utf-8")
-
-            response = {
-                "question_id": question.question_id,
-                "content": question.content,
-                "topic_id": question.topic_id,
-                "correct_answer_id": question.correct_answer_id,
-                "image": image_base64,
-                "mimetype": question.mimetype,
-                "options": [
-                    {
-                        "answer_id": opt.answer_id,
-                        "text": opt.option_text,
-                        "is_correct": opt.answer_id == question.correct_answer_id
-                    }
-                    for opt in question.answer_options
-                ]
-            }
-            return jsonify({"status": True, "question": response}), 200
-
-        elif request.method == "PUT":
-            payload = request.form
-
-            # Update content/topic if provided
-            content = payload.get("content")
-            topic_id = payload.get("topic")
-            raw_options = payload.get("options")
-            correct_answer_id = payload.get("correct_answer_id")
-
-            if content:
-                question.content = content
-            if topic_id:
-                question.topic_id = topic_id
-
-            # Handle image update
-            if "image" in request.files:
-                file = request.files["image"]
-                question.mimetype = file.mimetype
-                question.image_data = file.read()
-
-            # Update options if provided
-            if raw_options:
-                import json
-                try:
-                    options = json.loads(raw_options) if isinstance(raw_options, str) else raw_options
-                except Exception:
-                    return jsonify({"status": False, "message": "Invalid options format"}), 400
-
-                # options should be a list of dicts: [{"answer_id": 15, "text": "new text"}, ...]
-                for opt in options:
-                    answer_id = opt.get("answer_id")
-                    new_text = opt.get("text")
-                    if answer_id and new_text:
-                        existing_opt = AnswerOption.query.get(answer_id)
-                        if existing_opt and existing_opt.question_id == question.question_id:
-                            existing_opt.option_text = new_text
-
-            # Update correct answer if provided
-            if correct_answer_id:
-                correct_answer_id = int(correct_answer_id)
-                if any(opt.answer_id == correct_answer_id for opt in question.answer_options):
-                    question.correct_answer_id = correct_answer_id
-
-            db.session.commit()
-            return jsonify({"status": True, "message": "Question updated successfully"}), 200
-
-        elif request.method == "DELETE":
-            db.session.delete(question)
-            db.session.commit()
-            return jsonify({"status": True, "message": "Question deleted successfully"}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"Error handling question: {str(e)}")
-        return jsonify({"status": False, "message": "Error handling question"}), 500
 
 @app.route("/questions", methods=["GET"])
 @role_required("admin")
@@ -300,6 +244,160 @@ def get_all_questions():
     except Exception as e:
         logging.error(f"Error retrieving questions: {str(e)}")
         return jsonify({"status": False, "message": "Error retrieving questions"}), 500
+
+import base64
+
+@app.route("/question/<int:question_id>", methods=["GET"])
+@role_required("admin")
+def get_question(question_id):
+    try:
+        question = Question.query.get(question_id)
+        if not question:
+            return jsonify({"status": False, "message": "Question not found"}), 404
+
+        # Convert image to base64 if present
+        image_base64 = None
+        if question.image_data:
+            image_base64 = base64.b64encode(question.image_data).decode("utf-8")
+
+        # Map options into {A: {id, text}, B: {id, text}, ...}
+        options_map = {}
+        letters = ["A", "B", "C", "D"]
+        for idx, opt in enumerate(question.answer_options):
+            if idx < len(letters):
+                options_map[letters[idx]] = {
+                    "id": opt.answer_id,
+                    "text": opt.option_text
+                }
+
+        # Resolve correct answer back to letter
+        correct_letter = None
+        for idx, opt in enumerate(question.answer_options):
+            if opt.answer_id == question.correct_answer_id and idx < len(letters):
+                correct_letter = letters[idx]
+
+        response = {
+            "statement": question.content,
+            "topic": question.topic.name if question.topic else "",
+            "topicId": question.topic_id,
+            "correctAnswer": correct_letter,
+            "image": image_base64,
+            "mimetype": question.mimetype,
+            "options": options_map
+        }
+
+        return jsonify({"status": True, "question": response}), 200
+
+    except Exception as e:
+        logging.error(f"Error retrieving question: {str(e)}")
+        return jsonify({"status": False, "message": "Error retrieving question"}), 500
+
+
+@app.route("/question", methods=["PUT"])
+@role_required("admin")
+def update_question():
+    try:
+        payload = request.form
+        question_id = payload.get("id")
+        if not question_id:
+            return jsonify({"status": False, "message": "Question ID required"}), 400
+
+        question = Question.query.get(question_id)
+        if not question:
+            return jsonify({"status": False, "message": "Question not found"}), 404
+
+        # Update basic fields
+        statement = payload.get("statement")
+        topic_id = payload.get("topicId")
+        correct_answer = payload.get("correctAnswer")
+        raw_options = payload.get("options")
+
+        if statement:
+            question.content = statement
+        if topic_id:
+            question.topic_id = topic_id
+
+        # Handle image logic
+        if "image" in request.files:  # Scenario 2: new image uploaded
+            file = request.files["image"]
+            question.mimetype = file.mimetype
+            question.image_data = file.read()
+        elif payload.get("removeImage") == "true":  # Scenario 3: remove image
+            question.image_data = None
+            question.mimetype = None
+        # Scenario 1: no image field → keep existing image
+
+        # Update options if provided
+        if raw_options:
+            import json
+            try:
+                options = json.loads(raw_options) if isinstance(raw_options, str) else raw_options
+            except Exception:
+                return jsonify({"status": False, "message": "Invalid options format"}), 400
+
+            for key, opt in options.items():
+                opt_id = opt.get("id")
+                new_text = opt.get("text")
+                if opt_id and new_text:
+                    existing_opt = AnswerOption.query.get(opt_id)
+                    if existing_opt and existing_opt.question_id == question.question_id:
+                        existing_opt.option_text = new_text
+
+        # Update correct answer if provided
+        if correct_answer:
+            # If letter (A/B/C/D), map to option id
+            if raw_options:
+                options = json.loads(raw_options) if isinstance(raw_options, str) else raw_options
+                if correct_answer in options:
+                    question.correct_answer_id = options[correct_answer]["id"]
+            else:
+                try:
+                    correct_id = int(correct_answer)
+                    if any(opt.answer_id == correct_id for opt in question.answer_options):
+                        question.correct_answer_id = correct_id
+                except ValueError:
+                    pass
+
+        db.session.commit()
+        return jsonify({"status": True, "message": "Question updated successfully"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating question: {str(e)}")
+        return jsonify({"status": False, "message": "Error updating question"}), 500
+
+
+@app.route("/question", methods=["DELETE"])
+@role_required("admin")
+def delete_question():
+    try:
+        payload = request.get_json(force=True, silent=True)
+        if not payload:
+            return jsonify({"status": False, "message": "Invalid or missing JSON payload"}), 400
+
+        question_id = payload.get("id")
+        if not question_id:
+            return jsonify({"status": False, "message": "Question ID required"}), 400
+
+        question = Question.query.get(question_id)
+        if not question:
+            return jsonify({"status": False, "message": "Question not found"}), 404
+
+        # Delete all related options first
+        for opt in question.answer_options:
+            db.session.delete(opt)
+
+        # Delete the question itself
+        db.session.delete(question)
+        db.session.commit()
+        print("i have")
+        return jsonify({"status": True, "message": "Question and its options deleted successfully"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting question: {str(e)}")
+        return jsonify({"status": False, "message": "Error deleting question"}), 500
+
 
 
 @app.route("/subtopic", methods=["GET", "POST", "PUT", "DELETE"])
@@ -336,6 +434,8 @@ def subTopics():
     except Exception as e:
         logging.error(f"Unexpected error: {str(e)}")
         return jsonify({"status": False, "message": "Unexpected error occurred"}), 500
+
+
 
 @app.route("/users", methods=["GET"])
 def get_all_users():
@@ -469,7 +569,8 @@ def logout():
         logging.error(f"Logout error: {str(e)}")
         return jsonify({"status": False, "message": "Logout failed"}), 500
 
-        
+
+     
         
 
 

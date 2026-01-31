@@ -36,52 +36,65 @@ class Topic(db.Model):
     def __repr__(self):
         return f'<Topic {self.name}>'
 
-
 class Question(db.Model):
     __tablename__ = "question"
 
     question_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     content = db.Column(db.Text, nullable=False)
 
-    # Store raw image data instead of a URL
     image_data = db.Column(db.LargeBinary, nullable=True)
     mimetype = db.Column(db.String(50), nullable=True)
-    topic_id = db.Column(db.Integer, db.ForeignKey("topic.topic_id"))
-    correct_answer_id = db.Column(db.Integer, db.ForeignKey("answer_option.answer_id"))
+
+    topic_id = db.Column(db.Integer, db.ForeignKey("topic.topic_id", ondelete="CASCADE"))
+    correct_answer_id = db.Column(
+        db.Integer,
+        db.ForeignKey("answer_option.answer_id", ondelete="SET NULL"),
+        nullable=True
+    )
 
     # Relationships
     topic = db.relationship("Topic", back_populates="questions")
+
     answer_options = db.relationship(
         "AnswerOption",
         back_populates="question",
-        foreign_keys="[AnswerOption.question_id]"
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        foreign_keys="[AnswerOption.question_id]"   # ✅ tell SQLAlchemy which FK to use
     )
+
     correct_answer = db.relationship(
         "AnswerOption",
-        foreign_keys=[correct_answer_id]
+        foreign_keys=[correct_answer_id],
+        post_update=True
     )
 
     def __repr__(self):
         return f"<Question {self.question_id}>"
 
 
-
 class AnswerOption(db.Model):
     __tablename__ = "answer_option"
 
     answer_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    question_id = db.Column(db.Integer, db.ForeignKey("question.question_id"))
+    question_id = db.Column(
+        db.Integer,
+        db.ForeignKey("question.question_id", ondelete="CASCADE"),
+        nullable=False
+    )
     option_text = db.Column(db.Text, nullable=False)
 
     # Relationships
     question = db.relationship(
         "Question",
         back_populates="answer_options",
-        foreign_keys=[question_id]   # ✅ specify FK here too
+        foreign_keys=[question_id]   # ✅ explicitly tie to question_id
     )
 
     def __repr__(self):
         return f"<AnswerOption {self.answer_id}>"
+
+
 
     
 class Quiz(db.Model):
