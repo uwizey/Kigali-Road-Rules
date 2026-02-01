@@ -101,6 +101,7 @@ class Quiz(db.Model):
     __tablename__ = "quiz" 
     quiz_id = db.Column(db.Integer, primary_key=True, autoincrement=True) 
     title = db.Column(db.String(255)) 
+    description = db.Column(db.Text) 
     publish_date = db.Column(db.DateTime, default=datetime.utcnow) 
     
     # Relationships 

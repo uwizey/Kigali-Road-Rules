@@ -805,6 +805,22 @@ async function populateTopicSelects() {
   modalTopicSelect.innerHTML =
     '<option value="">Select topic</option>' + optionsHtml;
 }
+async function populateTopicSelects_2(select) {
+  let optionsHtml = "";
+  const response = await FetchData("/topic", true);
+
+  const data = response.data.topics || [];
+
+  data.forEach((cat) => {
+    optionsHtml += `<optgroup label="${cat.name}">`;
+    optionsHtml += `<option value="${cat.id}">${cat.name}</option>`;
+    cat.subtopics.forEach((sub) => {
+      optionsHtml += `<option value="${sub.id}">${sub.name}</option>`;
+    });
+    optionsHtml += `</optgroup>`;
+  });
+  select.innerHTML = '<option value="">Select topic</option>' + optionsHtml;
+}
 /**
  * Handle question form submission
  * @param {Event} event - Form submit event
@@ -1204,30 +1220,32 @@ function displayFilteredUsers(filtered) {
 /**
  * Load and display all exams
  */
-function loadExams() {
+async function loadExams() {
   var examsList = document.getElementById("examsList");
   examsList.innerHTML = "";
 
-  if (exams.length === 0) {
-    examsList.innerHTML =
-      '<p style="text-align: center; color: var(--gray); padding: 40px;">No exams created yet. Click "Add New Exam" to get started.</p>';
-    return;
-  }
-
+ 
+  const response = await FetchData("/quizzes", true);
+  const exams = response.data.quizzes
+   if (exams.length === 0) {
+     examsList.innerHTML =
+       '<p style="text-align: center; color: var(--gray); padding: 40px;">No exams created yet. Click "Add New Exam" to get started.</p>';
+     return;
+   }
   exams.forEach(function (exam) {
     var examCard = document.createElement("div");
     examCard.className = "exam-card";
     examCard.innerHTML = `
             <div class="exam-card-header">
                 <div>
-                    <h3>${exam.name}</h3>
+                    <h3>${exam.title}</h3>
                     <p>${exam.description || "No description provided"}</p>
                 </div>
                 <div class="exam-actions">
-                    <button class="btn-edit" data-action="edit-exam" data-id="${exam.id}">
+                    <button class="btn-edit" data-action="edit-exam" data-id="${exam.quiz_id}">
                         <i class="fas fa-edit"></i> Edit
                     </button>
-                    <button class="btn-delete" data-action="delete-exam" data-id="${exam.id}">
+                    <button class="btn-delete" data-action="delete-exam" data-id="${exam.quiz_id}">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>
@@ -1239,7 +1257,7 @@ function loadExams() {
                 </div>
                 <div class="exam-meta-item">
                     <i class="fas fa-calendar"></i>
-                    <span>Created: ${exam.created}</span>
+                    <span>Created: ${exam.publish_date}</span>
                 </div>
             </div>
         `;
@@ -1251,7 +1269,7 @@ function loadExams() {
  * Open exam modal for add or edit
  * @param {number|null} examId - ID of exam to edit, or null for new
  */
-function openExamModal(examId) {
+async function openExamModal(examId) {
   var modal = document.getElementById("examModal");
   var form = document.getElementById("examForm");
   var title = document.getElementById("examModalTitle");
@@ -1263,21 +1281,15 @@ function openExamModal(examId) {
   // Load topic filter options
   var topicFilter = document.getElementById("examQuestionTopicFilter");
   topicFilter.innerHTML = '<option value="">All Topics</option>';
-  topics.forEach(function (topic) {
-    var option = document.createElement("option");
-    option.value = topic.name;
-    option.textContent = topic.name;
-    topicFilter.appendChild(option);
-  });
+  populateTopicSelects_2(topicFilter);
 
   if (examId) {
-    var exam = exams.find(function (e) {
-      return e.id === examId;
-    });
+    const response= await FetchData(`/quiz/${examId}`);
+    const exam = response.data
     if (exam) {
       title.textContent = "Edit Exam";
-      document.getElementById("examId").value = exam.id;
-      document.getElementById("examName").value = exam.name;
+      document.getElementById("examId").value = exam.quiz_id;
+      document.getElementById("examName").value = exam.title;
       document.getElementById("examDescription").value = exam.description || "";
       selectedQuestionIds = exam.questions.slice();
     }
@@ -1301,39 +1313,41 @@ function closeExamModal() {
 /**
  * Load available questions for exam selection
  */
-function loadAvailableQuestions() {
+async function loadAvailableQuestions() {
   var container = document.getElementById("availableQuestions");
   var topicFilter = document.getElementById("examQuestionTopicFilter").value;
   var searchTerm = document
     .getElementById("examQuestionSearch")
     .value.toLowerCase();
+  const response = await FetchData("/questions", true);
+  questions = response.data.questions;
+  // var filtered = questions.filter(function (q) {
+  //   var matchesTopic = !topicFilter || q.topic === topicFilter;
+  //   var matchesSearch =
+  //     !searchTerm || q.statement.toLowerCase().includes(searchTerm);
+  //   return matchesTopic && matchesSearch;
+  // });
 
-  var filtered = questions.filter(function (q) {
-    var matchesTopic = !topicFilter || q.topic === topicFilter;
-    var matchesSearch =
-      !searchTerm || q.statement.toLowerCase().includes(searchTerm);
-    return matchesTopic && matchesSearch;
-  });
-
-  if (filtered.length === 0) {
-    container.innerHTML =
-      '<p style="text-align: center; color: var(--gray); padding: 20px;">No questions found.</p>';
-    return;
-  }
+  // if (filtered.length === 0) {
+  //   container.innerHTML =
+  //     '<p style="text-align: center; color: var(--gray); padding: 20px;">No questions found.</p>';
+  //   return;
+  // }
 
   container.innerHTML = "";
-  filtered.forEach(function (question) {
-    var isSelected = selectedQuestionIds.indexOf(question.id) > -1;
+  questions.forEach(function (question) {
+    console.log(question)
+    var isSelected =
+      selectedQuestionIds.indexOf(question.question_id) > -1;
     var item = document.createElement("div");
     item.className = "question-checkbox-item";
     item.innerHTML = `
             <input type="checkbox" 
-                   id="q-${question.id}" 
+                   id="q-${question.question_id}" 
                    ${isSelected ? "checked" : ""}
-                   data-question-id="${question.id}">
+                   data-question-id="${question.question_id}">
             <div class="question-checkbox-content">
-                <strong>${question.statement}</strong>
-                <span class="question-topic-badge">${question.topic}</span>
+                <strong>${question.content}</strong>
             </div>
         `;
     container.appendChild(item);
@@ -1365,6 +1379,7 @@ function toggleQuestionSelection(questionId) {
  * Update selected questions display
  */
 function updateSelectedQuestionsDisplay() {
+  console.log(selectedQuestionIds)
   var container = document.getElementById("selectedQuestions");
   var countSpan = document.getElementById("selectedCount");
 
@@ -1379,13 +1394,13 @@ function updateSelectedQuestionsDisplay() {
   container.innerHTML = "";
   selectedQuestionIds.forEach(function (questionId) {
     var question = questions.find(function (q) {
-      return q.id === questionId;
+      return q.question_id === questionId;
     });
     if (question) {
       var item = document.createElement("div");
       item.className = "selected-question-item";
       item.innerHTML = `
-                <span>${question.statement.substring(0, 60)}${question.statement.length > 60 ? "..." : ""}</span>
+                <span>${question.content.substring(0, 60)}${question.content.length > 60 ? "..." : ""}</span>
                 <button type="button" data-action="remove-selected-question" data-id="${questionId}">
                     <i class="fas fa-times"></i>
                 </button>
@@ -1418,7 +1433,7 @@ function removeQuestionFromSelection(questionId) {
  * Handle exam form submission
  * @param {Event} event - Form submit event
  */
-function handleExamSubmit(event) {
+async function handleExamSubmit(event) {
   event.preventDefault();
 
   if (selectedQuestionIds.length === 0) {
@@ -1432,26 +1447,33 @@ function handleExamSubmit(event) {
 
   if (examId) {
     // Update existing exam
-    var exam = exams.find(function (e) {
-      return e.id === parseInt(examId);
-    });
-    if (exam) {
-      exam.name = name;
-      exam.description = description;
-      exam.questions = selectedQuestionIds.slice();
-      console.log("Exam updated:", exam);
-    }
-  } else {
-    // Create new exam
-    var newExam = {
-      id: nextExamId++,
-      name: name,
+    const payload = {
+      quiz_id: examId,
+      title: name,
       description: description,
       questions: selectedQuestionIds.slice(),
-      created: new Date().toISOString().split("T")[0],
     };
-    exams.push(newExam);
-    console.log("Exam created:", newExam);
+    const res = await UpdateData("/quiz", payload, true);
+    if (res.success) {
+      alert("Exam updated successfully");
+    } else {
+      alert("Failed to update Exam");
+    }
+
+  } else {
+    // Create new exam
+    var payload = {
+      title: name,
+      description: description,
+      questions: selectedQuestionIds.slice(),
+    };
+
+    const res = await PostData("/quiz", payload, true);
+    if (res.success) {
+      alert("Exam created successfully");;
+    } else {
+      alert("Failed to add Exam");
+    }
   }
 
   loadExams();
@@ -1470,13 +1492,15 @@ function editExam(examId) {
  * Delete an exam
  * @param {number} examId - ID of exam to delete
  */
-function deleteExam(examId) {
+async function deleteExam(examId) {
   if (confirm("Are you sure you want to delete this exam?")) {
-    exams = exams.filter(function (e) {
-      return e.id !== examId;
-    });
+    const res = await DeleteData("/quiz", {id: examId}, true);
+    if (res.success) {
+      alert("Exam " + examId + " deleted");;
+    } else {
+      alert("Failed to delete Exam");
+    }
     loadExams();
-    console.log("Exam " + examId + " deleted");
   }
 }
 

@@ -2,10 +2,10 @@ from flask import request, jsonify
 from werkzeug.security import generate_password_hash,check_password_hash
 from sqlalchemy.exc import SQLAlchemyError
 from flask_jwt_extended import create_access_token,jwt_required,get_jwt_identity,get_jwt,verify_jwt_in_request
-from core.models import db, User,Topic,Question,AnswerOption
+from core.models import db, User,Topic,Question,AnswerOption,Quiz,QuizQuestion
 from functools import wraps
 from core import abstract_app,jwt,jwt_blacklist
-from datetime import timedelta
+from datetime import timedelta,datetime
 
 import logging
 
@@ -435,8 +435,6 @@ def subTopics():
         logging.error(f"Unexpected error: {str(e)}")
         return jsonify({"status": False, "message": "Unexpected error occurred"}), 500
 
-
-
 @app.route("/users", methods=["GET"])
 def get_all_users():
     try:
@@ -456,6 +454,197 @@ def get_all_users():
     except Exception as e:
         logging.error(f"Error retrieving questions: {str(e)}")
         return jsonify({"status": False, "message": "Error retrieving questions"}), 500
+
+
+@app.route("/quiz", methods=["POST"])
+@role_required("admin")
+def create_quiz():
+    try:
+        payload = request.get_json(force=True, silent=True)
+        if not payload:
+            return jsonify({"status": False, "message": "Invalid or missing JSON payload"}), 400
+
+        title = payload.get("title")
+        description = payload.get("description")
+        question_ids = payload.get("questions")
+
+        if not title or not description or not question_ids:
+            return jsonify({"status": False, "message": "Title, description, and questions are required"}), 400
+
+        # Create quiz
+        new_quiz = Quiz(
+            title=title,
+            description=description,
+            publish_date=datetime.utcnow()
+        )
+        db.session.add(new_quiz)
+        db.session.flush()  # get quiz_id before committing
+
+        # Link questions
+        for q_id in question_ids:
+            question = Question.query.get(q_id)
+            if not question:
+                return jsonify({"status": False, "message": f"Question {q_id} not found"}), 404
+
+            quiz_question = QuizQuestion(
+                quiz_id=new_quiz.quiz_id,
+                question_id=q_id
+            )
+            db.session.add(quiz_question)
+
+        db.session.commit()
+
+        return jsonify({
+            "status": True,
+            "message": "Quiz created successfully",
+            "quiz_id": new_quiz.quiz_id
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error creating quiz: {str(e)}")
+        return jsonify({"status": False, "message": "Error creating quiz"}), 500
+
+
+@app.route("/quiz", methods=["PUT"])
+@role_required("admin")
+def update_quiz():
+    print("please help update")
+    try:
+        payload = request.get_json(force=True, silent=True)
+        if not payload:
+            return jsonify({"status": False, "message": "Invalid or missing JSON payload"}), 400
+
+        quiz_id = payload.get("quiz_id")
+        title = payload.get("title")
+        description = payload.get("description")
+        question_ids = payload.get("questions")
+
+        if not quiz_id or not title or not description or not question_ids:
+            return jsonify({"status": False, "message": "quiz_id, title, description, and questions are required"}), 400
+
+        quiz = Quiz.query.get(quiz_id)
+        if not quiz:
+            return jsonify({"status": False, "message": "Quiz not found"}), 404
+
+        # Update quiz metadata
+        quiz.title = title
+        quiz.description = description
+
+        # Delete existing quiz-question links
+        QuizQuestion.query.filter_by(quiz_id=quiz_id).delete()
+
+        # Insert new quiz-question links
+        for q_id in question_ids:
+            question = Question.query.get(q_id)
+            if not question:
+                return jsonify({"status": False, "message": f"Question {q_id} not found"}), 404
+
+            quiz_question = QuizQuestion(
+                quiz_id=quiz_id,
+                question_id=q_id
+            )
+            db.session.add(quiz_question)
+
+        db.session.commit()
+
+        return jsonify({
+            "status": True,
+            "message": "Quiz updated successfully",
+            "quiz_id": quiz.quiz_id
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating quiz: {str(e)}")
+        return jsonify({"status": False, "message": "Error updating quiz"}), 500
+
+
+@app.route("/quiz", methods=["DELETE"])
+@role_required("admin")
+def delete_quiz():
+    try:
+        payload = request.get_json(force=True, silent=True)
+        if not payload:
+            return jsonify({"status": False, "message": "Invalid or missing JSON payload"}), 400
+
+        quiz_id = payload.get("id")
+        if not quiz_id:
+            return jsonify({"status": False, "message": "Quiz ID required"}), 400
+
+        quiz = Quiz.query.get(quiz_id)
+        if not quiz:
+            return jsonify({"status": False, "message": "Quiz not found"}), 404
+
+        # Delete all quiz-question links first
+        QuizQuestion.query.filter_by(quiz_id=quiz_id).delete()
+
+        # Delete the quiz itself
+        db.session.delete(quiz)
+        db.session.commit()
+
+        return jsonify({"status": True, "message": "Quiz deleted successfully"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting quiz: {str(e)}")
+        return jsonify({"status": False, "message": "Error deleting quiz"}), 500
+
+
+@app.route("/quizzes", methods=["GET"])
+@role_required("admin")
+def get_all_quizzes():
+    try:
+        quizzes = Quiz.query.all()
+
+        response = []
+        for quiz in quizzes:
+            quiz_data = {
+                "quiz_id": quiz.quiz_id,
+                "title": quiz.title,
+                "description": quiz.description,
+                "publish_date": quiz.publish_date.isoformat() if quiz.publish_date else None,
+                "questions": [
+                    {
+                        "question_id": qq.question.question_id,
+                        "statement": qq.question.content,
+                        "topicId": qq.question.topic_id,
+                        "correctAnswerId": qq.question.correct_answer_id
+                    }
+                    for qq in quiz.questions
+                ]
+            }
+            response.append(quiz_data)
+
+        return jsonify({"status": True, "quizzes": response}), 200
+
+    except Exception as e:
+        logging.error(f"Error retrieving quizzes: {str(e)}")
+        return jsonify({"status": False, "message": "Error retrieving quizzes"}), 500
+
+@app.route("/quiz/<int:quiz_id>", methods=["GET"])
+@role_required("admin")
+def get_quiz_for_update(quiz_id):
+    try:
+        quiz = Quiz.query.get(quiz_id)
+        if not quiz:
+            return jsonify({"status": False, "message": "Quiz not found"}), 404
+
+        # Collect only question IDs
+        question_ids = [qq.question_id for qq in quiz.questions]
+
+        response = {
+            "quiz_id": quiz.quiz_id,
+            "title": quiz.title,
+            "description": quiz.description,
+            "questions": question_ids
+        }
+
+        return jsonify(response), 200
+
+    except Exception as e:
+        logging.error(f"Error retrieving quiz for update: {str(e)}")
+        return jsonify({"status": False, "message": "Error retrieving quiz"}), 500
 
 
 @app.route("/me", methods=["GET"])
