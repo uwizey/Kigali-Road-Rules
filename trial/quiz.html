@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Home Screen -->
+        <div id="homeScreen" class="screen active">
+            <div class="header">
+                <h1>📚 Quiz Master</h1>
+                <p class="subtitle">Test your knowledge with exercises and quizzes</p>
+            </div>
+
+            <div class="mode-selection">
+                <div class="mode-card" data-mode="exercise">
+                    <div class="mode-icon">✏️</div>
+                    <h2>Exercise Mode</h2>
+                    <p>Get instant feedback after each question</p>
+                    <button class="btn btn-primary">Start Exercise</button>
+                </div>
+
+                <div class="mode-card" data-mode="quiz">
+                    <div class="mode-icon">⏱️</div>
+                    <h2>Quiz Mode</h2>
+                    <p>Timed quiz with results at the end</p>
+                    <button class="btn btn-primary">Take a Quiz</button>
+                </div>
+
+                <div class="mode-card" data-mode="template">
+                    <div class="mode-icon">📋</div>
+                    <h2>Template Quizzes</h2>
+                    <p>Try our pre-made quiz collections</p>
+                    <button class="btn btn-primary">Browse Templates</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template Quizzes List -->
+        <div id="templateScreen" class="screen">
+            <div class="header">
+                <button class="btn-back" id="templateBackBtn">← Back</button>
+                <h1>Template Quizzes</h1>
+            </div>
+
+            <div id="templateList" class="template-list"></div>
+        </div>
+
+        <!-- Question Screen -->
+        <div id="questionScreen" class="screen">
+            <div class="quiz-header">
+                <div class="quiz-info">
+                    <button class="btn-back" id="exitQuizBtn">← Exit</button>
+                    <span id="questionCounter" class="question-counter"></span>
+                </div>
+                <div id="timerDisplay" class="timer"></div>
+            </div>
+
+            <div class="question-container">
+                <div id="topicBadge" class="topic-badge"></div>
+                
+                <div class="question-content">
+                    <h2 id="questionText" class="question-text"></h2>
+                    <div id="questionImage" class="question-image"></div>
+                </div>
+
+                <div id="optionsContainer" class="options-container"></div>
+
+                <div id="feedbackContainer" class="feedback-container"></div>
+
+                <div class="question-actions">
+                    <button id="submitBtn" class="btn btn-primary btn-large">Submit Answer</button>
+                    <button id="nextBtn" class="btn btn-secondary btn-large" style="display: none;">Next Question</button>
+                </div>
+            </div>
+
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="resultsScreen" class="screen">
+            <div class="results-container">
+                <div class="results-header">
+                    <div id="resultsIcon" class="results-icon">🎉</div>
+                    <h1 id="resultsTitle">Quiz Complete!</h1>
+                    <div id="scoreDisplay" class="score-display"></div>
+                </div>
+
+                <div id="resultsSummary" class="results-summary"></div>
+
+                <div id="detailedResults" class="detailed-results"></div>
+
+                <div class="results-actions">
+                    <button class="btn btn-primary btn-large" id="backHomeBtn">Back to Home</button>
+                    <button id="retryBtn" class="btn btn-secondary btn-large" style="display: none;">Try Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/script.js" type="module"></script>
+</body>
+</html>

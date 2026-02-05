@@ -831,9 +831,7 @@ async function handleQuestionSubmit(event) {
   var questionId = document.getElementById("questionId").value;
   var statement = document.getElementById("questionStatement").value;
   var topicId = parseInt(document.getElementById("questionTopic").value);
-  var topic = topics.find(function (t) {
-    return t.id === topicId;
-  });
+
   var correctAnswer = document.querySelector(
     'input[name="correctAnswer"]:checked',
   ).value;
@@ -843,7 +841,6 @@ async function handleQuestionSubmit(event) {
 
   // Append all the fields
   formData.append("statement", statement);
-  formData.append("topic", topic ? topic.name : "");
   formData.append("topicId", topicId);
   formData.append("correctAnswer", correctAnswer);
   var imageInput = document.getElementById("questionImage");
@@ -889,12 +886,14 @@ async function handleQuestionSubmit(event) {
     }
   } else {
     // Append options as JSON string
+    
     var options = {
       A: document.getElementById("optionA").value,
       B: document.getElementById("optionB").value,
       C: document.getElementById("optionC").value,
       D: document.getElementById("optionD").value,
     };
+
     formData.append("options", JSON.stringify(options));
     const response = await PostData("/question", formData, true);
     if (response.success) {

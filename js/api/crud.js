@@ -35,30 +35,37 @@ export function clearAuthToken(storage = "localStorage") {
 }
 
 // === PostData Function ===
+// === Fixed PostData Function in crud.js ===
 export async function PostData(
   endpoint,
   payload,
   requiresAuth = false,
   storage = "localStorage",
 ) {
-    try {
-      const headers = {};
+  try {
+    const headers = new Headers(); // Use the Headers constructor
+
+    // Only set JSON content type if NOT sending FormData
     if (!(payload instanceof FormData)) {
-      headers["Content-Type"] = "application/json";
+      headers.append("Content-Type", "application/json");
     }
 
     if (requiresAuth) {
       const token = getAuthToken(storage);
       if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+        headers.append("Authorization", `Bearer ${token}`);
       }
     }
 
+  
+
     const response = await fetch(`${backendURL}${endpoint}`, {
       method: "POST",
-      headers,
+      headers: headers, // Pass the Headers object
       body: payload instanceof FormData ? payload : JSON.stringify(payload),
     });
+
+    // ... rest of your response handling logic
 
     const contentType = response.headers.get("content-type");
     let data;

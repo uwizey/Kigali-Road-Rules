@@ -6,26 +6,45 @@ from core.models import db, User,Topic,Question,AnswerOption,Quiz,QuizQuestion
 from functools import wraps
 from core import abstract_app,jwt,jwt_blacklist
 from datetime import timedelta,datetime
+import base64
+import random
+from collections import defaultdict, deque
 
 import logging
 
 app = abstract_app
 
-def role_required(required_role): 
-    def wrapper(fn): 
-        @wraps(fn) 
-        def decorator(*args, **kwargs): 
-            verify_jwt_in_request() 
-            claims = get_jwt() 
-            if claims.get("role") != required_role: 
-                return jsonify({ "status": False, "error": f"Access denied: {required_role} role required" }), 403 
-            return fn(*args, **kwargs) 
-        return decorator 
+def role_required(required_roles):
+    # Normalize input → always treat as a list
+    if isinstance(required_roles, str):
+        required_roles = [required_roles]
+
+    def wrapper(fn):
+        @wraps(fn)
+        def decorator(*args, **kwargs):
+            verify_jwt_in_request()
+            claims = get_jwt()
+            user_role = claims.get("role")
+
+            if user_role not in required_roles:
+                return jsonify({
+                    "status": False,
+                    "error": f"Access denied: requires one of {required_roles}"
+                }), 403
+
+            return fn(*args, **kwargs)
+        return decorator
     return wrapper
+
 
 @app.route("/")
 def home():
     return "Hello from the home route!"
+
+
+
+
+
 
 @jwt.unauthorized_loader
 def handle_missing_token(reason):
@@ -140,26 +159,32 @@ def get_single_topic(topic_id):
         return jsonify({"status": False, "message": "Unexpected error occurred"}), 500
  
 
-import json
-import base64
-from flask import request, jsonify
 
 @app.route("/question", methods=["POST"])
 @role_required("admin")
 def create_question():
+    import json
+   
+
     try:
-        # FormData fields
-        statement = request.form.get("statement")   # question text
-        topic_name = request.form.get("topic")      # optional topic name
-        topic_id = request.form.get("topicId")      # numeric/string id
-        correct_answer = request.form.get("correctAnswer")  # e.g. "B" or answer_id
-        raw_options = request.form.get("options")   # JSON string of options {A: "...", B: "...", ...}
+     
+        statement = request.form.get("statement")
+        topic_id = request.form.get("topicId")
+        correct_answer = request.form.get("correctAnswer")
+        raw_options = request.form.get("options")
 
-        # Validate required fields
-        if not statement or not topic_id or not raw_options:
-            return jsonify({"status": False, "message": "Statement, topicId, and options are required"}), 400
+        # 2. Precise Validation (Preventing the 400 error)
+        if not statement:
+            logging({"status": False, "message": "Statement is missing"})
+            return jsonify({"status": False, "message": "Statement is missing"}), 400
+        if topic_id is None:
+            logging({"status": False, "message": "topicId is missing"})
+            return jsonify({"status": False, "message": "topicId is missing"}), 400
+        if not raw_options:
+            logging({"status": False, "message": "Options JSON string is missing"})
+            return jsonify({"status": False, "message": "Options JSON string is missing"}), 400
 
-        # Handle image upload if present
+        # 3. Handle image upload
         image_data = None
         mimetype = None
         if "image" in request.files:
@@ -167,25 +192,26 @@ def create_question():
             mimetype = file.mimetype
             image_data = file.read()
 
-        # Create new question
+        # 4. Create Question Instance
+        # topic_id cast to int ensures DB compatibility
         new_question = Question(
             content=statement,
-            topic_id=topic_id,
-            correct_answer_id=None,  # will set later
+            topic_id=int(topic_id),
+            correct_answer_id=None,
             image_data=image_data,
             mimetype=mimetype
         )
         db.session.add(new_question)
-        db.session.flush()  # get question_id before committing
+        db.session.flush()
 
-        # Parse options (FormData sends as JSON string)
+        # 5. Parse and Create Options
         try:
             options = json.loads(raw_options) if isinstance(raw_options, str) else raw_options
-        except Exception:
-            return jsonify({"status": False, "message": "Invalid options format"}), 400
+        except (json.JSONDecodeError, TypeError) as e:
+            return jsonify({"status": False, "message": f"Invalid options format: {str(e)}"}), 400
 
         created_options = {}
-        for key, text in options.items():  # keys like "A", "B", "C", "D"
+        for key, text in options.items():
             if not text:
                 continue
             answer_option = AnswerOption(
@@ -196,13 +222,13 @@ def create_question():
             db.session.flush()
             created_options[key] = answer_option.answer_id
 
-        # Set correct answer if provided
+        # 6. Map Correct Answer
         if correct_answer:
-            # If correctAnswer is a letter (A/B/C/D), map to created option
+            # Handle letter mapping (A, B, C, D)
             if correct_answer in created_options:
                 new_question.correct_answer_id = created_options[correct_answer]
             else:
-                # If it's already an answer_id, trust it
+                # Fallback if an ID was sent directly
                 try:
                     correct_id = int(correct_answer)
                     if correct_id in created_options.values():
@@ -221,7 +247,8 @@ def create_question():
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error creating question: {str(e)}")
-        return jsonify({"status": False, "message": "Error creating question"}), 500
+        return jsonify({"status": False, "message": f"Server error: {str(e)}"}), 500
+
 
 @app.route("/questions", methods=["GET"])
 @role_required("admin")
@@ -245,10 +272,10 @@ def get_all_questions():
         logging.error(f"Error retrieving questions: {str(e)}")
         return jsonify({"status": False, "message": "Error retrieving questions"}), 500
 
-import base64
+
 
 @app.route("/question/<int:question_id>", methods=["GET"])
-@role_required("admin")
+@role_required(["admin","client"])
 def get_question(question_id):
     try:
         question = Question.query.get(question_id)
@@ -592,7 +619,7 @@ def delete_quiz():
 
 
 @app.route("/quizzes", methods=["GET"])
-@role_required("admin")
+@role_required(["admin","client"])
 def get_all_quizzes():
     try:
         quizzes = Quiz.query.all()
@@ -623,7 +650,7 @@ def get_all_quizzes():
         return jsonify({"status": False, "message": "Error retrieving quizzes"}), 500
 
 @app.route("/quiz/<int:quiz_id>", methods=["GET"])
-@role_required("admin")
+@role_required(["admin","client"])
 def get_quiz_for_update(quiz_id):
     try:
         quiz = Quiz.query.get(quiz_id)
@@ -740,10 +767,7 @@ def login():
         logging.error(f"Unexpected error: {str(e)}")
         return jsonify({"status": False, "message": "Unexpected error occurred"}), 500
     
-
-
 # In-memory token blacklist (for demo purposes; use Redis/DB in production)
-
 
 @app.route("/logout", methods=["GET"])
 @jwt_required()
@@ -757,7 +781,170 @@ def logout():
     except Exception as e:
         logging.error(f"Logout error: {str(e)}")
         return jsonify({"status": False, "message": "Logout failed"}), 500
+ 
+@app.route("/quiz/random/<int:quiz_size>", methods=["GET"])
+@role_required("client")
+def generate_random_quiz(quiz_size):
+    TARGET_SIZE = quiz_size
+    print(TARGET_SIZE)
+    # 1. Fetch all top-level topics
+    top_topics = Topic.query.filter_by(parent_topic=None).all()
+    if not top_topics:
+        return jsonify({"status": False, "message": "No topics found"}), 404
 
+    # 2. Build structure: topic → subtopics → questions
+    topic_data = {}
+
+    for topic in top_topics:
+        subtopics = topic.subtopics  # children
+        topic_data[topic.topic_id] = {
+            "topic": topic,
+            "subtopics": {},
+            "parent_questions": [q.question_id for q in topic.questions],
+            "total_available": 0
+        }
+
+        # Subtopic questions
+        for sub in subtopics:
+            sub_qs = [q.question_id for q in sub.questions]
+            topic_data[topic.topic_id]["subtopics"][sub.topic_id] = sub_qs
+
+        # Count total available
+        total_sub_qs = sum(len(qs) for qs in topic_data[topic.topic_id]["subtopics"].values())
+        total_parent_qs = len(topic_data[topic.topic_id]["parent_questions"])
+        topic_data[topic.topic_id]["total_available"] = total_sub_qs + total_parent_qs
+
+    # 3. Compute topic quotas
+    T = len(top_topics)
+    base_quota = TARGET_SIZE // T
+    leftover = TARGET_SIZE % T
+
+    topic_quota = {t.topic_id: base_quota for t in top_topics}
+
+    # Distribute leftover to topics with most questions
+    sorted_topics = sorted(top_topics, key=lambda t: topic_data[t.topic_id]["total_available"], reverse=True)
+    for i in range(leftover):
+        topic_quota[sorted_topics[i].topic_id] += 1
+
+    # 4. Select questions per topic
+    selected = defaultdict(list)
+    global_shortage = 0
+
+    for topic in top_topics:
+        tid = topic.topic_id
+        quota = topic_quota[tid]
+        data = topic_data[tid]
+
+        subtopics = data["subtopics"]
+        parent_qs = data["parent_questions"]
+
+        S = len(subtopics) if subtopics else 1
+        sub_quota = quota // S
+        sub_leftover = quota % S
+
+        # Step A: Fill subtopics
+        for sid, qs in subtopics.items():
+            take = min(len(qs), sub_quota)
+            chosen = random.sample(qs, take)
+            selected[tid].extend(chosen)
+
+            if take < sub_quota:
+                global_shortage += (sub_quota - take)
+
+        # Step B: Distribute leftover among subtopics
+        if subtopics:
+            sorted_subs = sorted(subtopics.items(), key=lambda x: len(x[1]), reverse=True)
+            for i in range(sub_leftover):
+                sid, qs = sorted_subs[i % len(sorted_subs)]
+                if qs:
+                    chosen = random.choice(qs)
+                    if chosen not in selected[tid]:
+                        selected[tid].append(chosen)
+                else:
+                    global_shortage += 1
+
+        # Step C: Fill remaining from parent topic
+        remaining = quota - len(selected[tid])
+        if remaining > 0:
+            take = min(len(parent_qs), remaining)
+            chosen = random.sample(parent_qs, take)
+            selected[tid].extend(chosen)
+
+            if take < remaining:
+                global_shortage += (remaining - take)
+
+    # 5. Redistribute shortages
+    if global_shortage > 0:
+        # Collect all remaining questions from all topics
+        remaining_pool = []
+        for tid, data in topic_data.items():
+            all_qs = []
+            for qs in data["subtopics"].values():
+                all_qs.extend(qs)
+            all_qs.extend(data["parent_questions"])
+
+            # Remove already selected
+            all_qs = [q for q in all_qs if q not in selected[tid]]
+            remaining_pool.extend(all_qs)
+
+        # Fill shortages
+        take = min(len(remaining_pool), global_shortage)
+        extra = random.sample(remaining_pool, take)
+
+        # Add extras to the largest topics
+        for qid in extra:
+            # Find topic of this question
+            q = Question.query.get(qid)
+            selected[q.topic.parent_topic or q.topic.topic_id].append(qid)
+
+    # 6. Flatten final list
+    final_list = []
+    topic_of = {}
+
+    for tid, qs in selected.items():
+        for q in qs:
+            final_list.append(q)
+            topic_of[q] = tid
+
+    # Reduce size if needed
+    if len(final_list) > TARGET_SIZE:
+        final_list = random.sample(final_list, TARGET_SIZE)
+
+    # 7. Shuffle ensuring no consecutive same-topic questions
+    grouped = defaultdict(deque)
+    for q in final_list:
+        grouped[topic_of[q]].append(q)
+
+    # Max-heap by remaining count
+    heap = [(-len(v), tid) for tid, v in grouped.items()]
+    import heapq
+    heapq.heapify(heap)
+
+    ordered = []
+    prev_topic = None
+
+    while heap:
+        count1, tid1 = heapq.heappop(heap)
+        if tid1 == prev_topic and heap:
+            # Use second option
+            count2, tid2 = heapq.heappop(heap)
+            qid = grouped[tid2].popleft()
+            ordered.append(qid)
+            prev_topic = tid2
+            if len(grouped[tid2]) > 0:
+                heapq.heappush(heap, (-(len(grouped[tid2])), tid2))
+            heapq.heappush(heap, (count1, tid1))
+        else:
+            qid = grouped[tid1].popleft()
+            ordered.append(qid)
+            prev_topic = tid1
+            if len(grouped[tid1]) > 0:
+                heapq.heappush(heap, (-(len(grouped[tid1])), tid1))
+
+    return jsonify({
+        "status": True,
+        "questions": ordered
+    }), 200
 
      
         
