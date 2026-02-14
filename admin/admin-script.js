@@ -205,23 +205,20 @@ function showSection(sectionId) {
 /**
  * Initialize all dashboard charts
  */
-function initializeCharts() {
+async function initializeCharts() {
   // Questions by Topic Chart
   var questionsCtx = document.getElementById("questionsChart").getContext("2d");
+  const response = await FetchData("/stats/topics", true);
+  const data = response.data.stats || [];
+  console.log(response);
   new Chart(questionsCtx, {
     type: "doughnut",
     data: {
-      labels: ["Mathematics", "Physics", "Chemistry", "Biology", "History"],
+      labels: response.data.labels,
       datasets: [
         {
-          data: [450, 320, 278, 150, 50],
-          backgroundColor: [
-            "#0097b2",
-            "#f59e0b",
-            "#10b981",
-            "#8b5cf6",
-            "#ef4444",
-          ],
+          data: response.data.data,
+          backgroundColor: response.data.colors,
           borderWidth: 0,
         },
       ],
@@ -345,7 +342,7 @@ async function loadTopics() {
   topicsList.innerHTML = "";
   const response = await FetchData("/topic", true);
   const data = response.data.topics || [];
-
+  document.getElementById("totalTopics").textContent = data.length;
   data.forEach(function (topic) {
     var topicCard = document.createElement("div");
     topicCard.className = "topic-card";
@@ -665,6 +662,7 @@ async function loadQuestions() {
   tbody.innerHTML = "";
   const response = await FetchData("/questions", true);
   const questions = response.data.questions;
+  document.getElementById("totalQuestions").textContent = questions.length;
   questions.forEach(function (question) {
     var row = document.createElement("tr");
     row.setAttribute("data-topic-id", `${question.topic_id}`);
@@ -1022,19 +1020,18 @@ function loadTopicOptions() {
 /**
  * Load and display all users
  */
-function loadUsers() {
+async function loadUsers() {
   var tbody = document.getElementById("usersTableBody");
   tbody.innerHTML = "";
-
+  const response = await FetchData("/users", true);
+  users = response.data.users;
+  document.getElementById("totalUsers").textContent = users.length;
   users.forEach(function (user) {
     var row = document.createElement("tr");
     row.innerHTML = `
             <td>${user.id}</td>
-            <td>${user.name}</td>
             <td>${user.email}</td>
             <td>${user.role.toUpperCase()}</td>
-            <td>${user.joined}</td>
-            <td><span class="status-badge status-${user.status}">${user.status.toUpperCase()}</span></td>
             <td>
                 <div class="table-actions">
                     <button class="btn-edit" data-action="edit-user" data-id="${user.id}">Edit</button>
@@ -1519,10 +1516,6 @@ document.addEventListener("DOMContentLoaded", function () {
   loadExams();
   loadTopicOptions();
 
-  // Update statistics
-  document.getElementById("totalTopics").textContent = topics.length;
-  document.getElementById("totalQuestions").textContent = questions.length;
-  document.getElementById("totalUsers").textContent = users.length;
 
   // ===== Logout Event Listener =====
   document

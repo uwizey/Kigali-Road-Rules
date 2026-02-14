@@ -41,11 +41,6 @@ def role_required(required_roles):
 def home():
     return "Hello from the home route!"
 
-
-
-
-
-
 @jwt.unauthorized_loader
 def handle_missing_token(reason):
     return jsonify({"status": False, "error": f"Missing or invalid token: {reason}"}), 401
@@ -417,7 +412,7 @@ def delete_question():
         # Delete the question itself
         db.session.delete(question)
         db.session.commit()
-        print("i have")
+
         return jsonify({"status": True, "message": "Question and its options deleted successfully"}), 200
 
     except Exception as e:
@@ -439,7 +434,6 @@ def subTopics():
 
             nameTopic = payload.get("subtopicName")
             parentTopic = payload.get("parentId")
-            print(parentTopic)
             if not nameTopic:
                 return jsonify({"status": False, "message": "Name of the sub topic required"}), 400
 
@@ -461,26 +455,6 @@ def subTopics():
     except Exception as e:
         logging.error(f"Unexpected error: {str(e)}")
         return jsonify({"status": False, "message": "Unexpected error occurred"}), 500
-
-@app.route("/users", methods=["GET"])
-def get_all_users():
-    try:
-        questions = User.query.all()
-
-        response = []
-        for q in questions:
-            question_data = {
-                "id": q.id,
-                "email": q.email,
-                "role": q.role,
-            }
-            response.append(question_data)
-
-        return jsonify({"status": True, "users": response}), 200
-
-    except Exception as e:
-        logging.error(f"Error retrieving questions: {str(e)}")
-        return jsonify({"status": False, "message": "Error retrieving questions"}), 500
 
 
 @app.route("/quiz", methods=["POST"])
@@ -536,7 +510,7 @@ def create_quiz():
 @app.route("/quiz", methods=["PUT"])
 @role_required("admin")
 def update_quiz():
-    print("please help update")
+    
     try:
         payload = request.get_json(force=True, silent=True)
         if not payload:
@@ -674,13 +648,13 @@ def get_quiz_for_update(quiz_id):
         return jsonify({"status": False, "message": "Error retrieving quiz"}), 500
 
 
-@app.route("/me", methods=["GET"])
+@app.route("/user/profile", methods=["GET"])
 @jwt_required()
 def me(): 
     user_id = get_jwt_identity() 
     # returns 'sub' → user.id 
     claims = get_jwt() # returns full payload 
-    return jsonify({ "status": True, "data": { "id": user_id, "email": claims["email"], "role": claims["role"] } })
+    return jsonify({ "status": True, "data": { "email": claims["email"], "role": claims["role"] } })
 
 @app.route("/register", methods=["POST"])
 def register():
@@ -713,7 +687,7 @@ def register():
 
         db.session.add(new_user)
         db.session.commit()
-        print("Registration successful: Email =",email," password = ",password )
+        
         return jsonify({"status": True, "message": "Registration successful"}), 201
 
     except SQLAlchemyError as e:
@@ -733,7 +707,7 @@ def login():
 
         email = payload.get("email", "").strip().lower()
         password = payload.get("password")
-        print("My credentials: Email =",email," password = ",password )
+        
         # Basic input validation
         if not email or not password:
             return jsonify({"status": False, "message": "Email and password are required"}), 400
@@ -786,7 +760,6 @@ def logout():
 @role_required("client")
 def generate_random_quiz(quiz_size):
     TARGET_SIZE = quiz_size
-    print(TARGET_SIZE)
     # 1. Fetch all top-level topics
     top_topics = Topic.query.filter_by(parent_topic=None).all()
     if not top_topics:
@@ -946,7 +919,73 @@ def generate_random_quiz(quiz_size):
         "questions": ordered
     }), 200
 
-     
+@app.route("/users", methods=["GET"])
+@role_required("admin")
+def get_all_users():
+    try:
+        users = User.query.filter(User.role=="client").all()
+
+        response = []
+        for u in users:
+            user_data = {
+                "id": u.id,
+                "email": u.email,
+                "role": u.role,
+            }
+            response.append(user_data)
+
+        return jsonify({"status": True, "users": response}), 200
+
+    except Exception as e:
+        logging.error(f"Error retrieving users: {str(e)}")
+        return jsonify({"status": False, "message": "Error retrieving users"}), 500  
         
 
+@app.route("/stats/topics", methods=["GET"])
+@role_required(["admin", "client"])
+def get_topic_stats():
+    try:
+        # Get all top-level topics (no parent)
+        top_topics = Topic.query.filter_by(parent_topic=None).all()
 
+        labels = []
+        data = []
+        colors = []
+
+        base_color = "#0097b2"
+
+        def shade_color(hex_color, factor):
+            """Generate lighter shades of a base hex color"""
+            hex_color = hex_color.lstrip("#")
+            r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+            r = min(255, int(r + (255 - r) * factor))
+            g = min(255, int(g + (255 - g) * factor))
+            b = min(255, int(b + (255 - b) * factor))
+            return f"#{r:02x}{g:02x}{b:02x}"
+
+        for idx, topic in enumerate(top_topics):
+            labels.append(topic.name)
+
+            # Count questions directly under parent
+            parent_count = Question.query.filter_by(topic_id=topic.topic_id).count()
+
+            # Count questions under all subtopics
+            sub_count = 0
+            for sub in topic.subtopics:
+                sub_count += Question.query.filter_by(topic_id=sub.topic_id).count()
+
+            total_count = parent_count + sub_count
+            data.append(total_count)
+
+            # Generate a shade for each topic
+            colors.append(shade_color(base_color, idx * 0.15))
+
+        return jsonify({
+            "labels": labels,
+            "data": data,
+            "colors": colors
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error generating stats: {e}")
+        return jsonify({"status": False, "message": "Error generating stats"}), 500

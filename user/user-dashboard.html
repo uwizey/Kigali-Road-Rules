@@ -10,7 +10,7 @@
 <body>
     <!-- HEADER -->
     <header class="header">
-        <div class="logo" onclick="window.location.href='../index.html'">
+        <div class="logo" data-link="../index.html">
             <img src="../assets/logo.png" alt="logo" onerror="this.style.display='none'">
         </div>
 
@@ -25,7 +25,7 @@
             <span class="user-email" id="userEmail">user@email.com</span>
         </nav>
         
-        <div class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+        <div class="mobile-menu-toggle">
             <span></span>
             <span></span>
             <span></span>
@@ -33,23 +33,23 @@
     </header>
 
     <!-- MODE SELECTOR BAR -->
- <div class="dash-topbar">
-    <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()">
-        <i class="fas fa-bars"></i>
-    </button>
-    <h3 class="dash-title" id="dashTitle">Dashboard - Content Mode</h3>
-    
-    <div class="mode-selector-container">
-        <button class="mode-btn active" id="contentModeBtn" onclick="switchMode('content')">
-            <i class="fas fa-book-open"></i>
-            <span>Content Mode</span>
+    <div class="dash-topbar">
+        <button class="menu-btn" id="menuBtn">
+            <i class="fas fa-bars"></i>
         </button>
-        <button class="mode-btn" id="qaModeBtn" onclick="switchMode('qa')">
-            <i class="fas fa-question-circle"></i>
-            <span>Q&A Mode</span>
-        </button>
+        <h3 class="dash-title" id="dashTitle">Dashboard - Content Mode</h3>
+        
+        <div class="mode-selector-container">
+            <button class="mode-btn active" id="contentModeBtn" data-mode="content">
+                <i class="fas fa-book-open"></i>
+                <span>Content Mode</span>
+            </button>
+            <button class="mode-btn" id="qaModeBtn" data-mode="qa">
+                <i class="fas fa-question-circle"></i>
+                <span>Q&A Mode</span>
+            </button>
+        </div>
     </div>
-</div>
 
     <!-- MAIN LAYOUT -->
     <div class="dash-layout">
@@ -64,54 +64,54 @@
                 <nav id="topicsNav">
                     <!-- Topics will be dynamically loaded from backend -->
                     <div class="topic">
-                        <div class="topic-header" onclick="toggleTopic(this)">
+                        <div class="topic-header">
                             <span>Overview</span>
                             <span class="topic-icon"><i class="fas fa-chevron-right"></i></span>
                         </div>
                         <div class="subtopics">
-                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'overview', 'intro')">
+                            <a href="#" class="subtopic-link" data-topic="overview" data-subtopic="intro">
                                 <i class="fas fa-file-alt"></i> Introduction
                             </a>
-                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'overview', 'getting-started')">
+                            <a href="#" class="subtopic-link" data-topic="overview" data-subtopic="getting-started">
                                 <i class="fas fa-file-alt"></i> Getting Started
                             </a>
-                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'overview', 'basics')">
+                            <a href="#" class="subtopic-link" data-topic="overview" data-subtopic="basics">
                                 <i class="fas fa-file-alt"></i> Road Basics
                             </a>
                         </div>
                     </div>
 
                     <div class="topic">
-                        <div class="topic-header" onclick="toggleTopic(this)">
+                        <div class="topic-header">
                             <span>Traffic Signs</span>
                             <span class="topic-icon"><i class="fas fa-chevron-right"></i></span>
                         </div>
                         <div class="subtopics">
-                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'traffic-signs', 'warning')">
+                            <a href="#" class="subtopic-link" data-topic="traffic-signs" data-subtopic="warning">
                                 <i class="fas fa-file-alt"></i> Warning Signs
                             </a>
-                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'traffic-signs', 'regulatory')">
+                            <a href="#" class="subtopic-link" data-topic="traffic-signs" data-subtopic="regulatory">
                                 <i class="fas fa-file-alt"></i> Regulatory Signs
                             </a>
-                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'traffic-signs', 'information')">
+                            <a href="#" class="subtopic-link" data-topic="traffic-signs" data-subtopic="information">
                                 <i class="fas fa-file-alt"></i> Information Signs
                             </a>
                         </div>
                     </div>
 
                     <div class="topic">
-                        <div class="topic-header" onclick="toggleTopic(this)">
+                        <div class="topic-header">
                             <span>Road Rules</span>
                             <span class="topic-icon"><i class="fas fa-chevron-right"></i></span>
                         </div>
                         <div class="subtopics">
-                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'road-rules', 'speed-limits')">
+                            <a href="#" class="subtopic-link" data-topic="road-rules" data-subtopic="speed-limits">
                                 <i class="fas fa-file-alt"></i> Speed Limits
                             </a>
-                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'road-rules', 'right-of-way')">
+                            <a href="#" class="subtopic-link" data-topic="road-rules" data-subtopic="right-of-way">
                                 <i class="fas fa-file-alt"></i> Right of Way
                             </a>
-                            <a href="#" class="subtopic-link" onclick="loadContent(event, 'road-rules', 'parking')">
+                            <a href="#" class="subtopic-link" data-topic="road-rules" data-subtopic="parking">
                                 <i class="fas fa-file-alt"></i> Parking Rules
                             </a>
                         </div>
@@ -127,7 +127,7 @@
                 </div>
                 <nav id="quizTopicsNav">
                     <!-- Quiz topics will be dynamically loaded from backend -->
-                    <div class="quiz-topic-item" onclick="startQuiz('overview')">
+                    <div class="quiz-topic-item" data-quiz="overview">
                         <div class="quiz-topic-icon">
                             <i class="fas fa-map"></i>
                         </div>
@@ -138,7 +138,7 @@
                         <i class="fas fa-chevron-right"></i>
                     </div>
 
-                    <div class="quiz-topic-item" onclick="startQuiz('traffic-signs')">
+                    <div class="quiz-topic-item" data-quiz="traffic-signs">
                         <div class="quiz-topic-icon">
                             <i class="fas fa-traffic-light"></i>
                         </div>
@@ -149,7 +149,7 @@
                         <i class="fas fa-chevron-right"></i>
                     </div>
 
-                    <div class="quiz-topic-item" onclick="startQuiz('road-rules')">
+                    <div class="quiz-topic-item" data-quiz="road-rules">
                         <div class="quiz-topic-icon">
                             <i class="fas fa-road"></i>
                         </div>
@@ -160,7 +160,7 @@
                         <i class="fas fa-chevron-right"></i>
                     </div>
 
-                    <div class="quiz-topic-item" onclick="startQuiz('all-topics')">
+                    <div class="quiz-topic-item" data-quiz="all-topics">
                         <div class="quiz-topic-icon">
                             <i class="fas fa-list-check"></i>
                         </div>
@@ -191,7 +191,7 @@
         </aside>
 
         <!-- OVERLAY -->
-        <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+        <div class="overlay" id="overlay"></div>
 
         <!-- MAIN CONTENT AREA -->
         <main class="dash-content" id="mainContent">
@@ -231,15 +231,15 @@
                 <!-- CONTENT DISPLAY AREA (Hidden initially) -->
                 <div id="contentDisplay" class="content-display" style="display: none;">
                     <div class="content-header">
-                        <button class="back-btn" onclick="backToWelcome()">
+                        <button class="back-btn" id="backBtn">
                             <i class="fas fa-arrow-left"></i> Back
                         </button>
                         <h2 id="contentTitle">Loading...</h2>
                         <div class="content-actions">
-                            <button class="action-btn" onclick="bookmarkContent()">
+                            <button class="action-btn" id="bookmarkBtn">
                                 <i class="fas fa-bookmark"></i>
                             </button>
-                            <button class="action-btn" onclick="printContent()">
+                            <button class="action-btn" id="printBtn">
                                 <i class="fas fa-print"></i>
                             </button>
                         </div>
@@ -310,7 +310,7 @@
 
                         <!-- Answer Options -->
                         <div class="answer-options" id="answerOptions">
-                            <div class="answer-option" onclick="selectAnswer('A')">
+                            <div class="answer-option" data-answer="A">
                                 <input type="radio" name="answer" id="answerA" value="A">
                                 <label for="answerA">
                                     <span class="option-letter">A</span>
@@ -318,7 +318,7 @@
                                 </label>
                             </div>
 
-                            <div class="answer-option" onclick="selectAnswer('B')">
+                            <div class="answer-option" data-answer="B">
                                 <input type="radio" name="answer" id="answerB" value="B">
                                 <label for="answerB">
                                     <span class="option-letter">B</span>
@@ -326,7 +326,7 @@
                                 </label>
                             </div>
 
-                            <div class="answer-option" onclick="selectAnswer('C')">
+                            <div class="answer-option" data-answer="C">
                                 <input type="radio" name="answer" id="answerC" value="C">
                                 <label for="answerC">
                                     <span class="option-letter">C</span>
@@ -334,7 +334,7 @@
                                 </label>
                             </div>
 
-                            <div class="answer-option" onclick="selectAnswer('D')">
+                            <div class="answer-option" data-answer="D">
                                 <input type="radio" name="answer" id="answerD" value="D">
                                 <label for="answerD">
                                     <span class="option-letter">D</span>
@@ -345,13 +345,13 @@
 
                         <!-- Navigation Buttons -->
                         <div class="quiz-nav-buttons">
-                            <button class="quiz-btn secondary" id="prevBtn" onclick="previousQuestion()" disabled>
+                            <button class="quiz-btn secondary" id="prevBtn" disabled>
                                 <i class="fas fa-arrow-left"></i> Previous
                             </button>
-                            <button class="quiz-btn primary" id="nextBtn" onclick="nextQuestion()" disabled>
+                            <button class="quiz-btn primary" id="nextBtn" disabled>
                                 Next <i class="fas fa-arrow-right"></i>
                             </button>
-                            <button class="quiz-btn success" id="submitBtn" onclick="submitQuiz()" style="display: none;">
+                            <button class="quiz-btn success" id="submitBtn" style="display: none;">
                                 <i class="fas fa-check"></i> Submit Quiz
                             </button>
                         </div>
@@ -407,13 +407,13 @@
                     </div>
 
                     <div class="results-actions">
-                        <button class="quiz-btn secondary" onclick="reviewAnswers()">
+                        <button class="quiz-btn secondary" id="reviewBtn">
                             <i class="fas fa-eye"></i> Review Answers
                         </button>
-                        <button class="quiz-btn primary" onclick="retakeQuiz()">
+                        <button class="quiz-btn primary" id="retakeBtn">
                             <i class="fas fa-redo"></i> Retake Quiz
                         </button>
-                        <button class="quiz-btn" onclick="backToQuizSelection()">
+                        <button class="quiz-btn" id="backToTopicsBtn">
                             <i class="fas fa-home"></i> Back to Topics
                         </button>
                     </div>
@@ -422,6 +422,6 @@
         </main>
     </div>
 
-    <script src="../js/user-dashboard.js"></script>
+    <script src="../js/user-dashboard.js" type="module"></script>
 </body>
 </html>

@@ -1,6 +1,10 @@
 const backendURL = "http://127.0.0.1:5000";
 
 const TOKEN_KEY = "authToken";
+function autoLogout(storage = "localStorage") {
+  clearAuthToken(storage); // remove token
+  window.location.href = "../auth/login.html"; // redirect to login page
+}
 
 export function setAuthToken(token, storage = "localStorage") {
   if (storage === "localStorage") {
@@ -57,8 +61,6 @@ export async function PostData(
       }
     }
 
-  
-
     const response = await fetch(`${backendURL}${endpoint}`, {
       method: "POST",
       headers: headers, // Pass the Headers object
@@ -79,27 +81,34 @@ export async function PostData(
     }
 
     if (!response.ok) {
-      // Return error in a structured way
-      return { status: false, error: data };
+      if (response.status === 401) {
+        autoLogout(storage);
+      }
+      return { success: false, status: response.status, error: data };
     }
 
     return { success: true, data };
   } catch (error) {
     console.error("Error:", error);
+    autoLogout(storage);
     return { status: false, error: error.message };
   }
 }
 
-export async function FetchData(endpoint,requiresAuth = true,storage = "localStorage") {
+export async function FetchData(
+  endpoint,
+  requiresAuth = true,
+  storage = "localStorage",
+) {
   try {
     const headers = { "Content-Type": "application/json" };
     if (requiresAuth) {
-        const token = getAuthToken(storage);
+      const token = getAuthToken(storage);
 
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
-      }
+    }
 
     const response = await fetch(`${backendURL}${endpoint}`, {
       method: "GET",
@@ -115,15 +124,18 @@ export async function FetchData(endpoint,requiresAuth = true,storage = "localSto
       data = await response.blob();
     }
     if (!response.ok) {
+      if (response.status === 401) {
+        autoLogout(storage);
+      }
       return { success: false, status: response.status, error: data };
     }
     return { success: true, data };
   } catch (error) {
     console.error("Error:", error);
+    autoLogout(storage);
     return { success: false, error: error.message };
   }
 }
-
 
 export async function UpdateData(
   endpoint,
@@ -161,19 +173,22 @@ export async function UpdateData(
     }
 
     if (!response.ok) {
+      if (response.status === 401) {
+        autoLogout(storage);
+      }
       return { success: false, status: response.status, error: data };
     }
     return { success: true, data };
   } catch (error) {
     console.error("Error:", error);
+    autoLogout(storage);
     return { success: false, error: error.message };
   }
 }
 
-
 export async function DeleteData(
-    endpoint,
-    payload,
+  endpoint,
+  payload,
   requiresAuth = true,
   storage = "localStorage",
 ) {
@@ -189,8 +204,8 @@ export async function DeleteData(
 
     const response = await fetch(`${backendURL}${endpoint}`, {
       method: "DELETE",
-        headers,
-      body:JSON.stringify(payload),
+      headers,
+      body: JSON.stringify(payload),
     });
 
     const contentType = response.headers.get("content-type");
@@ -204,12 +219,15 @@ export async function DeleteData(
     }
 
     if (!response.ok) {
+      if (response.status === 401) {
+        autoLogout(storage);
+      }
       return { success: false, status: response.status, error: data };
     }
     return { success: true, data };
   } catch (error) {
     console.error("Error:", error);
+    autoLogout(storage);
     return { success: false, error: error.message };
   }
 }
-

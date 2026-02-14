@@ -1,5 +1,6 @@
 import { FetchData, PostData, DeleteData, UpdateData } from "../js/api/crud.js"
 const logoutbtn = document.getElementById("btn-logout");
+
 if (logoutbtn) {
     logoutbtn.addEventListener("click", async () => {
       const response = await FetchData("/logout", true);
@@ -12,6 +13,17 @@ if (logoutbtn) {
       }
     });
 }
+const useremail = document.getElementById("userEmail");
+if (useremail) {
+  const response = await FetchData("/user/profile", true);
+  console.log(response);
+  if (response.success) {
+    useremail.textContent = response.data.data.email;
+  } else {
+    useremail.textContent = "Unknown User";
+  }
+}
+
 
 const msgBox = document.getElementById("message-box");
 const toggleLogin = document
@@ -138,7 +150,7 @@ document
           window.location.href = "../admin/admin-dashboard.html";
         }
       } else {
-        showMessage(response.error.message, "error");
+        showMessage("Can't connect to the server", "error");
       }
     } else {
       if (password.length < 8) {
