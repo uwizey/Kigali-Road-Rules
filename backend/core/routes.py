@@ -57,7 +57,7 @@ def build_topic_tree(topic):
            }
 
 @app.route("/topic", methods=["GET", "POST", "PUT", "DELETE"])
-@role_required("admin")
+@role_required(["admin","client"])
 def Topics():
     try:
         if request.method == "POST":
@@ -756,8 +756,7 @@ def logout():
         logging.error(f"Logout error: {str(e)}")
         return jsonify({"status": False, "message": "Logout failed"}), 500
  
-@app.route("/quiz/random/<int:quiz_size>", methods=["GET"])
-@role_required("client")
+
 def generate_random_quiz(quiz_size):
     TARGET_SIZE = quiz_size
     # 1. Fetch all top-level topics
@@ -918,6 +917,61 @@ def generate_random_quiz(quiz_size):
         "status": True,
         "questions": ordered
     }), 200
+
+@app.route("/quiz/random", methods=["GET"])
+@role_required("client")
+def generate_quiz():
+    try:
+        # Query params: ?topic=Technology&exercise=true
+        topic_name = request.args.get("topic")
+        is_exercise = request.args.get("exercise", "false").lower() == "true"
+
+        # Decide target size
+        if is_exercise:
+            TARGET_SIZE = 5
+        elif topic_name:
+            TARGET_SIZE = 10
+        else:
+            TARGET_SIZE = 20
+
+        questions = []
+
+        if topic_name:
+            # Find topic by name
+            topic = Topic.query.filter_by(name=topic_name).first()
+            if not topic:
+                return jsonify({"status": False, "message": "Topic not found"}), 404
+
+            # Collect questions recursively (topic + subtopics)
+            def collect_questions_recursive(t: Topic):
+                qs = [q.question_id for q in t.questions]
+                for sub in t.subtopics:
+                    qs.extend(collect_questions_recursive(sub))
+                return qs
+
+            all_qs = collect_questions_recursive(topic)
+            if not all_qs:
+                return jsonify({"status": False, "message": "No questions found"}), 404
+
+            # Random sample up to target size
+            questions = random.sample(all_qs, min(len(all_qs), TARGET_SIZE))
+
+        else:
+            # No topic provided → use your balanced distribution logic
+            # (reuse your existing generate_random_quiz code but with TARGET_SIZE=20)
+            return generate_random_quiz(20)
+
+        return jsonify({
+            "status": True,
+            "questions": questions,
+            "count": len(questions),
+            "topic": topic_name if topic_name else "Mixed"
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error generating quiz: {e}")
+        return jsonify({"status": False, "message": "Server error"}), 500
+
 
 @app.route("/users", methods=["GET"])
 @role_required("admin")
