@@ -1,7 +1,12 @@
 // ============================================================================
 // MOCK DATA - Simulating Backend API Responses
 // ============================================================================
-import { FetchData, PostData, DeleteData, UpdateData } from "../js/api/crud.js";
+import {
+  FetchData,
+  PostData,
+  DeleteData,
+  UpdateData,
+} from "../../js/api/crud.js";
 
 const MOCK_QUESTIONS_DB = {
   1: {
@@ -357,10 +362,10 @@ function resetQuizState() {
 // Mode Selection
 async function showExerciseStart() {
   currentMode = "exercise";
-  const max_size = 12
+  const max_size = 12;
   try {
-
-    const response = await FetchData(`/quiz/random/${max_size}`,true);
+    const response = await FetchData(`/quiz/random`, true);
+    console.log(response.data);
     await loadQuestions(response.data.questions);
     startQuiz();
   } catch (error) {
@@ -372,11 +377,11 @@ async function showQuizStart() {
   const max_size = 20;
   currentMode = "quiz";
   try {
-    const response = await FetchData(`/quiz/random/${max_size}`, true);  
-
+    const response = await FetchData(`/quiz/random`, true);
+    console.log(response.data);
     await loadQuestions(response.data.questions);
     startQuiz();
-  } catch (error) { 
+  } catch (error) {
     alert("Error loading quiz: " + error.message);
   }
 }
@@ -384,7 +389,7 @@ async function showQuizStart() {
 async function showTemplateQuizzes() {
   showScreen("templateScreen");
   try {
-    const templates = await FetchData("/quizzes",true);
+    const templates = await FetchData("/quizzes", true);
     renderTemplateList(templates.data.quizzes);
   } catch (error) {
     alert("Error loading templates: " + error.message);
@@ -431,11 +436,12 @@ async function startTemplateQuiz(quizId) {
 
 // Load Questions
 async function loadQuestions(questionIds) {
+  console.log("Loading questions:", questionIds);
   currentQuestions = [];
   for (const id of questionIds) {
     try {
       const response = await FetchData(`/question/${id}`, true);
-      console.log(response)
+      console.log(response);
       currentQuestions.push({
         id: id,
         ...response.data.question,

@@ -10,7 +10,7 @@
 <body>
     <!-- HEADER -->
     <header class="header">
-        <div class="logo" data-link="../index.html">
+        <div class="logo" id="logoBtn">
             <img src="../assets/logo.png" alt="logo" onerror="this.style.display='none'">
         </div>
 
@@ -22,10 +22,10 @@
             <a href="modeselection.html#about">Who are we</a>
             <a href="modeselection.html#contact">Contact Us</a>
             <a href="../index.html" id="btn-logout">Log Out</a>
-            <span class="user-email" id="userEmail">user@email.com</span>
+            <span class="user-email" id="userEmail"></span>
         </nav>
         
-        <div class="mobile-menu-toggle">
+        <div class="mobile-menu-toggle" id="mobileMenuToggle">
             <span></span>
             <span></span>
             <span></span>
@@ -33,23 +33,23 @@
     </header>
 
     <!-- MODE SELECTOR BAR -->
-       <div class="dash-topbar">
-            <button class="menu-btn" id="menuBtn">
-                <i class="fas fa-bars"></i>
+    <div class="dash-topbar">
+        <button class="menu-btn" id="menuBtn">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h3 class="dash-title" id="dashTitle">Dashboard - Content Mode</h3>
+        
+        <div class="mode-selector-container">
+            <button class="mode-btn active" id="contentModeBtn">
+                <i class="fas fa-book-open"></i>
+                <span>Content Mode</span>
             </button>
-            <h3 class="dash-title" id="dashTitle">Dashboard - Content Mode</h3>
-            
-            <div class="mode-selector-container">
-                <button class="mode-btn active" id="contentModeBtn" data-mode="content">
-                    <i class="fas fa-book-open"></i>
-                    <span>Content Mode</span>
-                </button>
-                <button class="mode-btn" id="qaModeBtn" data-mode="qa">
-                    <i class="fas fa-question-circle"></i>
-                    <span>Q&A Mode</span>
-                </button>
-            </div>
+            <button class="mode-btn" id="qaModeBtn">
+                <i class="fas fa-question-circle"></i>
+                <span>Q&A Mode</span>
+            </button>
         </div>
+    </div>
 
     <!-- MAIN LAYOUT -->
     <div class="dash-layout">
@@ -61,10 +61,7 @@
                     <i class="fas fa-book"></i>
                     <h3>Learning Content</h3>
                 </div>
-                <nav id="topicsNav">
-                    <!-- Topics will be dynamically loaded from backend -->
-                    <!-- Placeholder structure below -->
-                </nav>
+                <nav id="topicsNav"></nav>
             </div>
 
             <!-- Q&A MODE SIDEBAR -->
@@ -73,10 +70,7 @@
                     <i class="fas fa-clipboard-list"></i>
                     <h3>Practice Quizzes</h3>
                 </div>
-                <nav id="quizTopicsNav">
-                    <!-- Quiz topics will be dynamically loaded from backend -->
-                    <!-- Placeholder structure below -->
-                </nav>
+                <nav id="quizTopicsNav"></nav>
 
                 <div class="quiz-stats">
                     <h4>Your Stats</h4>
@@ -151,34 +145,27 @@
                         </div>
                     </div>
 
-                    <!-- CONTENT CONTAINER (All formats will be rendered here) -->
-                    <div id="contentContainer" class="content-container">
-                        <!-- Dynamic content formats will be loaded here -->
-                    </div>
+                    <div id="contentContainer" class="content-container"></div>
 
-                    <!-- EXERCISE SECTION (appears after content) -->
+                    <!-- EXERCISE SECTION -->
                     <div id="exerciseSection" class="exercise-section" style="display: none;">
                         <div class="exercise-header">
                             <i class="fas fa-dumbbell"></i>
                             <h3>Practice Exercise</h3>
                         </div>
-                        <div id="exerciseQuestions">
-                            <!-- Exercise questions will be loaded here -->
-                        </div>
-                        <button class="submit-exercise-btn" onclick="submitExercise()">
+                        <div id="exerciseQuestions"></div>
+                        <button class="submit-exercise-btn" id="submitExerciseBtn">
                             <i class="fas fa-check"></i> Submit Exercise
                         </button>
-                        <div id="exerciseResults" class="exercise-results" style="display: none;">
-                            <!-- Results will appear here -->
-                        </div>
+                        <div id="exerciseResults" class="exercise-results" style="display: none;"></div>
                     </div>
 
                     <!-- TOPIC NAVIGATION -->
                     <div class="topic-navigation">
-                        <button class="topic-nav-btn" id="prevTopicBtn" onclick="navigateTopic('prev')" style="display: none;">
+                        <button class="topic-nav-btn" id="prevTopicBtn" style="display: none;">
                             <i class="fas fa-arrow-left"></i> Previous Topic
                         </button>
-                        <button class="topic-nav-btn" id="nextTopicBtn" onclick="navigateTopic('next')" style="display: none;">
+                        <button class="topic-nav-btn" id="nextTopicBtn" style="display: none;">
                             Next Topic <i class="fas fa-arrow-right"></i>
                         </button>
                     </div>
@@ -187,6 +174,24 @@
 
             <!-- Q&A MODE VIEW -->
             <div id="qaModeView" class="mode-view">
+
+                <!-- EXAM SELECTION SCREEN -->
+                <div id="examSelectionScreen" style="display: none;">
+                    <div class="exam-selection-header">
+                        <button class="back-btn" id="backToQuizTopicsBtn">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <div class="exam-selection-title">
+                            <i class="fas fa-certificate"></i>
+                            <div>
+                                <h1>Latest Police Exams</h1>
+                                <p>Choose an exam session to practice</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="exam-grid" id="examGrid"></div>
+                </div>
+
                 <!-- QUIZ START SCREEN -->
                 <div id="quizStartScreen" class="quiz-start-screen">
                     <div class="quiz-start-icon">
@@ -200,15 +205,16 @@
                 <!-- QUIZ INTERFACE -->
                 <div id="quizInterface" class="quiz-interface" style="display: none;">
                     <!-- Question Navigation Grid -->
-                    <div class="question-nav-grid" id="questionNavGrid">
-                        <!-- Will be populated with question number buttons -->
-                    </div>
+                    <div class="question-nav-grid" id="questionNavGrid"></div>
 
                     <!-- Quiz Progress Bar -->
                     <div class="quiz-progress-bar">
                         <div class="progress-info">
                             <span>Question <span id="currentQuestion">1</span> of <span id="totalQuestions">10</span></span>
-                            <span class="quiz-timer"><i class="fas fa-clock"></i> <span id="quizTimer">00:00</span></span>
+                            <span id="quizCountdownWrap" class="quiz-timer">
+                                <i class="fas fa-clock"></i>
+                                <span id="quizTimer">00:00</span>
+                            </span>
                         </div>
                         <div class="progress-bar">
                             <div class="progress-fill" id="progressFill" style="width: 10%;"></div>
@@ -223,17 +229,13 @@
                         
                         <div class="question-content">
                             <h2 class="question-text" id="questionText">What does a red octagonal sign indicate?</h2>
-                            
-                            <!-- Question Image (if available) -->
                             <div class="question-image-container" id="questionImageContainer" style="display: none;">
                                 <img id="questionImage" src="" alt="Question Image">
                             </div>
                         </div>
 
                         <!-- Answer Options -->
-                        <div class="answer-options" id="answerOptions">
-                            <!-- Options will be dynamically generated -->
-                        </div>
+                        <div class="answer-options" id="answerOptions"></div>
 
                         <!-- Navigation Buttons -->
                         <div class="quiz-nav-buttons">
@@ -299,17 +301,26 @@
                     </div>
 
                     <div class="results-actions">
-                        <button class="quiz-btn secondary" id="reviewBtn">
+                        <button class="quiz-btn secondary" id="reviewAnswersBtn">
                             <i class="fas fa-eye"></i> Review Answers
                         </button>
-                        <button class="quiz-btn primary" id="retakeBtn">
+                        <button class="quiz-btn primary" id="retakeQuizBtn">
                             <i class="fas fa-redo"></i> Retake Quiz
                         </button>
                         <button class="quiz-btn" id="backToTopicsBtn">
                             <i class="fas fa-home"></i> Back to Topics
                         </button>
+                        <button class="quiz-btn" id="viewReportBtn">
+                            <i class="fas fa-clipboard-list"></i> View Full Report
+                        </button>
                     </div>
                 </div>
+
+                <!-- QUIZ REPORT SCREEN -->
+                <div id="quizReportScreen" style="display: none;">
+                    <!-- Populated by JS buildQuizReport() -->
+                </div>
+
             </div>
         </main>
     </div>

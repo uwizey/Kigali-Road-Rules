@@ -81,16 +81,16 @@ export async function PostData(
     }
 
     if (!response.ok) {
-      if (response.status === 401) {
+     /*  if (response.status === 401) {
         autoLogout(storage);
-      }
+      } */
       return { success: false, status: response.status, error: data };
     }
 
     return { success: true, data };
   } catch (error) {
     console.error("Error:", error);
-    autoLogout(storage);
+
     return { status: false, error: error.message };
   }
 }
