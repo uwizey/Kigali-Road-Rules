@@ -5,6 +5,7 @@
 import { FetchData, PostData, DeleteData, UpdateData } from "../js/api/crud.js";
 
 let currentQuestions = []; // holds raw fetched questions before normalization
+const useremail = document.getElementById("userEmail");
 
 // ===== CONTENT MODE DATA =====
 const CONTENT_DATA = {
@@ -1811,11 +1812,20 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeApp();
 });
 
-function initializeApp() {
+async function initializeApp() {
   injectExamSelectionStyles();
   loadContentSidebar();
   loadQuizSidebar();
   setupEventListeners();
+  if (useremail) {
+    const response = await FetchData("/user/profile", true);
+    console.log(response);
+    if (response.success) {
+      useremail.textContent = response.data.data.email;
+    } else {
+      useremail.textContent = "Unknown User";
+    }
+  }
 }
 
 function injectExamSelectionStyles() {
@@ -2386,10 +2396,22 @@ function injectExamSelectionStyles() {
 // ============================================
 
 function setupEventListeners() {
-  // Header: logo click
-  document.getElementById("logoBtn").addEventListener("click", () => {
-    window.location.href = "../index.html";
-  });
+    // Header: logo click
+    const logoutbtn = document.getElementById("logoBtn");
+
+    if (logoutbtn) {
+      logoutbtn.addEventListener("click", async () => {
+        const response = await FetchData("/logout", true);
+        if (response.success) {
+          localStorage.removeItem("token");
+          alert("Succeessfull Logout");
+          window.location.href = "../auth/login.html";
+        } else {
+          alert("logout failed");
+        }
+      });
+    }
+
 
   // Header: mobile menu toggle
   document
