@@ -1,114 +1,1177 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kigali Road Rules | 100% Free Online Driving School</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/components.css">
-    <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Admin — Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #0097b2;
+  --primary-dark: #1e40af;
+  --primary-light: #e0f7fb;
+  --white: #ffffff;
+  --black: #0F172A;
+  --gray: #4b5563;
+  --gray-light: #9ca3af;
+  --border: #e5e7eb;
+  --bg: #f9fafb;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.07);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+  --speed: 0.2s ease;
+  --panel-left: 260px;
+  --panel-mid: 280px;
+  --header-h: 60px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--black);
+  height: 100vh;
+  overflow: hidden;
+  font-size: 14px;
+}
 
-    </style>
+/* ── HEADER ── */
+.header {
+  height: var(--header-h);
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  position: fixed; top:0; left:0; right:0; z-index:100;
+  box-shadow: var(--shadow);
+}
+.header .logo {
+  font-size: 18px; font-weight: 800; color: var(--primary);
+  letter-spacing: -0.5px; white-space: nowrap;
+}
+.header-breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--gray-light); font-size: 13px; font-weight: 500;
+}
+.header-breadcrumb span { color: var(--black); font-weight: 600; }
+.header-breadcrumb .sep { opacity: .4; }
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.save-indicator {
+  font-size: 12px; font-weight: 600; color: #16a34a;
+  background: #dcfce7; padding: 4px 12px; border-radius: 20px;
+  opacity: 0; transition: opacity .3s;
+}
+.save-indicator.show { opacity: 1; }
+.btn-icon {
+  background: none; border: 1px solid var(--border); border-radius: var(--radius);
+  width: 34px; height: 34px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; font-size: 16px;
+  transition: var(--speed); color: var(--gray);
+}
+.btn-icon:hover { background: var(--bg); border-color: var(--primary); color: var(--primary); }
+
+/* ── LAYOUT ── */
+.app-body {
+  display: flex;
+  margin-top: var(--header-h);
+  height: calc(100vh - var(--header-h));
+}
+
+/* ── LEFT PANEL — Topics ── */
+.panel-topics {
+  width: var(--panel-left);
+  min-width: var(--panel-left);
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.panel-label {
+  padding: 14px 16px 10px;
+  font-size: 10px; font-weight: 700; color: var(--gray-light);
+  text-transform: uppercase; letter-spacing: 1px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-label .readonly-badge {
+  font-size: 9px; background: #f3f4f6; border: 1px solid var(--border);
+  color: var(--gray-light); padding: 2px 7px; border-radius: 10px;
+  letter-spacing: .5px; font-weight: 600;
+}
+.topics-tree {
+  flex:1; overflow-y:auto; padding: 10px 8px;
+}
+.topic-group { margin-bottom: 4px; }
+.topic-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 10px; border-radius: var(--radius);
+  cursor: pointer; transition: var(--speed);
+  user-select: none;
+}
+.topic-row:hover { background: var(--bg); }
+.topic-row.active { background: var(--primary-light); }
+.topic-row.active .topic-name { color: var(--primary); font-weight: 700; }
+.topic-chevron {
+  font-size: 10px; color: var(--gray-light);
+  transition: transform .2s; flex-shrink: 0;
+}
+.topic-row.expanded .topic-chevron { transform: rotate(90deg); }
+.topic-icon { font-size: 16px; flex-shrink:0; }
+.topic-name { font-size: 14px; font-weight: 600; color: var(--black); }
+.subtopics { display: none; padding-left: 20px; }
+.subtopic-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: var(--radius);
+  cursor: pointer; transition: var(--speed); color: var(--gray);
+  font-size: 13px; font-weight: 500;
+}
+.subtopic-row:hover { background: var(--bg); color: var(--black); }
+.subtopic-row.active { background: var(--primary-light); color: var(--primary); font-weight: 700; }
+.subtopic-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border); flex-shrink:0;
+}
+.subtopic-row.active .subtopic-dot { background: var(--primary); }
+.topic-group.open .subtopics { display: block; }
+
+/* ── MIDDLE PANEL — Sections ── */
+.panel-sections {
+  width: var(--panel-mid);
+  min-width: var(--panel-mid);
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.panel-sections .panel-label {
+  justify-content: space-between;
+}
+.sections-topic-title {
+  padding: 10px 16px;
+  font-size: 12px; font-weight: 700; color: var(--primary);
+  background: var(--primary-light);
+  border-bottom: 1px solid var(--border);
+  min-height: 36px; display: flex; align-items: center; gap: 6px;
+}
+.sections-list {
+  flex:1; overflow-y:auto; padding: 10px 8px;
+}
+.section-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 10px;
+  border-radius: var(--radius); margin-bottom: 3px;
+  cursor: pointer; transition: var(--speed);
+  border: 1px solid transparent;
+  position: relative;
+}
+.section-item:hover { background: var(--bg); border-color: var(--border); }
+.section-item.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+.section-item.active .section-title { color: var(--primary); font-weight: 700; }
+.drag-handle {
+  color: var(--gray-light); cursor: grab; font-size: 14px;
+  padding: 2px 4px; border-radius: 3px; flex-shrink: 0;
+}
+.drag-handle:active { cursor: grabbing; }
+.drag-handle:hover { background: var(--border); }
+.section-title {
+  flex:1; font-size: 13px; font-weight: 500;
+  color: var(--black); overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.section-title-input {
+  flex:1; border: 1px solid var(--primary); border-radius: 4px;
+  padding: 3px 8px; font-size: 13px; font-family: inherit;
+  font-weight: 600; background: white;
+  outline: none;
+}
+.section-order-badge {
+  font-size: 10px; color: var(--gray-light); font-weight: 700;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1px 6px; flex-shrink:0;
+}
+.section-actions {
+  display: none; gap: 4px; flex-shrink:0;
+}
+.section-item:hover .section-actions,
+.section-item.active .section-actions { display: flex; }
+.section-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 14px; padding: 2px 4px; border-radius: 3px;
+  color: var(--gray-light); transition: var(--speed);
+}
+.section-btn:hover { background: var(--border); color: var(--black); }
+.section-btn.delete:hover { background: #fee2e2; color: #dc2626; }
+.sections-footer {
+  padding: 10px 8px;
+  border-top: 1px solid var(--border);
+}
+.btn-add-section {
+  width: 100%; padding: 9px 14px;
+  background: none; border: 1.5px dashed var(--border);
+  border-radius: var(--radius); color: var(--gray);
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: var(--speed);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-add-section:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+/* ── RIGHT PANEL — Builder ── */
+.panel-builder {
+  flex:1; display:flex; flex-direction:column; overflow:hidden;
+  background: var(--bg);
+}
+.builder-header {
+  padding: 14px 20px;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-shrink: 0;
+}
+.builder-section-name {
+  font-size: 16px; font-weight: 700; color: var(--black);
+}
+.builder-section-name input {
+  font-size: 16px; font-weight: 700; border: none; background: none;
+  font-family: inherit; outline: none; color: var(--black); width: 100%;
+}
+.builder-header-actions { display: flex; gap: 8px; }
+.builder-body {
+  flex:1; overflow-y:auto; padding: 20px;
+}
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; height: 100%; color: var(--gray-light);
+  text-align: center;
+}
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: .5; }
+.empty-state h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: var(--black); opacity: .4; }
+.empty-state p { font-size: 13px; }
+
+/* ── COMPONENT CARDS ── */
+.components-list { display: flex; flex-direction: column; gap: 12px; }
+.component-card {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: border-color .2s, box-shadow .2s;
+}
+.component-card:hover { border-color: #c0d9e0; }
+.component-card.expanded { border-color: var(--primary); box-shadow: var(--shadow-lg); }
+
+.component-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer; user-select: none;
+  background: var(--white);
+}
+.component-card.expanded .component-header { border-bottom: 1px solid var(--border); }
+.comp-drag { color: var(--gray-light); cursor: grab; font-size: 14px; padding: 2px; flex-shrink:0; }
+.comp-drag:active { cursor: grabbing; }
+.comp-type-badge {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 11px; font-weight: 700; color: var(--gray);
+  text-transform: uppercase; letter-spacing: .5px; flex-shrink:0;
+}
+.comp-title {
+  flex:1; font-size: 14px; font-weight: 600; color: var(--black);
+}
+.comp-chevron { color: var(--gray-light); font-size: 12px; transition: transform .2s; flex-shrink:0; }
+.component-card.expanded .comp-chevron { transform: rotate(180deg); }
+.comp-actions { display: flex; gap: 4px; flex-shrink:0; }
+.comp-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 14px; padding: 4px 7px; border-radius: var(--radius);
+  color: var(--gray-light); transition: var(--speed); font-family: inherit;
+}
+.comp-btn:hover { background: var(--bg); color: var(--primary); }
+.comp-btn.delete:hover { background: #fee2e2; color: #dc2626; }
+
+.component-body {
+  display: none; padding: 16px 18px;
+}
+.component-card.expanded .component-body { display: block; }
+
+/* Form inside component */
+.comp-form-group { margin-bottom: 14px; }
+.comp-form-group label {
+  display: block; margin-bottom: 5px; font-size: 12px;
+  font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .5px;
+}
+.comp-input, .comp-textarea, .comp-select {
+  width: 100%; padding: 9px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 13px; font-family: inherit; color: var(--black);
+  transition: border-color .15s; background: var(--white);
+}
+.comp-input:focus, .comp-textarea:focus, .comp-select:focus {
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0,151,178,.1);
+}
+.comp-textarea { min-height: 70px; resize: vertical; }
+
+/* Items inside component */
+.items-section { margin-top: 16px; }
+.items-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.items-section-header span {
+  font-size: 12px; font-weight: 700; color: var(--gray);
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.items-list { display: flex; flex-direction: column; gap: 8px; }
+.item-row {
+  display: flex; gap: 8px; align-items: stretch;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px;
+  position: relative;
+}
+.item-row.dragging { opacity: .5; border-style: dashed; }
+.item-drag { color: var(--gray-light); cursor: grab; font-size: 13px; padding: 2px 2px; display:flex; align-items:center; }
+.item-drag:active { cursor: grabbing; }
+.item-fields { flex:1; display:flex; flex-direction:column; gap:6px; }
+.item-field-row { display:flex; gap:8px; }
+.item-input {
+  flex:1; padding: 7px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: 13px;
+  font-family: inherit; color: var(--black);
+}
+.item-input:focus { outline: none; border-color: var(--primary); }
+.item-delete-btn {
+  background: none; border: none; color: var(--gray-light);
+  cursor: pointer; font-size: 16px; padding: 0 6px;
+  border-radius: var(--radius); transition: var(--speed);
+  display: flex; align-items: flex-start; padding-top: 2px;
+}
+.item-delete-btn:hover { background: #fee2e2; color: #dc2626; }
+
+.btn-add-item {
+  margin-top: 8px; width: 100%;
+  background: none; border: 1.5px dashed var(--border);
+  border-radius: var(--radius); padding: 7px 12px;
+  font-family: inherit; font-size: 12px; font-weight: 600;
+  color: var(--gray); cursor: pointer; transition: var(--speed);
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.btn-add-item:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+/* ── ADD COMPONENT FOOTER ── */
+.builder-footer {
+  padding: 14px 20px;
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.btn-add-component {
+  width: 100%; padding: 11px;
+  background: var(--primary); color: var(--white);
+  border: none; border-radius: var(--radius);
+  font-family: inherit; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: var(--speed);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-add-component:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: var(--shadow); }
+
+/* ── MODAL ── */
+.modal {
+  display: none; position: fixed; inset:0;
+  background: rgba(0,0,0,.5); z-index:500;
+  align-items: center; justify-content: center;
+}
+.modal.active { display: flex; }
+.modal-box {
+  background: var(--white); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 480px; max-width: 95vw; max-height: 85vh;
+  overflow-y: auto; animation: fadeUp .2s ease;
+}
+@keyframes fadeUp { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+.modal-head {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-head h3 { font-size: 18px; font-weight: 700; }
+.modal-close {
+  background: none; border: none; font-size: 22px;
+  cursor: pointer; color: var(--gray-light); line-height:1;
+  border-radius: var(--radius); padding: 2px 6px;
+  transition: var(--speed);
+}
+.modal-close:hover { background: var(--bg); color: var(--black); }
+.modal-body { padding: 20px 24px; }
+.comp-type-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+}
+.comp-type-option {
+  border: 1.5px solid var(--border); border-radius: var(--radius-lg);
+  padding: 14px 10px; cursor: pointer; text-align: center;
+  transition: var(--speed);
+}
+.comp-type-option:hover { border-color: var(--primary); background: var(--primary-light); }
+.comp-type-option .type-icon { font-size: 26px; margin-bottom: 6px; }
+.comp-type-option .type-label { font-size: 12px; font-weight: 700; color: var(--black); }
+.comp-type-option .type-desc { font-size: 11px; color: var(--gray-light); margin-top: 2px; }
+
+/* ── DELETE CONFIRM ── */
+.confirm-modal .modal-box { max-width: 360px; }
+.confirm-body { padding: 20px 24px 24px; text-align: center; }
+.confirm-icon { font-size: 36px; margin-bottom: 10px; }
+.confirm-body h4 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.confirm-body p { font-size: 13px; color: var(--gray); margin-bottom: 20px; }
+.confirm-actions { display: flex; gap: 10px; justify-content: center; }
+.btn-danger {
+  background: #dc2626; color: white; border: none;
+  padding: 9px 20px; border-radius: var(--radius);
+  font-family: inherit; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: var(--speed);
+}
+.btn-danger:hover { background: #b91c1c; }
+.btn-cancel {
+  background: var(--bg); color: var(--gray); border: 1px solid var(--border);
+  padding: 9px 20px; border-radius: var(--radius);
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: var(--speed);
+}
+.btn-cancel:hover { border-color: var(--gray); color: var(--black); }
+
+/* ── DRAG OVER ── */
+.drag-over { background: var(--primary-light) !important; border-color: var(--primary) !important; }
+
+/* ── SCROLLBARS ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  :root { --panel-left: 220px; --panel-mid: 240px; }
+}
+@media (max-width: 680px) {
+  .panel-topics { display: none; }
+  :root { --panel-mid: 200px; }
+}
+</style>
 </head>
-
 <body>
 
-    <header class="header">
-         <div class="logo" onclick="window.location.href='index.html'">
-        <img src="assets/logo.png" alt="logo">
+<header class="header">
+  <div class="logo">📚 ContentAdmin</div>
+  <div class="header-breadcrumb" id="headerBreadcrumb">
+    <span style="opacity:.4">Select a topic to begin</span>
+  </div>
+  <div class="header-right">
+    <div class="save-indicator" id="saveIndicator">✓ Saved</div>
+    <button class="btn-icon" title="Keyboard shortcuts" onclick="alert('Shortcuts:\n⌘S - Save\nEsc - Collapse all\nDbl-click section title to rename')">⌨️</button>
+  </div>
+</header>
+
+<div class="app-body">
+
+  <div class="panel-topics">
+    <div class="panel-label">
+      Topics <span class="readonly-badge">READ ONLY</span>
     </div>
+    <div class="topics-tree" id="topicsTree"></div>
+  </div>
 
-    <div class="site-name">
-        Kigali <br><span>RoadRules</span>
+  <div class="panel-sections">
+    <div class="panel-label">Sections</div>
+    <div class="sections-topic-title" id="sectionsTopic">
+      <span style="opacity:.5">← Select a topic</span>
     </div>
-        <nav class="links">
-            <a href="auth/login.html" class="login">Login</a>
-        </nav>
-    </header>
+    <div class="sections-list" id="sectionsList"></div>
+    <div class="sections-footer">
+      <button class="btn-add-section" id="btnAddSection" onclick="addSection()" style="display:none">
+        ＋ Add Section
+      </button>
+    </div>
+  </div>
 
-    <main class="main-content">
-        <!-- Left Column -->
-        <section class="intro-msg-container">
-            <div class="free-badge">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                100% FREE — No Hidden Fees
-            </div>
+  <div class="panel-builder">
+    <div class="builder-header" id="builderHeader" style="display:none">
+      <div class="builder-section-name" id="builderSectionName"></div>
+      <div class="builder-header-actions">
+        <button class="btn-icon" title="Collapse all components" onclick="collapseAllComponents()">⊟</button>
+      </div>
+    </div>
+    <div class="builder-body" id="builderBody">
+      <div class="empty-state">
+        <div class="icon">🏗️</div>
+        <h3>Section Builder</h3>
+        <p>Select a section from the middle panel<br>to start building its content.</p>
+      </div>
+    </div>
+    <div class="builder-footer" id="builderFooter" style="display:none">
+      <button class="btn-add-component" onclick="openAddComponentModal()">
+        ＋ Add Component
+      </button>
+    </div>
+  </div>
+</div>
 
-            <h1>
-                Learn to Drive <span class="highlight">Online</span>, <br>
-                Pass Your Test <span class="highlight-green">First Time</span>
-            </h1>
+<div class="modal" id="modalAddComponent">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Add Component</h3>
+      <button class="modal-close" onclick="closeModal('modalAddComponent')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:14px;font-size:13px;color:var(--gray);">Select a component type to add to this section:</p>
+      <div class="comp-type-grid" id="compTypeGrid"></div>
+    </div>
+  </div>
+</div>
 
-            <p class="card-ratings">
-                Master the rules of the road from the comfort of your home.
-                Our comprehensive online driving course prepares you for your
-                theory test with interactive lessons and practice exams.
-            </p>
+<div class="modal confirm-modal" id="modalConfirm">
+  <div class="modal-box">
+    <div class="confirm-body">
+      <div class="confirm-icon">🗑️</div>
+      <h4 id="confirmTitle">Delete this item?</h4>
+      <p id="confirmMsg">This action cannot be undone.</p>
+      <div class="confirm-actions">
+        <button class="btn-cancel" onclick="closeModal('modalConfirm')">Cancel</button>
+        <button class="btn-danger" id="confirmBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-            <div class="features-list">
-                <div class="feature-item">
-                    <span class="feature-icon">✓</span>
-                    <span>Complete theory test preparation</span>
-                </div>
-                <div class="feature-item">
-                    <span class="feature-icon">✓</span>
-                    <span>500+ practice questions with explanations</span>
-                </div>
-                <div class="feature-item">
-                    <span class="feature-icon">✓</span>
-                    <span>Road signs & traffic rules mastery</span>
-                </div>
-            </div>
+<script>
+// ═══════════════════════════════════════════════
+// DATA STORE (mock database in memory)
+// ═══════════════════════════════════════════════
+const DB = {
+  topics: [
+    { id:1, name:'Physics', icon:'⚛️', subtopics:[
+      { id:11, name:'Mechanics' },
+      { id:12, name:'Electricity' },
+      { id:13, name:'Waves' }
+    ]},
+    { id:2, name:'Chemistry', icon:'🧪', subtopics:[
+      { id:21, name:'Atomic Structure' },
+      { id:22, name:'Chemical Bonding' }
+    ]},
+    { id:3, name:'Biology', icon:'🧬', subtopics:[
+      { id:31, name:'Cell Biology' },
+      { id:32, name:'Genetics' },
+      { id:33, name:'Ecosystems' }
+    ]},
+    { id:4, name:'Mathematics', icon:'📐', subtopics:[
+      { id:41, name:'Algebra' },
+      { id:42, name:'Calculus' }
+    ]}
+  ],
+  // sections[topicId] = [{id, title, order_index}]
+  sections: {
+    11: [
+      { id:101, title:'Introduction to Mechanics', order_index:0 },
+      { id:102, title:'Newton\'s Laws', order_index:1 },
+      { id:103, title:'Applications', order_index:2 }
+    ],
+    12: [
+      { id:104, title:'Electric Fields', order_index:0 },
+      { id:105, title:'Circuits', order_index:1 }
+    ],
+    21: [
+      { id:106, title:'Atomic Models', order_index:0 }
+    ]
+  },
+  // components[sectionId] = [{id, type, title, order_index, settings, items}]
+  components: {
+    101: [
+      {
+        id:1001, type:'flipcards', title:'Key Concepts', order_index:0,
+        settings: {},
+        items: [
+          { id:10001, front:'What is inertia?', back:'The resistance of an object to change in motion.', order_index:0 },
+          { id:10002, front:'Define mass', back:'Amount of matter in an object.', order_index:1 }
+        ]
+      },
+      {
+        id:1002, type:'timeline', title:'History of Mechanics', order_index:1,
+        settings: {},
+        items: [
+          { id:10003, label:'1687', content:'Newton publishes Principia Mathematica.', order_index:0 },
+          { id:10004, label:'1905', content:'Einstein develops special relativity.', order_index:1 }
+        ]
+      }
+    ]
+  },
+  nextId: 9000
+};
 
-            <div class="button-container">
-                <button class="btn-primary" onclick="window.location.href='auth/login.html'">
-                    Start Now
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                </button>
-            </div>
+function newId() { return ++DB.nextId; }
 
-            <div class="stats-container">
-                <div class="stat-item">
-                    <div class="stat-number">25K+</div>
-                    <div class="stat-label">Students Trained</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">94%</div>
-                    <div class="stat-label">Pass Rate</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">4.9★</div>
-                    <div class="stat-label">Student Rating</div>
-                </div>
-            </div>
-        </section>
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let state = {
+  activeTopic: null,
+  activeSection: null,
+  expandedTopics: new Set()
+};
 
-        <!-- Right Column -->
-        <section class="intro-image-container">
-            
+let saveTimer = null;
+function triggerSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const ind = document.getElementById('saveIndicator');
+    ind.classList.add('show');
+    setTimeout(() => ind.classList.remove('show'), 2000);
+  }, 500);
+}
 
-            <!-- Background Decoration -->
-            <div
-                style="position: absolute; width: 300px; height: 300px; background: rgba(0, 119, 255, 0.05); border-radius: 50%; top: -50px; right: -50px;">
-            </div>
-            <div
-                style="position: absolute; width: 200px; height: 200px; background: rgba(0, 210, 106, 0.05); border-radius: 50%; bottom: -30px; left: -30px;">
-            </div>
-        </section>
-    </main>
+// ═══════════════════════════════════════════════
+// COMPONENT TYPE DEFINITIONS
+// ═══════════════════════════════════════════════
+const COMP_TYPES = {
+  flipcards: { icon:'🃏', label:'Flip Cards', desc:'Front & back cards', fields:['front','back'], fieldLabels:['Front','Back'] },
+  timeline: { icon:'📅', label:'Timeline', desc:'Chronological events', fields:['label','content'], fieldLabels:['Label/Date','Content'] },
+  accordion: { icon:'🪗', label:'Accordion', desc:'Expandable Q&A', fields:['question','answer'], fieldLabels:['Question','Answer'] },
+  tabs: { icon:'📑', label:'Tabs', desc:'Tabbed sections', fields:['tab','content'], fieldLabels:['Tab Name','Content'] },
+  imageblock: { icon:'🖼️', label:'Image Block', desc:'Image with caption', fields:['url','caption'], fieldLabels:['Image Upload','Caption'] },
+  quiz: { icon:'❓', label:'Quiz', desc:'Multiple choice', fields:['question','options'], fieldLabels:['Question','Options (comma-sep)'] }
+};
 
-    <footer
-        style="padding: 40px 8%; text-align: center; border-top: 1px solid var(--border); color: var(--gray); font-size: 14px;">
-        <p>&copy; 2026 Kigali Road Rules Online School. Safer roads for every Rwandan.</p>
-    </footer>
-<script src="js/main.js" type="module"></script>
+// ═══════════════════════════════════════════════
+// RENDER TOPICS
+// ═══════════════════════════════════════════════
+function renderTopics() {
+  const tree = document.getElementById('topicsTree');
+  tree.innerHTML = DB.topics.map(topic => `
+    <div class="topic-group ${state.expandedTopics.has(topic.id) ? 'open' : ''}" id="tg-${topic.id}">
+      <div class="topic-row ${state.expandedTopics.has(topic.id) ? 'expanded' : ''}" onclick="toggleTopic(${topic.id})">
+        <span class="topic-chevron">▶</span>
+        <span class="topic-icon">${topic.icon}</span>
+        <span class="topic-name">${topic.name}</span>
+      </div>
+      <div class="subtopics">
+        ${topic.subtopics.map(sub => `
+          <div class="subtopic-row ${state.activeTopic && state.activeTopic.id === sub.id ? 'active' : ''}"
+               onclick="selectSubtopic(${topic.id}, ${sub.id}, '${topic.icon} ${topic.name}', '${sub.name}')">
+            <span class="subtopic-dot"></span>
+            ${sub.name}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleTopic(topicId) {
+  if (state.expandedTopics.has(topicId)) {
+    state.expandedTopics.delete(topicId);
+  } else {
+    state.expandedTopics.add(topicId);
+  }
+  renderTopics();
+}
+
+function selectSubtopic(parentId, subId, parentLabel, subName) {
+  // Expand parent
+  state.expandedTopics.add(parentId);
+  // Find subtopic
+  const parent = DB.topics.find(t => t.id === parentId);
+  const sub = parent.subtopics.find(s => s.id === subId);
+  state.activeTopic = sub;
+  state.activeSection = null;
+  renderTopics();
+  renderSections(sub, `${parentLabel} › ${subName}`);
+  renderBuilder(null);
+  updateBreadcrumb(parentLabel, subName, null);
+}
+
+// ═══════════════════════════════════════════════
+// RENDER SECTIONS
+// ═══════════════════════════════════════════════
+function renderSections(subtopic, label) {
+  const topicEl = document.getElementById('sectionsTopic');
+  topicEl.innerHTML = `<span>${label}</span>`;
+  document.getElementById('btnAddSection').style.display = 'flex';
+
+  if (!DB.sections[subtopic.id]) DB.sections[subtopic.id] = [];
+  const sections = DB.sections[subtopic.id].sort((a,b) => a.order_index - b.order_index);
+
+  const list = document.getElementById('sectionsList');
+  list.innerHTML = sections.map((sec, i) => `
+    <div class="section-item ${state.activeSection && state.activeSection.id === sec.id ? 'active' : ''}"
+         id="sec-${sec.id}"
+         draggable="true"
+         ondragstart="sectionDragStart(event,${sec.id})"
+         ondragover="sectionDragOver(event)"
+         ondrop="sectionDrop(event,${sec.id})"
+         ondragend="sectionDragEnd(event)"
+         onclick="selectSection(${sec.id})">
+      <span class="drag-handle" title="Drag to reorder" onclick="event.stopPropagation()">⠿</span>
+      <span class="section-order-badge">${i+1}</span>
+      <span class="section-title" id="stitle-${sec.id}" ondblclick="event.stopPropagation();startRename(${sec.id})">${sec.title}</span>
+      <div class="section-actions" onclick="event.stopPropagation()">
+        <button class="section-btn" title="Rename" onclick="startRename(${sec.id})">✏️</button>
+        <button class="section-btn delete" title="Delete" onclick="deleteSection(${sec.id})">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addSection() {
+  if (!state.activeTopic) return;
+  const tid = state.activeTopic.id;
+  if (!DB.sections[tid]) DB.sections[tid] = [];
+  const sections = DB.sections[tid];
+  const newSec = { id: newId(), title: 'New Section', order_index: sections.length };
+  sections.push(newSec);
+  renderSections(state.activeTopic, document.getElementById('sectionsTopic').innerText);
+  // Auto-select and rename
+  setTimeout(() => {
+    selectSection(newSec.id);
+    startRename(newSec.id);
+  }, 50);
+  triggerSave();
+}
+
+function startRename(secId) {
+  const el = document.getElementById(`stitle-${secId}`);
+  if (!el) return;
+  const current = el.textContent;
+  const input = document.createElement('input');
+  input.className = 'section-title-input';
+  input.value = current;
+  el.replaceWith(input);
+  input.focus(); input.select();
+  function finish() {
+    const val = input.value.trim() || current;
+    const sec = Object.values(DB.sections).flat().find(s => s.id === secId);
+    if (sec) sec.title = val;
+    const span = document.createElement('span');
+    span.className = 'section-title';
+    span.id = `stitle-${secId}`;
+    span.textContent = val;
+    span.ondblclick = (e) => { e.stopPropagation(); startRename(secId); };
+    input.replaceWith(span);
+    // Update builder header if active
+    if (state.activeSection && state.activeSection.id === secId) {
+      state.activeSection.title = val;
+      document.getElementById('builderSectionName').textContent = val;
+    }
+    triggerSave();
+  }
+  input.onblur = finish;
+  input.onkeydown = (e) => { if (e.key === 'Enter') finish(); if (e.key === 'Escape') { input.value = current; finish(); } };
+  input.onclick = (e) => e.stopPropagation();
+}
+
+function deleteSection(secId) {
+  showConfirm('Delete Section?', 'All components inside will be lost.', () => {
+    const tid = state.activeTopic.id;
+    DB.sections[tid] = DB.sections[tid].filter(s => s.id !== secId);
+    delete DB.components[secId];
+    if (state.activeSection && state.activeSection.id === secId) {
+      state.activeSection = null;
+      renderBuilder(null);
+      updateBreadcrumb(null, null, null);
+    }
+    renderSections(state.activeTopic, document.getElementById('sectionsTopic').innerText);
+    triggerSave();
+  });
+}
+
+function selectSection(secId) {
+  const sec = Object.values(DB.sections).flat().find(s => s.id === secId);
+  if (!sec) return;
+  state.activeSection = sec;
+  // Re-render sections to update active
+  renderSections(state.activeTopic, document.getElementById('sectionsTopic').innerText);
+  renderBuilder(secId);
+  updateBreadcrumb(null, null, sec.title);
+}
+
+// ── Section drag & drop ──
+let dragSecId = null;
+function sectionDragStart(e, secId) {
+  dragSecId = secId;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.style.opacity = '.4';
+}
+function sectionDragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+}
+function sectionDrop(e, targetId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (dragSecId === targetId) return;
+  const tid = state.activeTopic.id;
+  const secs = DB.sections[tid].sort((a,b) => a.order_index - b.order_index);
+  const from = secs.findIndex(s => s.id === dragSecId);
+  const to = secs.findIndex(s => s.id === targetId);
+  const [moved] = secs.splice(from,1);
+  secs.splice(to,0,moved);
+  secs.forEach((s,i) => s.order_index = i);
+  renderSections(state.activeTopic, document.getElementById('sectionsTopic').innerText);
+  triggerSave();
+}
+function sectionDragEnd(e) {
+  e.currentTarget.style.opacity = '1';
+  dragSecId = null;
+  document.querySelectorAll('.section-item').forEach(el => el.classList.remove('drag-over'));
+}
+
+// ═══════════════════════════════════════════════
+// RENDER BUILDER
+// ═══════════════════════════════════════════════
+function renderBuilder(secId) {
+  const header = document.getElementById('builderHeader');
+  const body = document.getElementById('builderBody');
+  const footer = document.getElementById('builderFooter');
+
+  if (!secId) {
+    header.style.display = 'none';
+    footer.style.display = 'none';
+    body.innerHTML = `<div class="empty-state">
+      <div class="icon">🏗️</div>
+      <h3>Section Builder</h3>
+      <p>Select a section from the middle panel<br>to start building its content.</p>
+    </div>`;
+    return;
+  }
+
+  const sec = Object.values(DB.sections).flat().find(s => s.id === secId);
+  header.style.display = 'flex';
+  footer.style.display = 'block';
+  document.getElementById('builderSectionName').textContent = sec.title;
+
+  if (!DB.components[secId]) DB.components[secId] = [];
+  const comps = DB.components[secId].sort((a,b) => a.order_index - b.order_index);
+
+  if (comps.length === 0) {
+    body.innerHTML = `<div class="empty-state">
+      <div class="icon">➕</div>
+      <h3>No components yet</h3>
+      <p>Click "+ Add Component" below to begin.</p>
+    </div>`;
+    return;
+  }
+
+  body.innerHTML = `<div class="components-list" id="compsList">
+    ${comps.map(c => renderComponentCard(c)).join('')}
+  </div>`;
+}
+
+function renderComponentCard(comp) {
+  const type = COMP_TYPES[comp.type] || { icon:'📦', label: comp.type, fields:['value'], fieldLabels:['Value'] };
+  return `
+  <div class="component-card ${comp._expanded ? 'expanded' : ''}"
+       id="comp-${comp.id}"
+       draggable="true"
+       ondragstart="compDragStart(event,${comp.id})"
+       ondragover="compDragOver(event)"
+       ondrop="compDrop(event,${comp.id})"
+       ondragend="compDragEnd(event)">
+    <div class="component-header" onclick="toggleComponent(${comp.id})">
+      <span class="comp-drag" onclick="event.stopPropagation()" title="Drag to reorder">⠿</span>
+      <span class="comp-type-badge">${type.icon} ${type.label}</span>
+      <span class="comp-title">${comp.title || 'Untitled'}</span>
+      <div class="comp-actions" onclick="event.stopPropagation()">
+        <button class="comp-btn" title="Duplicate" onclick="duplicateComponent(${comp.id})">⧉</button>
+        <button class="comp-btn delete" title="Delete" onclick="deleteComponent(${comp.id})">🗑️</button>
+      </div>
+      <span class="comp-chevron">▾</span>
+    </div>
+    <div class="component-body">
+      <div class="comp-form-group">
+        <label>Title</label>
+        <input class="comp-input" value="${comp.title}" oninput="updateCompTitle(${comp.id}, this.value)" placeholder="Component title…">
+      </div>
+      <div class="items-section">
+        <div class="items-section-header">
+          <span>${type.label} Items</span>
+          <span style="font-size:11px;color:var(--gray-light)">Drag to reorder</span>
+        </div>
+        <div class="items-list" id="items-${comp.id}">
+          ${(comp.items||[]).sort((a,b)=>a.order_index-b.order_index).map(item => renderItemRow(comp.id, item, type)).join('')}
+        </div>
+        <button class="btn-add-item" onclick="addItem(${comp.id})">＋ Add ${type.label.replace(/s$/,'')} Item</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderItemRow(compId, item, type) {
+  const isImageBlock = comp_type_from_id(compId) === 'imageblock';
+  return `
+  <div class="item-row" id="item-${item.id}"
+       draggable="true"
+       ondragstart="itemDragStart(event,${compId},${item.id})"
+       ondragover="itemDragOver(event)"
+       ondrop="itemDrop(event,${compId},${item.id})"
+       ondragend="itemDragEnd(event)">
+    <span class="item-drag">⠿</span>
+    <div class="item-fields">
+      ${type.fields.map((f,i) => {
+        if (isImageBlock && f === 'url') {
+          return `
+            <div style="display:flex; gap:10px; align-items:center;">
+              <button class="btn-add-item" style="margin-top:0; width:auto; border-style:solid; padding:6px 12px;" onclick="document.getElementById('file-${item.id}').click()">📁 Upload Raw Image</button>
+              <input type="file" id="file-${item.id}" style="display:none" accept="image/*" onchange="processImage(${compId}, ${item.id}, this)">
+              ${item[f] ? `<img src="${item[f]}" style="height:34px; border-radius:4px; border:1px solid var(--border); box-shadow:var(--shadow)">` : `<span style="font-size:11px; color:var(--gray-light)">No image uploaded</span>`}
+            </div>`;
+        }
+        return `
+          <input class="item-input" placeholder="${type.fieldLabels[i]}"
+                 value="${(item[f]||'').replace(/"/g,'&quot;')}"
+                 oninput="updateItemField(${compId}, ${item.id}, '${f}', this.value)">
+        `;
+      }).join('')}
+    </div>
+    <button class="item-delete-btn" onclick="deleteItem(${compId}, ${item.id})">×</button>
+  </div>`;
+}
+
+function comp_type_from_id(compId) {
+  const secId = state.activeSection.id;
+  return DB.components[secId].find(c => c.id === compId).type;
+}
+
+function processImage(compId, itemId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    updateItemField(compId, itemId, 'url', e.target.result);
+    // Partial refresh to show preview without collapsing
+    renderBuilder(state.activeSection.id);
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══════════════════════════════════════════════
+// COMPONENT CRUD
+// ═══════════════════════════════════════════════
+function toggleComponent(compId) {
+  const secId = state.activeSection.id;
+  const comp = DB.components[secId].find(c => c.id === compId);
+  const wasExpanded = comp._expanded;
+  // Collapse all
+  DB.components[secId].forEach(c => c._expanded = false);
+  // Toggle clicked
+  comp._expanded = !wasExpanded;
+  renderBuilder(secId);
+}
+
+function collapseAllComponents() {
+  if (!state.activeSection) return;
+  DB.components[state.activeSection.id].forEach(c => c._expanded = false);
+  renderBuilder(state.activeSection.id);
+}
+
+function updateCompTitle(compId, val) {
+  const secId = state.activeSection.id;
+  const comp = DB.components[secId].find(c => c.id === compId);
+  if (comp) comp.title = val;
+  // Update header badge without re-render
+  const card = document.getElementById(`comp-${compId}`);
+  if (card) card.querySelector('.comp-title').textContent = val || 'Untitled';
+  triggerSave();
+}
+
+function addItem(compId) {
+  const secId = state.activeSection.id;
+  const comp = DB.components[secId].find(c => c.id === compId);
+  const type = COMP_TYPES[comp.type];
+  const newItem = { id: newId(), order_index: (comp.items||[]).length };
+  (type.fields).forEach(f => newItem[f] = '');
+  if (!comp.items) comp.items = [];
+  comp.items.push(newItem);
+  renderBuilder(secId);
+  triggerSave();
+}
+
+function updateItemField(compId, itemId, field, val) {
+  const secId = state.activeSection.id;
+  const comp = DB.components[secId].find(c => c.id === compId);
+  const item = comp.items.find(i => i.id === itemId);
+  if (item) item[field] = val;
+  triggerSave();
+}
+
+function deleteItem(compId, itemId) {
+  const secId = state.activeSection.id;
+  const comp = DB.components[secId].find(c => c.id === compId);
+  comp.items = comp.items.filter(i => i.id !== itemId);
+  renderBuilder(secId);
+  triggerSave();
+}
+
+function duplicateComponent(compId) {
+  const secId = state.activeSection.id;
+  const comp = DB.components[secId].find(c => c.id === compId);
+  const newComp = JSON.parse(JSON.stringify(comp));
+  newComp.id = newId();
+  newComp.title = comp.title + ' (Copy)';
+  newComp._expanded = true;
+  newComp.order_index = DB.components[secId].length;
+  newComp.items = (comp.items||[]).map(item => ({ ...item, id: newId() }));
+  // Collapse others
+  DB.components[secId].forEach(c => c._expanded = false);
+  DB.components[secId].push(newComp);
+  renderBuilder(secId);
+  triggerSave();
+}
+
+function deleteComponent(compId) {
+  showConfirm('Delete Component?', 'All items inside will be removed.', () => {
+    const secId = state.activeSection.id;
+    DB.components[secId] = DB.components[secId].filter(c => c.id !== compId);
+    renderBuilder(secId);
+    triggerSave();
+  });
+}
+
+// ── Component drag & drop ──
+let dragCompId = null;
+function compDragStart(e, compId) {
+  dragCompId = compId;
+  e.dataTransfer.effectAllowed = 'move';
+}
+function compDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function compDrop(e, targetId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (dragCompId === targetId) return;
+  const secId = state.activeSection.id;
+  const comps = DB.components[secId].sort((a,b) => a.order_index - b.order_index);
+  const from = comps.findIndex(c => c.id === dragCompId);
+  const to = comps.findIndex(c => c.id === targetId);
+  const [moved] = comps.splice(from,1);
+  comps.splice(to,0,moved);
+  comps.forEach((c,i) => c.order_index = i);
+  renderBuilder(secId);
+  triggerSave();
+}
+function compDragEnd(e) {
+  dragCompId = null;
+  document.querySelectorAll('.component-card').forEach(el => el.classList.remove('drag-over'));
+}
+
+// ── Item drag & drop ──
+let dragItemId = null, dragItemCompId = null;
+function itemDragStart(e, compId, itemId) {
+  dragItemId = itemId; dragItemCompId = compId;
+  e.dataTransfer.effectAllowed = 'move';
+  e.stopPropagation();
+}
+function itemDragOver(e) { e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.add('drag-over'); }
+function itemDrop(e, compId, targetId) {
+  e.preventDefault(); e.stopPropagation();
+  e.currentTarget.classList.remove('drag-over');
+  if (dragItemId === targetId) return;
+  const secId = state.activeSection.id;
+  const comp = DB.components[secId].find(c => c.id === compId);
+  const items = comp.items.sort((a,b) => a.order_index - b.order_index);
+  const from = items.findIndex(i => i.id === dragItemId);
+  const to = items.findIndex(i => i.id === targetId);
+  const [moved] = items.splice(from,1);
+  items.splice(to,0,moved);
+  items.forEach((i,idx) => i.order_index = idx);
+  renderBuilder(secId);
+  triggerSave();
+}
+function itemDragEnd(e) {
+  dragItemId = null;
+  document.querySelectorAll('.item-row').forEach(el => el.classList.remove('drag-over'));
+}
+
+// ═══════════════════════════════════════════════
+// ADD COMPONENT MODAL
+// ═══════════════════════════════════════════════
+function openAddComponentModal() {
+  if (!state.activeSection) return;
+  const grid = document.getElementById('compTypeGrid');
+  grid.innerHTML = Object.entries(COMP_TYPES).map(([key, t]) => `
+    <div class="comp-type-option" onclick="addComponent('${key}')">
+      <div class="type-icon">${t.icon}</div>
+      <div class="type-label">${t.label}</div>
+      <div class="type-desc">${t.desc}</div>
+    </div>
+  `).join('');
+  document.getElementById('modalAddComponent').classList.add('active');
+}
+
+function addComponent(type) {
+  closeModal('modalAddComponent');
+  const secId = state.activeSection.id;
+  if (!DB.components[secId]) DB.components[secId] = [];
+  DB.components[secId].forEach(c => c._expanded = false);
+  const t = COMP_TYPES[type];
+  const newComp = {
+    id: newId(),
+    type,
+    title: `New ${t.label}`,
+    order_index: DB.components[secId].length,
+    settings: {},
+    items: [],
+    _expanded: true
+  };
+  DB.components[secId].push(newComp);
+  renderBuilder(secId);
+  triggerSave();
+  setTimeout(() => {
+    const body = document.getElementById('builderBody');
+    body.scrollTop = body.scrollHeight;
+  }, 100);
+}
+
+// ═══════════════════════════════════════════════
+// CONFIRM MODAL
+// ═══════════════════════════════════════════════
+let _confirmCb = null;
+function showConfirm(title, msg, cb) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  _confirmCb = cb;
+  document.getElementById('confirmBtn').onclick = () => {
+    if (_confirmCb) _confirmCb();
+    closeModal('modalConfirm');
+  };
+  document.getElementById('modalConfirm').classList.add('active');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+document.querySelectorAll('.modal').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
+});
+
+// ═══════════════════════════════════════════════
+// BREADCRUMB
+// ═══════════════════════════════════════════════
+function updateBreadcrumb(topicLabel, subName, secTitle) {
+  const bc = document.getElementById('headerBreadcrumb');
+  if (!topicLabel && !state.activeTopic) {
+    bc.innerHTML = `<span style="opacity:.4">Select a topic to begin</span>`;
+    return;
+  }
+  const sn = subName || (state.activeTopic ? state.activeTopic.name : '');
+  const st = secTitle || (state.activeSection ? state.activeSection.title : null);
+  let html = `<span>${sn}</span>`;
+  if (st) html += `<span class="sep">›</span><span>${st}</span>`;
+  bc.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+renderTopics();
+</script>
 </body>
-
 </html>

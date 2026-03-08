@@ -2,7 +2,7 @@ from flask import request, jsonify
 from werkzeug.security import generate_password_hash,check_password_hash
 from sqlalchemy.exc import SQLAlchemyError
 from flask_jwt_extended import create_access_token,jwt_required,get_jwt_identity,get_jwt,verify_jwt_in_request
-from core.models import db, User,Topic,Question,AnswerOption,Quiz,QuizQuestion
+from core.models import db, User,Topic,Question,AnswerOption,Quiz,QuizQuestion,Section,Component,ComponentItem
 from functools import wraps
 from core import abstract_app,jwt,jwt_blacklist
 from datetime import timedelta,datetime
@@ -1043,3 +1043,372 @@ def get_topic_stats():
     except Exception as e:
         logging.error(f"Error generating stats: {e}")
         return jsonify({"status": False, "message": "Error generating stats"}), 500
+
+
+@app.route("/sections/<int:topic_id>", methods=["GET"])
+@role_required(["admin", "client"])
+def get_sections_by_topic(topic_id):
+    try:
+        # Fetch all sections for the given topic_id
+        sections = Section.query.filter_by(topic_id=topic_id).order_by(Section.order_index).all()
+
+        if not sections:
+            return jsonify({
+                "status": False,
+                "message": f"No sections found for topic_id {topic_id}"
+            }), 200
+
+        # Build response
+        result = []
+        for section in sections:
+            result.append({
+                "section_id": section.section_id,
+                "title": section.title,
+                "order_index": section.order_index,
+                "is_locked": section.is_locked,
+                "created_at": section.created_at.isoformat()
+            })
+
+        return jsonify({
+            "status": True,
+            "topic_id": topic_id,
+            "sections": result,
+            "count": len(result)
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error retrieving sections for topic_id {topic_id}: {e}")
+        return jsonify({
+            "status": False,
+            "message": "Server error while retrieving sections"
+        }), 500
+
+@app.route("/section", methods=["POST"])
+@role_required(["admin"])
+def create_section():
+    try:
+        data = request.get_json()
+
+        new_section = Section(
+            topic_id=data["topic_id"],
+            title=data["title"],
+            order_index=data.get("order_index", 0),
+            is_locked=data.get("is_locked", False)
+        )
+
+        db.session.add(new_section)
+        db.session.commit()
+
+        section_data = {
+            "section_id": new_section.section_id,
+            "title": new_section.title,
+            "order_index": new_section.order_index,
+            "topic_id": new_section.topic_id,
+            "created_at": new_section.created_at.isoformat() if new_section.created_at else None,
+            "components": []  # new section starts empty
+        }
+
+        return jsonify({
+            "status": True,
+            "message": "Section created successfully",
+            "section": section_data
+        }), 201
+
+    except Exception as e:
+        logging.error(f"Error creating section: {e}")
+        return jsonify({"status": False, "message": "Server error"}), 500
+
+
+import json
+
+@app.route("/sections/<int:section_id>", methods=["PUT"])
+@role_required(["admin"])
+def update_section(section_id):
+    try:
+        data = request.get_json()
+        section = Section.query.get(section_id)
+
+        if not section:
+            return jsonify({"status": False, "message": "Section not found"}), 404
+
+        # Step 1 — Update section fields
+        section.title = data.get("title", section.title)
+        section.order_index = data.get("order_index", section.order_index)
+        section.is_locked = data.get("is_locked", section.is_locked)
+
+        # Step 2 — For each component in this section, delete all items
+        for comp in section.components:
+            for item in comp.items:
+                db.session.delete(item)
+
+            # Step 3 — If new items are provided for this component, insert them
+            # Expecting payload like: {"components":[{"component_id":X,"items":[...]}, ...]}
+            comps_payload = data.get("components", [])
+            for comp_payload in comps_payload:
+                if comp_payload.get("component_id") == comp.component_id:
+                    items_payload = comp_payload.get("items", [])
+                    for idx, item_data in enumerate(items_payload):
+                        new_item = ComponentItem(
+                            component_id=comp.component_id,
+                            title=item_data.get("title", f"Item {idx+1}"),
+                            content=item_data.get("content", None),
+                            format_type=item_data.get("format_type", "content"),
+                            order_index=item_data.get("order_index", idx)
+                        )
+                        db.session.add(new_item)
+
+        db.session.commit()
+
+        return jsonify({
+            "status": True,
+            "message": "Section updated successfully, items reset",
+            "section_id": section.section_id
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error updating section {section_id}: {e}")
+        db.session.rollback()
+        return jsonify({"status": False, "message": "Server error"}), 500
+
+
+@app.route("/sections/<int:section_id>", methods=["DELETE"])
+@role_required(["admin"])
+def delete_section(section_id):
+    try:
+        section = Section.query.get(section_id)
+
+        if not section:
+            return jsonify({"status": False, "message": "Section not found"}), 404
+
+        db.session.delete(section)
+        db.session.commit()
+
+        return jsonify({
+            "status": True,
+            "message": "Section deleted successfully",
+            "section_id": section_id
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error deleting section {section_id}: {e}")
+        return jsonify({"status": False, "message": "Server error"}), 500
+
+
+import base64
+
+@app.route("/sections/<int:section_id>/components", methods=["GET"])
+@role_required(["admin", "client"])
+def get_components_by_section(section_id):
+    try:
+        components = Component.query.filter_by(section_id=section_id).order_by(Component.order_index).all()
+
+        if not components:
+            return jsonify({
+                "status": False,
+                "message": f"No components found for section_id {section_id}"
+            }), 404
+
+        result = []
+        for comp in components:
+            comp_data = {
+                "component_id": comp.component_id,
+                "section_id": comp.section_id,
+                "component_type": comp.component_type,   # "content", "quiz", "exercise"
+                "order_index": comp.order_index,
+                "created_at": comp.created_at.isoformat(),
+                "items": []
+            }
+
+            # Items hold format_type now
+            for item in comp.items:
+                # Convert image_data to base64 if present
+                image_b64 = None
+                if item.image_data:
+                    image_b64 = base64.b64encode(item.image_data).decode("utf-8")
+
+                comp_data["items"].append({
+                    "item_id": item.item_id,
+                    "title": item.title,
+                    "format_type": item.format_type,
+                    "content": item.content,
+                    "order_index": item.order_index,
+                    "created_at": item.created_at.isoformat(),
+                    "mimetype": item.mimetype,
+                    "image_data": image_b64  # base64 string or None
+                })
+
+            result.append(comp_data)
+
+        return jsonify({
+            "status": True,
+            "section_id": section_id,
+            "components": result,
+            "count": len(result)
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error retrieving components for section_id {section_id}: {e}")
+        return jsonify({"status": False, "message": "Server error while retrieving components"}), 500
+
+
+@app.route("/component", methods=["POST"])
+@role_required(["admin", "client"])
+def create_component():
+    try:
+        data = request.get_json()
+
+        # Create new component
+        new_component = Component(
+            section_id=data["section_id"],
+            component_type=data.get("type", "content"),   # "content", "quiz", "exercise"
+            order_index=data["order_index"]
+        )
+
+        db.session.add(new_component)
+        db.session.flush()  # get component_id before commit
+
+        # Handle items if provided
+        items_payload = data.get("items", [])
+        for idx, item in enumerate(items_payload):
+            new_item = ComponentItem(
+                component_id=new_component.component_id,
+                format_type=item.get("format_type", "content"),  # default "content"
+                title=item.get("title", data.get("title", f"Item {idx+1}")),
+                content=item.get("content", None),
+                order_index=item.get("order_index", idx),
+                mimetype=item.get("mimetype", None),
+                image_data=item.get("image_data", None)
+            )
+            db.session.add(new_item)
+
+        db.session.commit()
+
+        return jsonify({
+            "status": True,
+            "message": "Component created successfully",
+            "component_id": new_component.component_id
+        }), 201
+
+    except Exception as e:
+        logging.error(f"Error creating component: {e}")
+        db.session.rollback()
+        return jsonify({"status": False, "message": "Server error"}), 500
+
+
+@app.route("/component/<int:component_id>", methods=["DELETE"])
+@role_required(["admin", "client"])
+def delete_component(component_id):
+    try:
+        comp = Component.query.get(component_id)
+
+        if not comp:
+            return jsonify({
+                "status": False,
+                "message": f"Component {component_id} not found"
+            }), 404
+
+        # Explicitly delete all items associated with this component
+        for item in comp.items:
+            db.session.delete(item)
+
+        # Delete the component itself
+        db.session.delete(comp)
+        db.session.commit()
+
+        return jsonify({
+            "status": True,
+            "message": "Component and its items deleted successfully",
+            "component_id": component_id
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error deleting component {component_id}: {e}")
+        db.session.rollback()
+        return jsonify({
+            "status": False,
+            "message": "Server error while deleting component"
+        }), 500
+
+
+import json
+
+@app.route("/component/<int:component_id>", methods=["PUT"])
+@role_required(["admin", "client"])
+def update_component(component_id):
+    try:
+        data = request.form.to_dict()
+        files = request.files
+
+        comp = Component.query.get(component_id)
+        if not comp:
+            return jsonify({"status": False, "message": f"Component {component_id} not found"}), 404
+
+        # Step 1 — Update component row
+        comp.order_index = int(data.get("order_index", comp.order_index))
+        comp.component_type = data.get("format_type", comp.component_type)
+
+        # Step 2 — Delete removed items
+        deleted_ids = data.get("deleted_item_ids")
+        if deleted_ids:
+            try:
+                ids = json.loads(deleted_ids)
+                for item_id in ids:
+                    item = ComponentItem.query.filter_by(item_id=item_id, component_id=comp.component_id).first()
+                    if item:
+                        db.session.delete(item)
+            except Exception as e:
+                logging.error(f"Error parsing deleted_item_ids: {e}")
+
+        # Step 3 — Upsert items
+        items_payload = json.loads(data.get("items", "[]"))
+        for idx, item_data in enumerate(items_payload):
+            item_id = item_data.get("item_id")
+            if item_id:  # update existing item
+                item = ComponentItem.query.filter_by(item_id=item_id, component_id=comp.component_id).first()
+                if item:
+                    item.title = item_data.get("title", item.title)
+                    item.content = item_data.get("content", item.content)
+                    item.format_type = item_data.get("format_type", item.format_type)
+                    item.order_index = item_data.get("order_index", item.order_index)
+
+                    # Image handling
+                    image_val = item_data.get("image")
+                    if image_val == "__keep__":
+                        pass  # do nothing
+                    elif image_val is None:
+                        item.image_data = None
+                        item.mimetype = None
+                    elif image_val in files:
+                        file = files[image_val]
+                        item.image_data = file.read()
+                        item.mimetype = file.mimetype
+            else:  # insert new item
+                new_item = ComponentItem(
+                    component_id=comp.component_id,
+                    title=item_data.get("title", f"Item {idx+1}"),
+                    content=item_data.get("content", None),
+                    format_type=item_data.get("format_type", "content"),
+                    order_index=item_data.get("order_index", idx)
+                )
+                image_val = item_data.get("image")
+                if image_val and image_val in files:
+                    file = files[image_val]
+                    new_item.image_data = file.read()
+                    new_item.mimetype = file.mimetype
+                elif image_val is None:
+                    new_item.image_data = None
+                    new_item.mimetype = None
+                db.session.add(new_item)
+
+        db.session.commit()
+
+        return jsonify({
+            "status": True,
+            "message": "Component updated successfully",
+            "component_id": comp.component_id
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error updating component {component_id}: {e}")
+        db.session.rollback()
+        return jsonify({"status": False, "message": "Server error while updating component"}), 500

@@ -150,7 +150,7 @@ document
           window.location.href = "../admin/admin-dashboard.html";
         }
       } else {
-        showMessage("Can't connect to the server", "error");
+        showMessage(response.error.message, "error");
       }
     } else {
       if (password.length < 8) {

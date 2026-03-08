@@ -7,7 +7,16 @@ import { FetchData, PostData, DeleteData, UpdateData } from "../js/api/crud.js";
 let currentQuestions = []; // holds raw fetched questions before normalization
 const useremail = document.getElementById("userEmail");
 
-// ===== CONTENT MODE DATA =====
+// ===== CONTENT MODE DATA (API-backed — static data removed) =====
+// Cache so we don't re-fetch on every click
+const _contentCache = {
+  sections: {}, // { [subtopicId]: Section[] }
+  components: {}, // { [sectionId]: Component[] }
+};
+let _allSubtopics = []; // flat ordered list used for prev/next navigation
+let _currentExercise = null; // { questions[] } — set by loadExerciseForSubtopic
+
+// REMOVED: static CONTENT_DATA — kept only so the closing brace below is valid
 const CONTENT_DATA = {
   topics: [
     {
@@ -2396,22 +2405,21 @@ function injectExamSelectionStyles() {
 // ============================================
 
 function setupEventListeners() {
-    // Header: logo click
-    const logoutbtn = document.getElementById("logoBtn");
+  // Header: logo click
+  const logoutbtn = document.getElementById("logoBtn");
 
-    if (logoutbtn) {
-      logoutbtn.addEventListener("click", async () => {
-        const response = await FetchData("/logout", true);
-        if (response.success) {
-          localStorage.removeItem("token");
-          alert("Succeessfull Logout");
-          window.location.href = "../auth/login.html";
-        } else {
-          alert("logout failed");
-        }
-      });
-    }
-
+  if (logoutbtn) {
+    logoutbtn.addEventListener("click", async () => {
+      const response = await FetchData("/logout", true);
+      if (response.success) {
+        localStorage.removeItem("token");
+        alert("Succeessfull Logout");
+        window.location.href = "../auth/login.html";
+      } else {
+        alert("logout failed");
+      }
+    });
+  }
 
   // Header: mobile menu toggle
   document
@@ -2481,49 +2489,90 @@ function setupEventListeners() {
 // CONTENT MODE FUNCTIONS
 // ============================================
 
-function loadContentSidebar() {
+async function loadContentSidebar() {
   const topicsNav = document.getElementById("topicsNav");
+  topicsNav.innerHTML = `<div style="padding:20px;color:#9ca3af;font-size:13px;">
+    <i class="fas fa-spinner fa-spin"></i> Loading topics...</div>`;
+
+  let topics = [];
+  try {
+    const res = await FetchData("/topic", true);
+    topics = res?.data?.topics ?? [];
+  } catch (err) {
+    console.error("[loadContentSidebar]", err);
+  }
+
+  if (!topics.length) {
+    topicsNav.innerHTML = `<div style="padding:20px;color:#9ca3af;font-size:13px;">
+      No topics available yet.</div>`;
+    return;
+  }
+
+  // Build flat ordered subtopic list for prev/next navigation
+  _allSubtopics = topics.flatMap((t) =>
+    (t.subtopics ?? []).map((s) => ({
+      topicId: String(t.id),
+      topicName: t.name,
+      subtopicId: String(s.id),
+      subtopicName: s.name,
+    })),
+  );
+
   topicsNav.innerHTML = "";
 
-  CONTENT_DATA.topics.forEach((topic) => {
+  topics.forEach((topic) => {
+    const subtopics = topic.subtopics ?? [];
     const topicDiv = document.createElement("div");
     topicDiv.className = "topic";
 
-    const subtopicsHTML = topic.subtopics
+    const subtopicsHTML = subtopics
       .map(
-        (subtopic) => `
-          <a href="#" class="subtopic-link" data-topic="${topic.id}" data-subtopic="${subtopic.id}">
-            <i class="fas fa-file-alt"></i> ${subtopic.title}
-          </a>
-        `,
+        (sub) => `
+          <a href="#" class="subtopic-link"
+             data-topic-id="${_escAttr(topic.id)}"
+             data-topic-name="${_escAttr(topic.name)}"
+             data-subtopic-id="${_escAttr(sub.id)}"
+             data-subtopic-name="${_escAttr(sub.name)}">
+            <i class="fas fa-file-alt"></i> ${sub.name}
+          </a>`,
       )
       .join("");
 
     topicDiv.innerHTML = `
       <div class="topic-header">
-        <span>${topic.title}</span>
+        <span>${topic.name}</span>
         <span class="topic-icon"><i class="fas fa-chevron-right"></i></span>
       </div>
-      <div class="subtopics">
-        ${subtopicsHTML}
-      </div>
-    `;
+      <div class="subtopics">${subtopicsHTML}</div>`;
 
     topicsNav.appendChild(topicDiv);
   });
 
-  // Attach topic header toggle listeners
   topicsNav.querySelectorAll(".topic-header").forEach((header) => {
     header.addEventListener("click", () => toggleTopic(header));
   });
 
-  // Attach subtopic link listeners
   topicsNav.querySelectorAll(".subtopic-link").forEach((link) => {
     link.addEventListener("click", (e) => {
       e.preventDefault();
-      loadContent(e, link.dataset.topic, link.dataset.subtopic);
+      loadContent(e, {
+        topicId: link.dataset.topicId,
+        topicName: link.dataset.topicName,
+        subtopicId: link.dataset.subtopicId,
+        subtopicName: link.dataset.subtopicName,
+      });
     });
   });
+}
+
+// Safe HTML attribute escaping helper
+function _escAttr(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function toggleTopic(element) {
@@ -2544,66 +2593,294 @@ function toggleTopic(element) {
   }
 }
 
-function loadContent(event, topicId, subtopicId) {
-  event.preventDefault();
+async function loadContent(event, dataset) {
+  // dataset: { topicId, topicName, subtopicId, subtopicName }
+  const { topicId, topicName, subtopicId, subtopicName } = dataset;
 
   document
     .querySelectorAll(".subtopic-link")
-    .forEach((link) => link.classList.remove("active"));
-  event.target.closest(".subtopic-link").classList.add("active");
-
-  const topic = CONTENT_DATA.topics.find((t) => t.id === topicId);
-  const subtopic = topic.subtopics.find((s) => s.id === subtopicId);
-
-  currentTopic = topic;
-  currentSubtopic = subtopic;
+    .forEach((l) => l.classList.remove("active"));
+  // Mark the clicked link active (event.target may be the <i> icon, so walk up)
+  const clickedLink = event?.target?.closest?.(".subtopic-link");
+  if (clickedLink) clickedLink.classList.add("active");
 
   document.getElementById("welcomeScreen").style.display = "none";
   document.getElementById("contentDisplay").style.display = "block";
-  document.getElementById("contentTitle").textContent = subtopic.title;
+  document.getElementById("contentTitle").textContent = subtopicName;
 
-  renderContent(subtopic);
+  const container = document.getElementById("contentContainer");
+  container.innerHTML = `<div style="padding:40px;text-align:center;color:#9ca3af;">
+    <i class="fas fa-spinner fa-spin" style="font-size:28px;"></i>
+    <p style="margin-top:12px;">Loading content...</p></div>`;
 
-  if (subtopic.exercise) {
-    renderExercise(subtopic.exercise);
-  } else {
-    document.getElementById("exerciseSection").style.display = "none";
+  document.getElementById("exerciseSection").style.display = "none";
+  _currentExercise = null;
+
+  try {
+    // 1. Fetch sections for this subtopic (cached)
+    if (!_contentCache.sections[subtopicId]) {
+      const res = await FetchData(`/sections/${subtopicId}`, true);
+      _contentCache.sections[subtopicId] = res?.data?.sections ?? [];
+    }
+    const sections = _contentCache.sections[subtopicId];
+
+    // 2. Fetch components for each section in parallel (cached)
+    await Promise.all(
+      sections.map(async (sec) => {
+        if (_contentCache.components[sec.section_id] !== undefined) return;
+        try {
+          const res = await FetchData(
+            `/sections/${sec.section_id}/components`,
+            true,
+          );
+          _contentCache.components[sec.section_id] = (
+            res?.data?.components ?? []
+          ).map(_normalizeComponent);
+        } catch (e) {
+          console.error(`components for section ${sec.section_id}:`, e);
+          _contentCache.components[sec.section_id] = [];
+        }
+      }),
+    );
+
+    // 3. Flatten + sort all components across all sections
+    const allComponents = sections
+      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+      .flatMap((sec) =>
+        (_contentCache.components[sec.section_id] ?? []).sort(
+          (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0),
+        ),
+      );
+
+    _renderComponentContent(allComponents, container);
+
+    // 4. Load exercise via /quiz/random?topic=<subtopicName>
+    await _loadExerciseForSubtopic(subtopicName);
+
+    // 5. Update prev/next navigation
+    _updateTopicNavFromAPI(subtopicId);
+  } catch (err) {
+    console.error("[loadContent]", err);
+    container.innerHTML = `<div style="padding:40px;text-align:center;color:#dc2626;">
+      <i class="fas fa-exclamation-triangle"></i>
+      <p style="margin-top:8px;">Failed to load content. Please try again.</p></div>`;
   }
 
-  updateTopicNavigation(topic, subtopic);
   closeSidebar();
 }
 
-function renderContent(subtopic) {
-  const container = document.getElementById("contentContainer");
-  container.innerHTML = "";
+// ===== CONTENT API HELPERS =====
 
-  switch (subtopic.formatType) {
-    case "flip_card":
-      container.innerHTML = renderFlipCards(subtopic.content.cards);
-      break;
-    case "image_right":
-      container.innerHTML = renderImageRight(subtopic.content);
-      break;
-    case "image_left":
-      container.innerHTML = renderImageLeft(subtopic.content);
-      break;
-    case "image_overlay":
-      container.innerHTML = renderImageOverlay(subtopic.content);
-      break;
-    case "accordion":
-      container.innerHTML = renderAccordion(subtopic.content.sections);
-      break;
-    case "tabs":
-      container.innerHTML = renderTabs(subtopic.content.tabs);
-      break;
-    case "timeline":
-      container.innerHTML = renderTimeline(subtopic.content.steps);
-      break;
+// Normalize a component from the backend shape
+function _normalizeComponent(c) {
+  const ft = c.format_type ?? c.component_type ?? c.type ?? "";
+  const items = (c.items ?? [])
+    .slice()
+    .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+    .map((it) => {
+      // Convert base64 image_data + mimetype → inline data: URL
+      if (it.image_data && it.mimetype) {
+        it.image = `data:${it.mimetype};base64,${it.image_data}`;
+        delete it.image_data;
+        delete it.mimetype;
+      }
+      return it;
+    });
+  return { ...c, format_type: ft, items };
+}
+
+// Render all components into the container element
+function _renderComponentContent(components, container) {
+  // Exclude exercise-type components — those are loaded separately
+  const display = components.filter((c) => c.format_type !== "exercise");
+
+  if (!display.length) {
+    container.innerHTML = `<div style="padding:40px;text-align:center;color:#9ca3af;">
+      No content has been added for this topic yet.</div>`;
+    return;
   }
 
+  container.innerHTML = display.map(_renderOneComponent).join("");
   initializeFormatInteractions();
 }
+
+// Map admin format_type → existing CSS render functions
+function _renderOneComponent(comp) {
+  const items = comp.items ?? [];
+
+  switch (comp.format_type) {
+    case "flipcards":
+      return renderFlipCards(
+        items.map((it) => ({
+          image: it.image ?? null,
+          title: it.title ?? "",
+          description: it.content ?? "",
+        })),
+      );
+
+    case "accordion":
+      return renderAccordion(
+        items.map((it) => ({
+          title: it.title ?? "",
+          text: it.content ?? "",
+          image: it.image ?? null,
+        })),
+      );
+
+    case "tabs":
+      return renderTabs(
+        items.map((it) => ({
+          title: it.title ?? "",
+          content: it.content ?? "",
+          image: it.image ?? null,
+        })),
+      );
+
+    case "timeline":
+      return renderTimeline(
+        items.map((it) => ({
+          title: it.title ?? "",
+          description: it.content ?? "",
+          image: it.image ?? null,
+        })),
+      );
+
+    case "image_right":
+      return renderImageRight({
+        title: items[0]?.title ?? comp.title ?? "",
+        text: [items[0]?.content ?? ""],
+        image: items[0]?.image ?? null,
+      });
+
+    case "image_left":
+      return renderImageLeft({
+        title: items[0]?.title ?? comp.title ?? "",
+        text: [items[0]?.content ?? ""],
+        image: items[0]?.image ?? null,
+      });
+
+    case "image_overlay":
+      return renderImageOverlay({
+        title: items[0]?.title ?? comp.title ?? "",
+        description: items[0]?.content ?? "",
+        image: items[0]?.image ?? null,
+      });
+
+    case "imageblock": {
+      const img = items[0]?.image ?? null;
+      const caption = items[0]?.caption ?? "";
+      return `<div style="text-align:center;margin-bottom:30px;">
+        ${
+          img
+            ? `<img src="${img}" alt="${_escAttr(caption)}"
+          style="max-width:100%;border-radius:var(--radius);box-shadow:var(--shadow);">`
+            : ""
+        }
+        ${caption ? `<p style="margin-top:8px;font-size:13px;color:#6b7280;font-style:italic;">${caption}</p>` : ""}
+      </div>`;
+    }
+
+    default:
+      return "";
+  }
+}
+
+// Fetch exercise questions from /quiz/random?topic=<subtopicName>
+async function _loadExerciseForSubtopic(subtopicName) {
+  try {
+    const res = await FetchData(
+      `/quiz/random?topic=${encodeURIComponent(subtopicName)}`,
+      true,
+    );
+
+    const questionIds = res?.data?.questions ?? [];
+    if (!questionIds.length) return;
+
+    const results = await Promise.allSettled(
+      questionIds.map((id) => FetchData(`/question/${id}`, true)),
+    );
+
+    const questions = results
+      .filter((r) => r.status === "fulfilled" && r.value?.success !== false)
+      .map((r) => _normalizeExerciseQuestion(r.value.data.question));
+
+    if (!questions.length) return;
+
+    _currentExercise = { questions };
+    renderExercise(_currentExercise);
+  } catch (err) {
+    // No exercise available for this subtopic — silently skip
+    console.warn("[_loadExerciseForSubtopic]", subtopicName, err.message);
+  }
+}
+
+// Normalize a backend question to the shape renderExercise() expects
+function _normalizeExerciseQuestion(raw) {
+  const keys = ["A", "B", "C", "D"];
+  const optionIds = [];
+  const options = keys.map((k) => {
+    const opt = raw.options?.[k];
+    if (opt && typeof opt === "object") {
+      optionIds.push(opt.id);
+      return opt.text ?? "";
+    }
+    optionIds.push(null);
+    return opt ?? "";
+  });
+
+  let correctAnswer = 0;
+  if (raw.correctAnswerId != null && optionIds.some((id) => id != null)) {
+    const i = optionIds.indexOf(raw.correctAnswerId);
+    if (i !== -1) correctAnswer = i;
+  } else if (typeof raw.correctAnswer === "number") {
+    correctAnswer = raw.correctAnswer;
+  }
+
+  return {
+    question: raw.statement ?? raw.question ?? "",
+    options,
+    correctAnswer,
+  };
+}
+
+// Prev/next navigation using the cached _allSubtopics flat list
+function _updateTopicNavFromAPI(subtopicId) {
+  const idx = _allSubtopics.findIndex(
+    (s) => String(s.subtopicId) === String(subtopicId),
+  );
+
+  const prevBtn = document.getElementById("prevTopicBtn");
+  const nextBtn = document.getElementById("nextTopicBtn");
+
+  // Replace to remove stale listeners
+  const newPrev = prevBtn.cloneNode(true);
+  const newNext = nextBtn.cloneNode(true);
+  prevBtn.parentNode.replaceChild(newPrev, prevBtn);
+  nextBtn.parentNode.replaceChild(newNext, nextBtn);
+
+  if (idx > 0) {
+    const prev = _allSubtopics[idx - 1];
+    newPrev.style.display = "flex";
+    newPrev.addEventListener("click", () =>
+      loadContent({ target: { closest: () => null } }, prev),
+    );
+  } else {
+    newPrev.style.display = "none";
+  }
+
+  if (idx !== -1 && idx < _allSubtopics.length - 1) {
+    const next = _allSubtopics[idx + 1];
+    newNext.style.display = "flex";
+    newNext.addEventListener("click", () =>
+      loadContent({ target: { closest: () => null } }, next),
+    );
+  } else {
+    newNext.style.display = "none";
+  }
+}
+
+// Legacy stub kept so renderContent() calls don't break if referenced elsewhere
+function renderContent() {}
 
 // ===== FORMAT RENDERERS =====
 
@@ -2837,7 +3114,8 @@ function renderExercise(exercise) {
 }
 
 function submitExercise() {
-  const exercise = currentSubtopic.exercise;
+  const exercise = _currentExercise;
+  if (!exercise) return;
   let correctCount = 0;
 
   exercise.questions.forEach((q, index) => {
@@ -2892,76 +3170,11 @@ function submitExercise() {
 
 // ===== TOPIC NAVIGATION =====
 
-function updateTopicNavigation(topic, subtopic) {
-  const prevBtn = document.getElementById("prevTopicBtn");
-  const nextBtn = document.getElementById("nextTopicBtn");
+// updateTopicNavigation replaced by _updateTopicNavFromAPI (see above)
+function updateTopicNavigation() {}
 
-  const topicIndex = CONTENT_DATA.topics.findIndex((t) => t.id === topic.id);
-  const subtopicIndex = topic.subtopics.findIndex((s) => s.id === subtopic.id);
-
-  // Previous button
-  prevBtn.replaceWith(prevBtn.cloneNode(true)); // Remove old listeners
-  const newPrevBtn = document.getElementById("prevTopicBtn");
-
-  if (subtopicIndex > 0) {
-    newPrevBtn.style.display = "flex";
-    newPrevBtn.addEventListener("click", () => {
-      loadContentDirect(topic.id, topic.subtopics[subtopicIndex - 1].id);
-    });
-  } else if (topicIndex > 0) {
-    const prevTopic = CONTENT_DATA.topics[topicIndex - 1];
-    const lastSubtopic = prevTopic.subtopics[prevTopic.subtopics.length - 1];
-    newPrevBtn.style.display = "flex";
-    newPrevBtn.addEventListener("click", () =>
-      loadContentDirect(prevTopic.id, lastSubtopic.id),
-    );
-  } else {
-    newPrevBtn.style.display = "none";
-  }
-
-  // Next button
-  nextBtn.replaceWith(nextBtn.cloneNode(true)); // Remove old listeners
-  const newNextBtn = document.getElementById("nextTopicBtn");
-
-  if (subtopicIndex < topic.subtopics.length - 1) {
-    newNextBtn.style.display = "flex";
-    newNextBtn.addEventListener("click", () => {
-      loadContentDirect(topic.id, topic.subtopics[subtopicIndex + 1].id);
-    });
-  } else if (topicIndex < CONTENT_DATA.topics.length - 1) {
-    const nextTopic = CONTENT_DATA.topics[topicIndex + 1];
-    const firstSubtopic = nextTopic.subtopics[0];
-    newNextBtn.style.display = "flex";
-    newNextBtn.addEventListener("click", () =>
-      loadContentDirect(nextTopic.id, firstSubtopic.id),
-    );
-  } else {
-    newNextBtn.style.display = "none";
-  }
-}
-
-function loadContentDirect(topicId, subtopicId) {
-  const topicHeader = Array.from(
-    document.querySelectorAll(".topic-header"),
-  ).find((header) =>
-    header.textContent.includes(
-      CONTENT_DATA.topics.find((t) => t.id === topicId).title,
-    ),
-  );
-
-  if (topicHeader && !topicHeader.classList.contains("active")) {
-    toggleTopic(topicHeader);
-  }
-
-  const subtopicLink = document.querySelector(
-    `.subtopic-link[data-topic="${topicId}"][data-subtopic="${subtopicId}"]`,
-  );
-  if (subtopicLink) {
-    subtopicLink.click();
-  }
-
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
+// loadContentDirect replaced by direct loadContent() calls
+function loadContentDirect() {}
 
 // ============================================
 // QUIZ MODE FUNCTIONS

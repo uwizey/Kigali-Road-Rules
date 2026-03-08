@@ -1,10 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Metrics Analytics Quiz</title>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; --text: #1e293b; --card: #ffffff; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        #quiz-app { background: var(--card); width: 100%; max-width: 800px; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .hidden { display: none; }
+        .option-btn { display: block; width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer; transition: all 0.2s; text-align: left; }
+        .option-btn:hover { background: #f1f5f9; border-color: var(--primary); }
+        .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .metric-tag { padding: 10px; border-radius: 8px; font-size: 0.9em; background: #f1f5f9; border-left: 4px solid var(--primary); }
+        .advice-section { margin-top: 30px; padding: 20px; background: #eff6ff; border-radius: 12px; border: 1px solid #bfdbfe; }
+        .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; margin-bottom: 20px; overflow: hidden; }
+        #progress-fill { height: 100%; background: var(--primary); width: 0%; transition: 0.3s; }
+    </style>
+</head>
+<body>
 
-<!-- Primary brlue button -->
-<button class="btn-primary" onclick="window.location.href='login.html'">
-                    Start Now
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-</button>
+<div id="quiz-app">
+    <div id="quiz-view">
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        <div id="meta-info" style="font-size: 0.8em; color: #64748b; margin-bottom: 10px;"></div>
+        <h2 id="question-text"></h2>
+        <div id="options-container"></div>
+    </div>
 
+    <div id="results-view" class="hidden">
+        <h1>Detailed Performance Analysis</h1>
+        <div class="metric-grid" id="metrics-display"></div>
+        <div class="advice-section" id="advice-display"></div>
+        <button onclick="location.reload()" style="margin-top:20px; padding:15px; width:100%; cursor:pointer; background:var(--primary); color:white; border:none; border-radius:10px;">Take Next Quiz</button>
+    </div>
+</div>
+
+<script>
+const quizBank = [
+    [
+        { q: "What is 12 * 12?", options: ["124", "144", "164", "154"], correct: 1, topic: "Math", diff: 1 },
+        { q: "Which gas do plants absorb?", options: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"], correct: 2, topic: "Science", diff: 1 },
+        { q: "Solve for y: 3y - 9 = 21", options: ["10", "12", "8", "15"], correct: 0, topic: "Math", diff: 2 },
+        { q: "What is the boiling point of water?", options: ["90°C", "100°C", "110°C", "120°C"], correct: 1, topic: "Science", diff: 1 },
+        { q: "Square root of 225?", options: ["13", "14", "15", "16"], correct: 2, topic: "Math", diff: 2 },
+        { q: "Largest organ in the human body?", options: ["Heart", "Liver", "Skin", "Lungs"], correct: 2, topic: "Science", diff: 2 },
+        { q: "What is 7^2 + 1?", options: ["49", "50", "51", "48"], correct: 1, topic: "Math", diff: 1 },
+        { q: "Primary function of Red Blood Cells?", options: ["Clotting", "Immunity", "Oxygen Transport", "Digestion"], correct: 2, topic: "Science", diff: 2 },
+        { q: "Derivative of constant 'c'?", options: ["1", "c", "0", "x"], correct: 2, topic: "Math", diff: 3 },
+        { q: "Chemical symbol for Gold?", options: ["Ag", "Fe", "Au", "Pb"], correct: 2, topic: "Science", diff: 1 }
+    ]
+];
+
+let currentIdx = 0;
+let startTime;
+let eliminationClicks = 0;
+let history = [];
+const currentQuiz = quizBank[0];
+
+function loadQuestion() {
+    const q = currentQuiz[currentIdx];
+    startTime = Date.now();
+    eliminationClicks = 0;
+    
+    document.getElementById("progress-fill").style.width = `${(currentIdx/10)*100}%`;
+    document.getElementById("meta-info").innerText = `Topic: ${q.topic} | Difficulty: ${q.diff}`;
+    document.getElementById("question-text").innerText = q.q;
+    
+    const container = document.getElementById("options-container");
+    container.innerHTML = "";
+    q.options.forEach((opt, i) => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.innerText = opt;
+        // Tracking Process of Elimination (multiple clicks before deciding)
+        btn.onmousedown = () => eliminationClicks++; 
+        btn.onclick = () => submitAnswer(i);
+        container.appendChild(btn);
+    });
+}
+
+function submitAnswer(choice) {
+    const timeTaken = (Date.now() - startTime) / 1000;
+    const q = currentQuiz[currentIdx];
+    
+    history.push({
+        ...q,
+        timeTaken,
+        isCorrect: choice === q.correct,
+        eliminationCount: eliminationClicks - 1 // Exclude the final click
+    });
+
+    currentIdx++;
+    if (currentIdx < currentQuiz.length) loadQuestion();
+    else calculateDeepMetrics();
+}
+
+function calculateDeepMetrics() {
+    document.getElementById("quiz-view").classList.add("hidden");
+    document.getElementById("results-view").classList.remove("hidden");
+
+    const totalTime = history.reduce((s, x) => s + x.timeTaken, 0);
+    const firstHalfAcc = history.slice(0, 5).filter(x => x.isCorrect).length / 5;
+    const secondHalfAcc = history.slice(5, 10).filter(x => x.isCorrect).length / 5;
+
+    // Metrics Logic
+    const metrics = {
+        latency: (totalTime / 10).toFixed(2),
+        decay: (firstHalfAcc - secondHalfAcc).toFixed(2), // Negative means they got better, Positive means fatigue
+        elimination: history.reduce((s, x) => s + x.eliminationCount, 0),
+        mathAcc: (history.filter(x => x.topic === "Math" && x.isCorrect).length / 5) * 100,
+        scienceAcc: (history.filter(x => x.topic === "Science" && x.isCorrect).length / 5) * 100,
+        hardDiffAcc: (history.filter(x => x.diff >= 2 && x.isCorrect).length / 5) * 100
+    };
+
+    renderDisplay(metrics);
+}
+
+function renderDisplay(m) {
+    const mDiv = document.getElementById("metrics-display");
+    const aDiv = document.getElementById("advice-display");
+
+    mDiv.innerHTML = `
+        <div class="metric-tag"><b>Response Latency:</b> ${m.latency}s avg</div>
+        <div class="metric-tag"><b>Engagement Decay:</b> ${m.decay > 0 ? 'High Fatigue' : 'Steady'}</div>
+        <div class="metric-tag"><b>Elimination Activity:</b> ${m.elimination} hesitations</div>
+        <div class="metric-tag"><b>Hard Calibration:</b> ${m.hardDiffAcc}% accuracy</div>
+    `;
+
+    let advice = "<h3>Actionable Strategy</h3><ul>";
+    if (m.decay > 0) advice += "<li><b>Fatigue Detected:</b> Your accuracy dropped in the second half. Try taking 30-second breathing breaks between blocks of 5 questions.</li>";
+    if (m.latency > 15) advice += "<li><b>Speed Optimization:</b> You are over-analyzing. Practice with a countdown timer to force quicker decision-making.</li>";
+    if (m.elimination > 5) advice += "<li><b>Elimination Behavior:</b> High hesitation noted. Trust your first instinct more; your data shows significant second-guessing.</li>";
+    if (m.hardDiffAcc < 40) advice += "<li><b>Difficulty Wall:</b> You struggle as complexity increases. Focus on intermediate theory before attempting expert levels.</li>";
+    advice += "</ul>";
+
+    aDiv.innerHTML = advice;
+}
+
+loadQuestion();
+</script>
+</body>
+</html>

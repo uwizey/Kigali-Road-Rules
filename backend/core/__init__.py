@@ -10,7 +10,10 @@ from core.config import Config
 from flask_jwt_extended import JWTManager
 
 abstract_app = Flask(__name__)
+
 abstract_app.config.from_object(Config)
+abstract_app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
+
 
 CORS(abstract_app, supports_credentials=True, origins=["http://localhost:3000"])
 

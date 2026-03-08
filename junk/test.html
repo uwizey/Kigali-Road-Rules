@@ -1,198 +1,1729 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test it</title>
-    <link rel="stylesheet" href="css/components.css">
-
-
-    <!-- <style>
-:root {
-    --primary: #2563eb;
-    --primary-dark: #1e40af;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduCraft — Course Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --deep: #0d0a1a;
+    --mid: #1a1330;
+    --panel: #211840;
+    --card: #2a1f52;
+    --border: #3d2e6b;
+    --accent: #8b5cf6;
+    --accent2: #a78bfa;
+    --accent3: #c4b5fd;
+    --neon: #e879f9;
+    --gold: #fbbf24;
+    --green: #34d399;
+    --red: #f87171;
+    --text: #ede9fe;
+    --muted: #7c6fad;
     --white: #ffffff;
-    --black: #111827;
-    --gray: #4b5563;
-    --border: #e5e7eb;
-    --radius: 12px;
-    --shadow: 0 8px 20px rgba(0,0,0,0.08);
-    --shadow-lg: 0 12px 30px rgba(0,0,0,0.12);
-    --speed: 0.3s ease;
-}
+  }
 
-/* ===== NAVBAR ===== */
-.header {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--deep);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(139,92,246,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(232,121,249,0.08) 0%, transparent 50%),
+      repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(255,255,255,0.01) 60px, rgba(255,255,255,0.01) 61px),
+      repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(255,255,255,0.01) 60px, rgba(255,255,255,0.01) 61px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 260px;
+    background: var(--mid);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-mark {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--white);
     display: flex;
     align-items: center;
-    padding: 18px 8%;
-    background: rgba(240, 247, 255, 0.9);
-    backdrop-filter: blur(10px);
-    position: fixed;
-    width: 100%;
-    top: 0;
-    z-index: 1000;
-    border-bottom: 1px solid var(--border);
-}
+    gap: 10px;
+  }
 
-.logo {
-    width: 80px;
-    height: 80px;
-    border-radius: var(--radius);
+  .logo-icon {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, var(--accent), var(--neon));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .sidebar-section { padding: 20px 16px 8px; }
+
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    padding: 0 8px;
+    margin-bottom: 6px;
+  }
+
+  .nav-item {
     display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 400;
+    position: relative;
+  }
+
+  .nav-item:hover { background: rgba(139,92,246,0.12); color: var(--accent3); }
+  .nav-item.active { background: rgba(139,92,246,0.2); color: var(--white); font-weight: 500; }
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: -16px;
+    top: 50%; transform: translateY(-50%);
+    width: 3px; height: 60%;
+    background: var(--accent);
+    border-radius: 0 3px 3px 0;
+  }
+
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+  .course-tree { padding: 0 16px 20px; }
+
+  .tree-course {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .tree-course-header {
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent3);
+  }
+
+  .tree-toggle { font-size: 10px; transition: transform 0.2s; }
+  .tree-toggle.open { transform: rotate(90deg); }
+
+  .tree-topics { padding: 0 14px 10px; display: none; }
+  .tree-topics.open { display: block; }
+
+  .tree-topic {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 5px 0 5px 16px;
+    border-left: 1px solid var(--border);
+    margin-left: 4px;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .tree-topic:hover { color: var(--accent3); }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    background: rgba(13,10,26,0.8);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .topbar-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .topbar-actions { display: flex; gap: 10px; align-items: center; }
+
+  .btn {
+    padding: 9px 18px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--neon));
+    color: var(--white);
+    box-shadow: 0 4px 15px rgba(139,92,246,0.4);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(139,92,246,0.5); }
+
+  .btn-ghost {
+    background: var(--panel);
+    color: var(--accent3);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--card); border-color: var(--accent); }
+
+  .btn-danger {
+    background: rgba(248,113,113,0.15);
+    color: var(--red);
+    border: 1px solid rgba(248,113,113,0.3);
+  }
+  .btn-danger:hover { background: rgba(248,113,113,0.25); }
+
+  .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+
+  /* CONTENT AREA */
+  .content { flex: 1; padding: 32px; overflow-y: auto; }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 28px;
+    width: fit-content;
+  }
+
+  .tab {
+    padding: 8px 20px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    transition: all 0.2s;
+    border: none;
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .tab.active { background: var(--accent); color: var(--white); }
+  .tab:hover:not(.active) { color: var(--accent3); }
+
+  /* CARDS */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--neon));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .card:hover::before { opacity: 1; }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: rgba(139,92,246,0.2);
+    color: var(--accent2);
+    border: 1px solid rgba(139,92,246,0.3);
+  }
+
+  /* FORM ELEMENTS */
+  .form-group { margin-bottom: 18px; }
+
+  .form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    transition: all 0.2s;
+    outline: none;
+  }
+
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.15);
+  }
+
+  .form-select option { background: var(--card); }
+
+  .form-textarea { resize: vertical; min-height: 100px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* TOPICS & SUBTOPICS */
+  .topic-block {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .topic-block:hover { border-color: var(--accent); }
+
+  .topic-header {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .topic-drag { color: var(--muted); font-size: 14px; cursor: grab; }
+
+  .topic-number {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--accent), var(--neon));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--white);
+    flex-shrink: 0;
+  }
+
+  .topic-name {
+    flex: 1;
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  .topic-actions { display: flex; gap: 6px; opacity: 0; transition: opacity 0.2s; }
+  .topic-block:hover .topic-actions { opacity: 1; }
+
+  .topic-toggle { color: var(--muted); font-size: 12px; transition: transform 0.2s; }
+  .topic-toggle.open { transform: rotate(180deg); }
+
+  .topic-body { padding: 0 20px 16px; display: none; }
+  .topic-body.open { display: block; }
+
+  .subtopic-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(13,10,26,0.5);
+    border: 1px solid rgba(61,46,107,0.5);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .subtopic-item:hover { border-color: var(--accent); background: rgba(139,92,246,0.08); }
+
+  .subtopic-icon { font-size: 14px; }
+
+  .content-type-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    margin-left: auto;
+  }
+
+  .type-video { background: rgba(248,113,113,0.15); color: var(--red); }
+  .type-quiz { background: rgba(251,191,36,0.15); color: var(--gold); }
+  .type-text { background: rgba(52,211,153,0.15); color: var(--green); }
+  .type-interactive { background: rgba(232,121,249,0.15); color: var(--neon); }
+  .type-flashcard { background: rgba(167,139,250,0.15); color: var(--accent2); }
+
+  /* CONTENT EDITOR */
+  .content-editor {
+    display: none;
+    animation: slideUp 0.3s ease;
+  }
+  .content-editor.open { display: block; }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* INTERACTIVE CONTENT TYPES */
+
+  /* Quiz Builder */
+  .quiz-builder { }
+  .quiz-question-block {
+    background: rgba(13,10,26,0.6);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .quiz-options { margin-top: 12px; }
+  .quiz-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .quiz-option input[type="radio"] { accent-color: var(--accent); }
+  .quiz-option .form-input { margin-bottom: 0; }
+  .correct-indicator {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .correct-indicator.correct { border-color: var(--green); background: rgba(52,211,153,0.2); color: var(--green); }
+
+  /* Flashcard Builder */
+  .flashcard-preview {
+    perspective: 1000px;
+    height: 180px;
+    margin: 16px 0;
+    cursor: pointer;
+  }
+  .flashcard-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+  }
+  .flashcard-preview.flipped .flashcard-inner { transform: rotateY(180deg); }
+  .flashcard-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: var(--speed);
-}
+    padding: 24px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .flashcard-front {
+    background: linear-gradient(135deg, var(--panel), var(--card));
+  }
+  .flashcard-back {
+    background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(232,121,249,0.1));
+    transform: rotateY(180deg);
+  }
+  .flashcard-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .flashcard-content-text { font-size: 18px; font-weight: 500; }
 
-.logo img {
-    max-height: 70px;
-}
-
-.logo:hover {
-    transform: scale(1.05);
-}
-
-.site-name {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--black);
-    margin-left: 14px;
-    line-height: 1.1;
-}
-
-.site-name span {
-    color: var(--primary);
-}
-
-.links {
+  /* Drag & Drop Matcher */
+  .matcher-builder {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .match-column { }
+  .match-col-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .match-pair {
     display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
     align-items: center;
-    gap: 25px;
-    margin-left: auto;
-}
+  }
 
-.links a {
-    color: var(--gray);
-    font-size: 15px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: var(--speed);
-}
+  /* Map/Image Hotspot */
+  .hotspot-canvas {
+    position: relative;
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    min-height: 220px;
+    overflow: hidden;
+    background: var(--card);
+    cursor: crosshair;
+    margin: 12px 0;
+  }
+  .hotspot-point {
+    position: absolute;
+    width: 28px; height: 28px;
+    background: var(--neon);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--deep);
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(232,121,249,0.6);
+    animation: pulseHot 2s infinite;
+    z-index: 5;
+  }
+  @keyframes pulseHot {
+    0%, 100% { box-shadow: 0 0 12px rgba(232,121,249,0.6); }
+    50% { box-shadow: 0 0 24px rgba(232,121,249,0.9); }
+  }
+  .hotspot-canvas-img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+  .hotspot-placeholder {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px; height: 220px;
+    color: var(--muted);
+  }
+  .hotspot-placeholder .icon { font-size: 48px; opacity: 0.3; }
 
-.links a:hover {
-    color: var(--primary);
-}
+  /* Accordion content type */
+  .accordion-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .accordion-header-preview {
+    padding: 12px 16px;
+    background: var(--card);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 13px; font-weight: 500;
+  }
 
-/* ===== USER EMAIL ===== */
-.user-email {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--black);
-    background: #eef2ff;
-    padding: 8px 14px;
-    border-radius: var(--radius);
-}
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: -20px; right: -20px;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    opacity: 0.06;
+  }
+  .stat-card:nth-child(1)::after { background: var(--accent); }
+  .stat-card:nth-child(2)::after { background: var(--neon); }
+  .stat-card:nth-child(3)::after { background: var(--gold); }
+  .stat-card:nth-child(4)::after { background: var(--green); }
 
-/* ===== LOGOUT ===== */
-.logout {
-    background: linear-gradient(135deg, #ff4d4d, #cc0000);
-    padding: 10px 28px;
-    border-radius: var(--radius);
-    color: white !important;
-    font-weight: 600;
-    box-shadow: var(--shadow);
-}
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
 
-.logout:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-}
+  /* Section title */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
 
-/* ===== PAGE CONTENT ===== */
-body {
-    margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background: #f9fafb;
-}
+  /* Content type selector */
+  .content-types-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+  .content-type-option {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .content-type-option:hover { border-color: var(--accent); background: rgba(139,92,246,0.1); }
+  .content-type-option.selected { border-color: var(--accent); background: rgba(139,92,246,0.15); }
+  .content-type-option .ct-icon { font-size: 24px; margin-bottom: 6px; }
+  .content-type-option .ct-name { font-size: 12px; font-weight: 600; }
+  .content-type-option .ct-desc { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
-.main {
-    padding: 140px 8% 40px;
-}
+  /* Preview panel */
+  .preview-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    min-height: 300px;
+  }
+  .preview-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
 
-.card {
-    background: white;
-    padding: 30px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-}
-</style> -->
+  /* Notification toast */
+  .toast {
+    position: fixed;
+    bottom: 30px; right: 30px;
+    background: var(--card);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 1000;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-icon { font-size: 18px; }
+
+  /* Views */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  /* Small utility */
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .gap-2 { gap: 8px; }
+  .gap-3 { gap: 12px; }
+  .ml-auto { margin-left: auto; }
+  .mt-3 { margin-top: 12px; }
+  .text-sm { font-size: 13px; }
+  .text-muted { color: var(--muted); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state .empty-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.3; }
+  .empty-state h3 { font-family: 'Syne', sans-serif; color: var(--text); margin-bottom: 8px; }
+  .empty-state p { font-size: 13px; }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--neon));
+    border-radius: 2px;
+    transition: width 0.5s;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .content-types-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Animation for appearing elements */
+  .animate-in { animation: fadeSlideIn 0.3s ease both; }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Modal overlay */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    width: 500px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+  }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .modal-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+  .modal-close:hover { color: var(--text); }
+
+  /* Rich text toolbar */
+  .rich-toolbar {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    padding: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+  }
+  .rich-btn {
+    padding: 5px 8px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 13px;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .rich-btn:hover { background: rgba(139,92,246,0.2); color: var(--accent3); }
+  .rich-editor {
+    border-radius: 0 0 10px 10px !important;
+    border-top: none !important;
+    min-height: 140px;
+  }
+</style>
 </head>
-
 <body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon">🌿</div>
+        EduCraft
+      </div>
+      <div style="font-size:11px; color:var(--muted); margin-top:6px;">Course Builder Platform</div>
+    </div>
 
-    <!-- ===== NAVBAR ===== -->
-    <header class="header">
-        <div class="logo" onclick="window.location.href='dashboard.html'">
-            <img src="assets/logo.png" alt="logo">
-        </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Navigation</div>
+      <div class="nav-item active" onclick="switchView('overview')">
+        <span class="nav-icon">📊</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="switchView('builder')">
+        <span class="nav-icon">✏️</span> Course Builder
+      </div>
+      <div class="nav-item" onclick="switchView('content')">
+        <span class="nav-icon">🎯</span> Content Editor
+      </div>
+      <div class="nav-item" onclick="switchView('preview')">
+        <span class="nav-icon">👁️</span> Preview
+      </div>
+    </div>
 
-        <div class="site-name">
-            Kigali <br><span>RoadRules</span>
-        </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">My Courses</div>
+      <div class="course-tree" id="courseTree">
+        <!-- dynamically populated -->
+        <div style="font-size:12px; color:var(--muted); padding:8px;">No courses yet</div>
+      </div>
+    </div>
 
-        <nav class="links">
-            <a href="about.html">About Us</a>
-            <a href="contact.html">Contact Us</a>
+    <div style="margin-top:auto; padding:16px; border-top:1px solid var(--border);">
+      <div class="nav-item">
+        <span class="nav-icon">⚙️</span> Settings
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">❓</span> Help
+      </div>
+    </div>
+  </aside>
 
-            <!-- Reserved space for logged-in user email -->
-            <span class="user-email" id="userEmail">user@email.com</span>
-
-            <a href="#" class="logout" onclick="logout()">Logout</a>
-        </nav>
+  <!-- MAIN -->
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="showToast('✅', 'Changes saved!')">💾 Save</button>
+        <button class="btn btn-primary" onclick="openNewCourseModal()">＋ New Course</button>
+      </div>
     </header>
 
-    <!-- ===== CONTENT ===== -->
-    <main class="main">
-        <div class="card">
-            <h2>Dashboard</h2>
-            <p>Navbar preview with user email and logout button.</p>
-            <button class="btn btn-secondary">Confirm</button>
-            <button class="btn btn-primary">Start</button>
+    <div class="content">
+
+      <!-- OVERVIEW VIEW -->
+      <div class="view active" id="view-overview">
+        <div class="stats-grid">
+          <div class="stat-card animate-in">
+            <div class="stat-label">Total Courses</div>
+            <div class="stat-value" id="stat-courses">0</div>
+            <div class="stat-sub">across all subjects</div>
+          </div>
+          <div class="stat-card animate-in" style="animation-delay:.05s">
+            <div class="stat-label">Topics</div>
+            <div class="stat-value" id="stat-topics">0</div>
+            <div class="stat-sub">main topic blocks</div>
+          </div>
+          <div class="stat-card animate-in" style="animation-delay:.1s">
+            <div class="stat-label">Content Pieces</div>
+            <div class="stat-value" id="stat-content">0</div>
+            <div class="stat-sub">lessons & activities</div>
+          </div>
+          <div class="stat-card animate-in" style="animation-delay:.15s">
+            <div class="stat-label">Completion</div>
+            <div class="stat-value" id="stat-completion">0%</div>
+            <div class="stat-sub">content published</div>
+          </div>
         </div>
-        <h1 class="heading-xl">
-            Learn <span class="text-primary">Smarter</span>,
-            <span class="text-green">Faster</span>
-        </h1>
 
-        <p class="text-normal">
-            You can switch learning modes anytime while learning.
-        </p>
+        <div class="section-title">Your Courses</div>
 
-        <div class="flex gap-md">
-            <a class="btn btn-primary">Start Learning</a>
-            <button class="btn btn-secondary">Confirm</button>
+        <div id="courseGrid">
+          <div class="empty-state">
+            <div class="empty-icon">🌱</div>
+            <h3>No courses yet</h3>
+            <p>Click "+ New Course" to start building your first course</p>
+          </div>
         </div>
-        <div class="intro-image-container decorated-container fade-in">
-        <p class="text-small">Lorem ipusm</p>
+      </div>
+
+      <!-- BUILDER VIEW -->
+      <div class="view" id="view-builder">
+        <div class="section-title">Course Builder</div>
+        <div style="display:grid; grid-template-columns:1fr 320px; gap:24px;">
+          <!-- Left -->
+          <div>
+            <div class="card animate-in" id="selectedCoursePanel">
+              <div class="empty-state" style="padding:40px 20px;">
+                <div class="empty-icon">📚</div>
+                <h3>Select a course</h3>
+                <p>Choose from the sidebar or create a new course</p>
+              </div>
+            </div>
+          </div>
+          <!-- Right: quick add -->
+          <div>
+            <div class="card animate-in">
+              <div class="card-title" style="margin-bottom:16px;">⚡ Quick Add</div>
+              <div class="form-group">
+                <label class="form-label">Topic Name</label>
+                <input class="form-input" id="quickTopicName" placeholder="e.g., Savanna Biome">
+              </div>
+              <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="addTopicFromQuick()">Add Topic</button>
+            </div>
+            <div class="card animate-in" style="margin-top:0;">
+              <div class="card-title" style="margin-bottom:16px;">📋 Content Types</div>
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <div class="subtopic-item" style="cursor:default;">
+                  <span>🎬</span><span style="font-size:13px;">Video Lesson</span><span class="content-type-badge type-video ml-auto">Video</span>
+                </div>
+                <div class="subtopic-item" style="cursor:default;">
+                  <span>📝</span><span style="font-size:13px;">Text / Reading</span><span class="content-type-badge type-text ml-auto">Text</span>
+                </div>
+                <div class="subtopic-item" style="cursor:default;">
+                  <span>🃏</span><span style="font-size:13px;">Flashcards</span><span class="content-type-badge type-flashcard ml-auto">Cards</span>
+                </div>
+                <div class="subtopic-item" style="cursor:default;">
+                  <span>❓</span><span style="font-size:13px;">Quiz</span><span class="content-type-badge type-quiz ml-auto">Quiz</span>
+                </div>
+                <div class="subtopic-item" style="cursor:default;">
+                  <span>🗺️</span><span style="font-size:13px;">Hotspot Map</span><span class="content-type-badge type-interactive ml-auto">Interactive</span>
+                </div>
+                <div class="subtopic-item" style="cursor:default;">
+                  <span>🔗</span><span style="font-size:13px;">Match Game</span><span class="content-type-badge type-interactive ml-auto">Interactive</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-    </main>
+      </div>
 
-    <script>
-        /* Example: set logged-in user email */
-        const loggedInUserEmail = "student@roadrules.rw";
-        document.getElementById("userEmail").textContent = loggedInUserEmail;
+      <!-- CONTENT EDITOR VIEW -->
+      <div class="view" id="view-content">
+        <div class="section-title">Content Editor</div>
+        <div id="contentEditorArea">
+          <div class="empty-state">
+            <div class="empty-icon">🎨</div>
+            <h3>No content selected</h3>
+            <p>Go to Builder and click on a subtopic to edit its content</p>
+          </div>
+        </div>
+      </div>
 
-        function logout() {
-            alert("Logging out...");
-            // later:
-            // localStorage.clear();
-            // window.location.href = "login.html";
-        }
-    </script>
+      <!-- PREVIEW VIEW -->
+      <div class="view" id="view-preview">
+        <div class="section-title">Student Preview</div>
+        <div id="previewArea">
+          <div class="preview-panel">
+            <div class="empty-state">
+              <div class="empty-icon">👁️</div>
+              <h3>Nothing to preview yet</h3>
+              <p>Add content in the editor to see how students will experience it</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
+    </div>
+  </main>
+</div>
+
+<!-- NEW COURSE MODAL -->
+<div class="modal-overlay" id="newCourseModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🌿 Create New Course</div>
+      <button class="modal-close" onclick="closeModal('newCourseModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Course Title</label>
+      <input class="form-input" id="newCourseTitle" placeholder="e.g., Vegetation in Africa">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Subject Category</label>
+      <select class="form-select" id="newCourseCategory">
+        <option>Geography & Environment</option>
+        <option>Biology & Ecology</option>
+        <option>Earth Sciences</option>
+        <option>History & Culture</option>
+        <option>Science & Technology</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Short Description</label>
+      <textarea class="form-textarea" id="newCourseDesc" style="min-height:70px;" placeholder="What will students learn?"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Difficulty</label>
+        <select class="form-select" id="newCourseDiff">
+          <option>Beginner</option>
+          <option>Intermediate</option>
+          <option>Advanced</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emoji Icon</label>
+        <input class="form-input" id="newCourseEmoji" value="🌿" style="font-size:20px;">
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
+      <button class="btn btn-ghost" onclick="closeModal('newCourseModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createCourse()">Create Course →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUBTOPIC CONTENT EDITOR MODAL -->
+<div class="modal-overlay" id="contentModal" style="align-items:flex-start; padding:40px 20px; overflow-y:auto;">
+  <div class="modal" style="width:680px; max-width:95vw;">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Edit Content</div>
+      <button class="modal-close" onclick="closeModal('contentModal')">✕</button>
+    </div>
+    <div id="contentModalBody"><!-- dynamically filled --></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toastIcon">✅</span>
+  <span id="toastMsg">Saved!</span>
+</div>
+
+<script>
+// ===== STATE =====
+const state = {
+  courses: [],
+  selectedCourseId: null,
+  selectedSubtopic: null,
+};
+
+// ===== UTILS =====
+function uid() { return Math.random().toString(36).slice(2,9); }
+
+function showToast(icon, msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const labels = { overview:'Dashboard', builder:'Course Builder', content:'Content Editor', preview:'Student Preview' };
+  document.getElementById('topbarTitle').textContent = labels[name] || name;
+  // Highlight sidebar
+  const items = document.querySelectorAll('.nav-item');
+  const map = { overview: 0, builder: 1, content: 2, preview: 3 };
+  if (items[map[name]]) items[map[name]].classList.add('active');
+}
+
+// ===== COURSES =====
+function openNewCourseModal() { openModal('newCourseModal'); }
+
+function createCourse() {
+  const title = document.getElementById('newCourseTitle').value.trim();
+  if (!title) { showToast('⚠️', 'Please enter a course title'); return; }
+  const course = {
+    id: uid(),
+    title,
+    category: document.getElementById('newCourseCategory').value,
+    desc: document.getElementById('newCourseDesc').value,
+    difficulty: document.getElementById('newCourseDiff').value,
+    emoji: document.getElementById('newCourseEmoji').value || '📚',
+    topics: [],
+    createdAt: new Date().toLocaleDateString(),
+  };
+  state.courses.push(course);
+  closeModal('newCourseModal');
+  document.getElementById('newCourseTitle').value = '';
+  document.getElementById('newCourseDesc').value = '';
+  updateStats();
+  renderCourseGrid();
+  renderSidebarTree();
+  selectCourse(course.id);
+  switchView('builder');
+  showToast('🎉', 'Course created successfully!');
+}
+
+function selectCourse(id) {
+  state.selectedCourseId = id;
+  renderBuilderPanel();
+  switchView('builder');
+}
+
+function deleteCourse(id) {
+  state.courses = state.courses.filter(c => c.id !== id);
+  if (state.selectedCourseId === id) {
+    state.selectedCourseId = null;
+    renderBuilderPanel();
+  }
+  updateStats();
+  renderCourseGrid();
+  renderSidebarTree();
+  showToast('🗑️', 'Course deleted');
+}
+
+// ===== STATS =====
+function updateStats() {
+  const courses = state.courses;
+  const totalTopics = courses.reduce((a,c) => a + c.topics.length, 0);
+  let totalContent = 0;
+  let hasContent = 0;
+  courses.forEach(c => c.topics.forEach(t => {
+    t.subtopics.forEach(s => {
+      totalContent++;
+      if (s.content && s.content.type) hasContent++;
+    });
+  }));
+  document.getElementById('stat-courses').textContent = courses.length;
+  document.getElementById('stat-topics').textContent = totalTopics;
+  document.getElementById('stat-content').textContent = totalContent;
+  document.getElementById('stat-completion').textContent = totalContent > 0
+    ? Math.round((hasContent / totalContent) * 100) + '%' : '0%';
+}
+
+// ===== COURSE GRID =====
+function renderCourseGrid() {
+  const el = document.getElementById('courseGrid');
+  if (state.courses.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🌱</div><h3>No courses yet</h3><p>Click "+ New Course" to start building your first course</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px;">` +
+    state.courses.map(c => {
+      const topicCount = c.topics.length;
+      const subCount = c.topics.reduce((a,t) => a + t.subtopics.length, 0);
+      return `<div class="card animate-in" style="cursor:pointer;" onclick="selectCourse('${c.id}')">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+          <div style="font-size:36px;">${c.emoji}</div>
+          <span class="badge">${c.difficulty}</span>
+        </div>
+        <div style="font-family:'Syne',sans-serif; font-size:16px; font-weight:700; margin-bottom:4px;">${c.title}</div>
+        <div style="font-size:12px; color:var(--muted); margin-bottom:12px;">${c.category}</div>
+        ${c.desc ? `<div style="font-size:13px; color:var(--muted); margin-bottom:12px; line-height:1.5;">${c.desc}</div>` : ''}
+        <div style="display:flex; gap:16px; margin-bottom:12px;">
+          <span style="font-size:12px; color:var(--muted);">📚 ${topicCount} topics</span>
+          <span style="font-size:12px; color:var(--muted);">📄 ${subCount} lessons</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${topicCount>0?Math.min(100,topicCount*20):5}%"></div></div>
+        <div style="display:flex; gap:8px; margin-top:14px;">
+          <button class="btn btn-ghost btn-sm" style="flex:1; justify-content:center;" onclick="event.stopPropagation();selectCourse('${c.id}')">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteCourse('${c.id}')">🗑️</button>
+        </div>
+      </div>`;
+    }).join('') + `</div>`;
+}
+
+// ===== SIDEBAR TREE =====
+function renderSidebarTree() {
+  const el = document.getElementById('courseTree');
+  if (state.courses.length === 0) {
+    el.innerHTML = `<div style="font-size:12px; color:var(--muted); padding:8px;">No courses yet</div>`;
+    return;
+  }
+  el.innerHTML = state.courses.map(c => `
+    <div class="tree-course">
+      <div class="tree-course-header" onclick="toggleTreeCourse('tree_${c.id}',this); selectCourse('${c.id}')">
+        <span>${c.emoji}</span>
+        <span style="flex:1; font-size:12px;">${c.title}</span>
+        <span class="tree-toggle">▶</span>
+      </div>
+      <div class="tree-topics" id="tree_${c.id}">
+        ${c.topics.map(t => `<div class="tree-topic" onclick="selectCourse('${c.id}')">${t.name}</div>`).join('')}
+        ${c.topics.length === 0 ? '<div style="font-size:11px;color:var(--muted);padding:4px 0;">No topics yet</div>' : ''}
+      </div>
+    </div>`).join('');
+}
+
+function toggleTreeCourse(id, header) {
+  const el = document.getElementById(id);
+  const toggle = header.querySelector('.tree-toggle');
+  el.classList.toggle('open');
+  toggle.classList.toggle('open');
+}
+
+// ===== BUILDER PANEL =====
+function renderBuilderPanel() {
+  const panel = document.getElementById('selectedCoursePanel');
+  const course = state.courses.find(c => c.id === state.selectedCourseId);
+  if (!course) {
+    panel.innerHTML = `<div class="empty-state" style="padding:40px 20px;"><div class="empty-icon">📚</div><h3>Select a course</h3><p>Choose from the sidebar or create a new course</p></div>`;
+    return;
+  }
+  panel.innerHTML = `
+    <div class="card-header">
+      <div class="card-title">
+        <span style="font-size:24px;">${course.emoji}</span>
+        ${course.title}
+        <span class="badge">${course.difficulty}</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="openAddTopicModal()">＋ Add Topic</button>
+    </div>
+    <div style="font-size:13px; color:var(--muted); margin-bottom:20px;">${course.category}</div>
+    <div id="topicsList">
+      ${course.topics.length === 0
+        ? `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon" style="font-size:36px;">📋</div><h3 style="font-size:15px;">No topics yet</h3><p>Click "+ Add Topic" to structure your course</p></div>`
+        : course.topics.map((topic, ti) => renderTopicBlock(topic, ti, course)).join('')}
+    </div>`;
+}
+
+function renderTopicBlock(topic, ti, course) {
+  return `<div class="topic-block" id="topic_${topic.id}">
+    <div class="topic-header" onclick="toggleTopic('topicbody_${topic.id}', this)">
+      <span class="topic-drag">⠿</span>
+      <div class="topic-number">${ti + 1}</div>
+      <div class="topic-name">${topic.name}</div>
+      <div class="topic-actions">
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openAddSubtopicModal('${course.id}','${topic.id}')">＋</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteTopic('${course.id}','${topic.id}')">🗑️</button>
+      </div>
+      <span class="topic-toggle">▾</span>
+    </div>
+    <div class="topic-body" id="topicbody_${topic.id}">
+      ${topic.subtopics.length === 0
+        ? `<div style="font-size:12px;color:var(--muted);padding:8px 0;">No subtopics yet. Click ＋ to add one.</div>`
+        : topic.subtopics.map((s,si) => renderSubtopicItem(s, si, course.id, topic.id)).join('')}
+    </div>
+  </div>`;
+}
+
+function renderSubtopicItem(s, si, cid, tid) {
+  const typeInfo = {
+    text:       { icon:'📝', cls:'type-text', label:'Text' },
+    video:      { icon:'🎬', cls:'type-video', label:'Video' },
+    quiz:       { icon:'❓', cls:'type-quiz', label:'Quiz' },
+    flashcard:  { icon:'🃏', cls:'type-flashcard', label:'Flashcard' },
+    hotspot:    { icon:'🗺️', cls:'type-interactive', label:'Hotspot' },
+    matcher:    { icon:'🔗', cls:'type-interactive', label:'Match' },
+  };
+  const t = s.content && s.content.type ? typeInfo[s.content.type] || { icon:'📄', cls:'type-text', label:s.content.type } : null;
+  return `<div class="subtopic-item" onclick="openContentEditor('${cid}','${tid}','${s.id}')">
+    <span class="subtopic-icon">${t ? t.icon : '📄'}</span>
+    <span style="font-size:13px;">${s.name}</span>
+    ${t ? `<span class="content-type-badge ${t.cls} ml-auto">${t.label}</span>` : `<span class="content-type-badge ml-auto" style="color:var(--muted);background:rgba(255,255,255,0.04);">No content</span>`}
+    <button class="btn btn-danger btn-sm" style="padding:4px 8px; margin-left:6px;" onclick="event.stopPropagation();deleteSubtopic('${cid}','${tid}','${s.id}')">✕</button>
+  </div>`;
+}
+
+function toggleTopic(id, header) {
+  const el = document.getElementById(id);
+  const tog = header.querySelector('.topic-toggle');
+  el.classList.toggle('open');
+  tog.classList.toggle('open');
+}
+
+// ===== ADD TOPIC MODAL =====
+function openAddTopicModal() {
+  const course = state.courses.find(c => c.id === state.selectedCourseId);
+  if (!course) return;
+  const body = document.getElementById('contentModalBody');
+  body.innerHTML = `
+    <div class="form-group">
+      <label class="form-label">Topic Name</label>
+      <input class="form-input" id="newTopicName" placeholder="e.g., Savanna Biome">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description (optional)</label>
+      <textarea class="form-textarea" id="newTopicDesc" style="min-height:60px;" placeholder="What is this topic about?"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-ghost" onclick="closeModal('contentModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addTopic()">Add Topic →</button>
+    </div>`;
+  document.querySelector('#contentModal .modal-title').textContent = '📋 Add Topic';
+  openModal('contentModal');
+  setTimeout(() => document.getElementById('newTopicName').focus(), 100);
+}
+
+function addTopicFromQuick() {
+  const name = document.getElementById('quickTopicName').value.trim();
+  if (!name) return;
+  const course = state.courses.find(c => c.id === state.selectedCourseId);
+  if (!course) { showToast('⚠️', 'Select or create a course first'); return; }
+  course.topics.push({ id: uid(), name, desc: '', subtopics: [] });
+  document.getElementById('quickTopicName').value = '';
+  updateStats(); renderBuilderPanel(); renderSidebarTree();
+  showToast('✅', 'Topic added!');
+}
+
+function addTopic() {
+  const name = document.getElementById('newTopicName').value.trim();
+  if (!name) { showToast('⚠️', 'Enter a topic name'); return; }
+  const course = state.courses.find(c => c.id === state.selectedCourseId);
+  course.topics.push({ id: uid(), name, desc: document.getElementById('newTopicDesc').value, subtopics: [] });
+  closeModal('contentModal');
+  updateStats(); renderBuilderPanel(); renderSidebarTree();
+  showToast('✅', 'Topic added!');
+}
+
+function deleteTopic(cid, tid) {
+  const course = state.courses.find(c => c.id === cid);
+  course.topics = course.topics.filter(t => t.id !== tid);
+  updateStats(); renderBuilderPanel(); renderSidebarTree();
+  showToast('🗑️', 'Topic deleted');
+}
+
+// ===== ADD SUBTOPIC MODAL =====
+function openAddSubtopicModal(cid, tid) {
+  const body = document.getElementById('contentModalBody');
+  body.innerHTML = `
+    <div class="form-group">
+      <label class="form-label">Subtopic / Lesson Name</label>
+      <input class="form-input" id="newSubName" placeholder="e.g., Grass Types in Savanna">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Content Type</label>
+      <div class="content-types-grid" id="ctGrid">
+        ${[
+          {type:'text', icon:'📝', name:'Text / Reading', desc:'Article or reading'},
+          {type:'video', icon:'🎬', name:'Video Lesson', desc:'Embed or upload video'},
+          {type:'quiz', icon:'❓', name:'Quiz', desc:'Multiple choice Q&A'},
+          {type:'flashcard', icon:'🃏', name:'Flashcards', desc:'Flip card study set'},
+          {type:'hotspot', icon:'🗺️', name:'Hotspot Map', desc:'Click on image areas'},
+          {type:'matcher', icon:'🔗', name:'Match Game', desc:'Drag & connect pairs'},
+        ].map(ct => `<div class="content-type-option" onclick="selectCT(this,'${ct.type}')" data-type="${ct.type}">
+          <div class="ct-icon">${ct.icon}</div>
+          <div class="ct-name">${ct.name}</div>
+          <div class="ct-desc">${ct.desc}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-ghost" onclick="closeModal('contentModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addSubtopic('${cid}','${tid}')">Add Lesson →</button>
+    </div>`;
+  document.querySelector('#contentModal .modal-title').textContent = '📄 Add Lesson';
+  openModal('contentModal');
+}
+
+function selectCT(el, type) {
+  document.querySelectorAll('.content-type-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  el.dataset.selected = 'true';
+}
+
+function getSelectedCT() {
+  const sel = document.querySelector('.content-type-option.selected');
+  return sel ? sel.dataset.type : null;
+}
+
+function addSubtopic(cid, tid) {
+  const name = document.getElementById('newSubName').value.trim();
+  if (!name) { showToast('⚠️', 'Enter a lesson name'); return; }
+  const course = state.courses.find(c => c.id === cid);
+  const topic = course.topics.find(t => t.id === tid);
+  const ct = getSelectedCT();
+  const sub = { id: uid(), name, content: ct ? { type: ct, data: getDefaultData(ct) } : null };
+  topic.subtopics.push(sub);
+  closeModal('contentModal');
+  updateStats(); renderBuilderPanel();
+  showToast('✅', 'Lesson added!');
+  if (ct) openContentEditor(cid, tid, sub.id);
+}
+
+function deleteSubtopic(cid, tid, sid) {
+  const course = state.courses.find(c => c.id === cid);
+  const topic = course.topics.find(t => t.id === tid);
+  topic.subtopics = topic.subtopics.filter(s => s.id !== sid);
+  updateStats(); renderBuilderPanel();
+  showToast('🗑️', 'Lesson deleted');
+}
+
+function getDefaultData(type) {
+  const defaults = {
+    text: { title: '', body: '' },
+    video: { url: '', transcript: '' },
+    quiz: { questions: [{ id: uid(), question: '', options: ['','','',''], correct: 0 }] },
+    flashcard: { cards: [{ id: uid(), front: '', back: '' }] },
+    hotspot: { image: '', hotspots: [] },
+    matcher: { pairs: [{ id: uid(), left: '', right: '' }] },
+  };
+  return defaults[type] || {};
+}
+
+// ===== CONTENT EDITOR =====
+function openContentEditor(cid, tid, sid) {
+  const course = state.courses.find(c => c.id === cid);
+  const topic = course.topics.find(t => t.id === tid);
+  const sub = topic.subtopics.find(s => s.id === sid);
+  if (!sub || !sub.content) return;
+
+  state.selectedSubtopic = { cid, tid, sid };
+  const body = document.getElementById('contentModalBody');
+  const ct = sub.content.type;
+  const data = sub.content.data;
+  document.querySelector('#contentModal .modal-title').textContent = `✏️ ${sub.name}`;
+
+  let html = '';
+  if (ct === 'text') {
+    html = `<div class="form-group">
+      <label class="form-label">Lesson Title</label>
+      <input class="form-input" id="ce_title" value="${escH(data.title||'')}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Content</label>
+      <div class="rich-toolbar">
+        <button class="rich-btn" onclick="fmtText('bold')"><b>B</b></button>
+        <button class="rich-btn" onclick="fmtText('italic')"><i>I</i></button>
+        <button class="rich-btn" onclick="fmtText('underline')"><u>U</u></button>
+        <button class="rich-btn" onclick="fmtText('insertUnorderedList')">• List</button>
+        <button class="rich-btn" onclick="fmtText('insertOrderedList')">1. List</button>
+        <span style="border-left:1px solid var(--border);margin:0 4px;"></span>
+        <button class="rich-btn" onclick="fmtText('justifyLeft')">⬅</button>
+        <button class="rich-btn" onclick="fmtText('justifyCenter')">↔</button>
+      </div>
+      <div class="form-input rich-editor" contenteditable="true" id="ce_body" style="line-height:1.7;">${data.body||''}</div>
+    </div>`;
+  } else if (ct === 'video') {
+    html = `<div class="form-group">
+      <label class="form-label">Video URL (YouTube / Vimeo)</label>
+      <input class="form-input" id="ce_url" value="${escH(data.url||'')}" placeholder="https://www.youtube.com/watch?v=...">
+    </div>
+    <div style="margin:12px 0; background:var(--card); border-radius:12px; overflow:hidden; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center;" id="videoPreview">
+      <span style="color:var(--muted); font-size:48px;">🎬</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Transcript / Notes (optional)</label>
+      <textarea class="form-textarea" id="ce_transcript">${escH(data.transcript||'')}</textarea>
+    </div>`;
+  } else if (ct === 'quiz') {
+    html = `<div id="quizEditor">${renderQuizEditor(data.questions)}</div>
+    <button class="btn btn-ghost btn-sm mt-3" onclick="addQuizQuestion()">＋ Add Question</button>`;
+  } else if (ct === 'flashcard') {
+    html = `<div style="margin-bottom:12px;">
+      <div class="form-group"><label class="form-label">Front</label><input class="form-input" id="fc_front" value="${escH(data.cards[0]?.front||'')}" placeholder="Term or concept"></div>
+      <div class="form-group"><label class="form-label">Back</label><textarea class="form-textarea" id="fc_back" style="min-height:70px;">${escH(data.cards[0]?.back||'')}</textarea></div>
+      <div class="flashcard-preview" id="fcPreview" onclick="this.classList.toggle('flipped')">
+        <div class="flashcard-inner">
+          <div class="flashcard-face flashcard-front">
+            <div class="flashcard-label">Click to flip · Front</div>
+            <div class="flashcard-content-text" id="fc_frontP">${escH(data.cards[0]?.front||'Term goes here')}</div>
+          </div>
+          <div class="flashcard-face flashcard-back">
+            <div class="flashcard-label">Back</div>
+            <div class="flashcard-content-text" id="fc_backP">${escH(data.cards[0]?.back||'Definition goes here')}</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="addFlashcard()">＋ Add Another Card</button>
+      <div id="moreCards">
+        ${data.cards.slice(1).map((c,i) => `<div class="quiz-question-block mt-3">
+          <div class="form-group" style="margin-bottom:8px;"><input class="form-input" placeholder="Front" value="${escH(c.front||'')}"></div>
+          <textarea class="form-textarea" style="min-height:50px;" placeholder="Back">${escH(c.back||'')}</textarea>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  } else if (ct === 'hotspot') {
+    html = `<div class="form-group">
+      <label class="form-label">Image URL</label>
+      <input class="form-input" id="hs_url" value="${escH(data.image||'')}" placeholder="Paste an image URL (e.g. map of Africa)">
+      <button class="btn btn-ghost btn-sm mt-3" onclick="loadHotspotImage()">Load Image</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Click on the image to add hotspots</label>
+      <div class="hotspot-canvas" id="hotspotCanvas" onclick="addHotspot(event)">
+        <div class="hotspot-placeholder">
+          <div class="icon">🗺️</div>
+          <div>Load an image URL above to start placing hotspots</div>
+        </div>
+      </div>
+    </div>
+    <div id="hotspotList" style="margin-top:12px;"></div>`;
+  } else if (ct === 'matcher') {
+    html = `<div id="matcherEditor">${renderMatcherEditor(data.pairs)}</div>
+    <button class="btn btn-ghost btn-sm mt-3" onclick="addMatchPair()">＋ Add Pair</button>`;
+  }
+
+  html += `<div class="divider"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeModal('contentModal')">Close</button>
+      <button class="btn btn-primary" onclick="saveContent('${cid}','${tid}','${sid}','${ct}')">💾 Save Content</button>
+    </div>`;
+
+  body.innerHTML = html;
+
+  // live preview for flashcard
+  if (ct === 'flashcard') {
+    document.getElementById('fc_front').addEventListener('input', e => {
+      document.getElementById('fc_frontP').textContent = e.target.value || 'Term goes here';
+    });
+    document.getElementById('fc_back').addEventListener('input', e => {
+      document.getElementById('fc_backP').textContent = e.target.value || 'Definition goes here';
+    });
+  }
+
+  openModal('contentModal');
+}
+
+function escH(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtText(cmd) { document.execCommand(cmd, false, null); document.getElementById('ce_body').focus(); }
+
+// QUIZ
+function renderQuizEditor(questions) {
+  return questions.map((q, qi) => `
+    <div class="quiz-question-block" id="qq_${q.id}">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);">Q${qi+1}</div>
+        <button class="btn btn-danger btn-sm" onclick="removeQuestion('${q.id}')">✕</button>
+      </div>
+      <div class="form-group">
+        <input class="form-input" placeholder="Enter question..." value="${escH(q.question||'')}">
+      </div>
+      <div class="quiz-options">
+        ${q.options.map((opt, oi) => `
+          <div class="quiz-option">
+            <div class="correct-indicator ${q.correct === oi ? 'correct':''}" onclick="setCorrect('${q.id}',${oi},this)" title="Mark as correct">✓</div>
+            <input class="form-input" style="flex:1;" placeholder="Option ${oi+1}" value="${escH(opt||'')}">
+          </div>`).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--green);margin-top:6px;">✓ Click the circle to mark correct answer</div>
+    </div>`).join('');
+}
+
+function addQuizQuestion() {
+  const { cid, tid, sid } = state.selectedSubtopic;
+  const course = state.courses.find(c => c.id === cid);
+  const topic = course.topics.find(t => t.id === tid);
+  const sub = topic.subtopics.find(s => s.id === sid);
+  const nq = { id: uid(), question: '', options: ['','','',''], correct: 0 };
+  sub.content.data.questions.push(nq);
+  const container = document.getElementById('quizEditor');
+  const div = document.createElement('div');
+  div.innerHTML = renderQuizEditor([nq]);
+  container.appendChild(div.firstElementChild);
+}
+
+function removeQuestion(qid) {
+  const el = document.getElementById('qq_'+qid);
+  if (el) el.remove();
+}
+
+function setCorrect(qid, idx, el) {
+  el.closest('.quiz-options').querySelectorAll('.correct-indicator').forEach(c => c.classList.remove('correct'));
+  el.classList.add('correct');
+}
+
+// FLASHCARDS
+function addFlashcard() {
+  const div = document.createElement('div');
+  div.className = 'quiz-question-block mt-3';
+  div.style.marginTop = '12px';
+  div.innerHTML = `<div class="form-group" style="margin-bottom:8px;"><input class="form-input" placeholder="Front - Term"></div>
+    <textarea class="form-textarea" style="min-height:50px;" placeholder="Back - Definition"></textarea>`;
+  document.getElementById('moreCards').appendChild(div);
+}
+
+// MATCHER
+function renderMatcherEditor(pairs) {
+  return `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Enter term-definition pairs:</div>` +
+    pairs.map((p, i) => `
+      <div class="match-pair" id="mp_${p.id}">
+        <input class="form-input" style="flex:1;" placeholder="Left (term)" value="${escH(p.left||'')}">
+        <span style="color:var(--muted); font-size:18px; flex-shrink:0;">↔</span>
+        <input class="form-input" style="flex:1;" placeholder="Right (match)" value="${escH(p.right||'')}">
+        <button class="btn btn-danger btn-sm" onclick="document.getElementById('mp_${p.id}').remove()">✕</button>
+      </div>`).join('');
+}
+
+function addMatchPair() {
+  const nid = uid();
+  const div = document.createElement('div');
+  div.className = 'match-pair';
+  div.id = 'mp_' + nid;
+  div.innerHTML = `<input class="form-input" style="flex:1;" placeholder="Left (term)">
+    <span style="color:var(--muted); font-size:18px; flex-shrink:0;">↔</span>
+    <input class="form-input" style="flex:1;" placeholder="Right (match)">
+    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('matcherEditor').appendChild(div);
+}
+
+// HOTSPOT
+let hotspotCount = 0;
+function loadHotspotImage() {
+  const url = document.getElementById('hs_url').value.trim();
+  if (!url) return;
+  const canvas = document.getElementById('hotspotCanvas');
+  canvas.innerHTML = `<img src="${escH(url)}" class="hotspot-canvas-img" onerror="this.parentElement.innerHTML='<div class=hotspot-placeholder><div class=icon>❌</div><div>Could not load image</div></div>'">`;
+  hotspotCount = 0;
+}
+
+function addHotspot(e) {
+  const canvas = document.getElementById('hotspotCanvas');
+  const img = canvas.querySelector('img');
+  if (!img) return;
+  hotspotCount++;
+  const rect = canvas.getBoundingClientRect();
+  const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(1);
+  const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(1);
+  const dot = document.createElement('div');
+  dot.className = 'hotspot-point';
+  dot.style.left = x + '%';
+  dot.style.top = y + '%';
+  dot.textContent = hotspotCount;
+  dot.onclick = (ev) => { ev.stopPropagation(); };
+  canvas.appendChild(dot);
+  // Add to list
+  const list = document.getElementById('hotspotList');
+  const item = document.createElement('div');
+  item.className = 'quiz-question-block';
+  item.style.marginBottom = '8px';
+  item.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+    <div class="topic-number" style="width:24px;height:24px;font-size:11px;">${hotspotCount}</div>
+    <span style="font-size:12px;color:var(--muted);">at (${x}%, ${y}%)</span>
+  </div>
+  <input class="form-input" placeholder="Label for this hotspot">
+  <textarea class="form-textarea" style="min-height:50px;margin-top:8px;" placeholder="Description when clicked..."></textarea>`;
+  list.appendChild(item);
+}
+
+// SAVE CONTENT
+function saveContent(cid, tid, sid, ct) {
+  const course = state.courses.find(c => c.id === cid);
+  const topic = course.topics.find(t => t.id === tid);
+  const sub = topic.subtopics.find(s => s.id === sid);
+
+  if (ct === 'text') {
+    sub.content.data.title = document.getElementById('ce_title').value;
+    sub.content.data.body = document.getElementById('ce_body').innerHTML;
+  } else if (ct === 'video') {
+    sub.content.data.url = document.getElementById('ce_url').value;
+    sub.content.data.transcript = document.getElementById('ce_transcript').value;
+  } else if (ct === 'quiz') {
+    const blocks = document.querySelectorAll('.quiz-question-block');
+    sub.content.data.questions = Array.from(blocks).map(b => ({
+      id: uid(),
+      question: b.querySelector('.form-input').value,
+      options: Array.from(b.querySelectorAll('.quiz-option .form-input')).map(i => i.value),
+      correct: Array.from(b.querySelectorAll('.correct-indicator')).findIndex(c => c.classList.contains('correct'))
+    }));
+  } else if (ct === 'flashcard') {
+    const front = document.getElementById('fc_front').value;
+    const back = document.getElementById('fc_back').value;
+    const extras = document.querySelectorAll('#moreCards .quiz-question-block');
+    sub.content.data.cards = [{ id: uid(), front, back },
+      ...Array.from(extras).map(b => ({
+        id: uid(),
+        front: b.querySelector('input').value,
+        back: b.querySelector('textarea').value
+      }))];
+  } else if (ct === 'hotspot') {
+    sub.content.data.image = document.getElementById('hs_url').value;
+  } else if (ct === 'matcher') {
+    const pairs = document.querySelectorAll('[id^="mp_"]');
+    sub.content.data.pairs = Array.from(pairs).map(p => ({
+      id: uid(),
+      left: p.querySelectorAll('input')[0].value,
+      right: p.querySelectorAll('input')[1].value
+    }));
+  }
+
+  updateStats();
+  renderBuilderPanel();
+  closeModal('contentModal');
+  showToast('💾', 'Content saved!');
+}
+
+// ===== INIT =====
+// Load example course
+function loadExample() {
+  const example = {
+    id: uid(),
+    title: 'Vegetation in Africa',
+    category: 'Geography & Environment',
+    desc: 'Explore the diverse plant life and biomes across the African continent.',
+    difficulty: 'Intermediate',
+    emoji: '🌿',
+    createdAt: new Date().toLocaleDateString(),
+    topics: [
+      {
+        id: uid(), name: 'Introduction to African Biomes', desc: '',
+        subtopics: [
+          { id: uid(), name: 'What is a biome?', content: { type: 'text', data: { title: 'Understanding Biomes', body: '<p>A <strong>biome</strong> is a large community of vegetation and wildlife adapted to a specific climate.</p><p>Africa contains some of the most diverse biomes on Earth, from dense rainforests to harsh deserts.</p>' } } },
+          { id: uid(), name: 'Biome Overview Video', content: { type: 'video', data: { url: '', transcript: '' } } },
+        ]
+      },
+      {
+        id: uid(), name: 'Tropical Rainforests', desc: '',
+        subtopics: [
+          { id: uid(), name: 'Congo Basin Flora', content: { type: 'text', data: { title: '', body: '' } } },
+          { id: uid(), name: 'Key Plants Flashcards', content: { type: 'flashcard', data: { cards: [
+            { id: uid(), front: 'Raffia Palm', back: 'World\'s largest leaves, found in Congo rainforests' },
+            { id: uid(), front: 'African Mahogany', back: 'Massive hardwood tree prized for its timber' }
+          ]}}},
+        ]
+      },
+      {
+        id: uid(), name: 'Savanna & Grasslands', desc: '',
+        subtopics: [
+          { id: uid(), name: 'Savanna Quiz', content: { type: 'quiz', data: { questions: [
+            { id: uid(), question: 'What covers about 40% of Africa\'s land area?', options: ['Rainforest','Desert','Savanna','Mountains'], correct: 2 }
+          ]}}},
+          { id: uid(), name: 'Plant Match Game', content: { type: 'matcher', data: { pairs: [
+            { id: uid(), left: 'Baobab Tree', right: 'Stores water in trunk' },
+            { id: uid(), left: 'Acacia', right: 'Iconic flat-topped tree' }
+          ]}}},
+        ]
+      }
+    ]
+  };
+  state.courses.push(example);
+  state.selectedCourseId = example.id;
+  updateStats(); renderCourseGrid(); renderSidebarTree(); renderBuilderPanel();
+}
+
+loadExample();
+switchView('overview');
+</script>
 </body>
-
 </html>

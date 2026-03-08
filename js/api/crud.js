@@ -125,7 +125,7 @@ export async function FetchData(
     }
     if (!response.ok) {
       if (response.status === 401) {
-        autoLogout(storage);
+         autoLogout(storage);
       }
       return { success: false, status: response.status, error: data };
     }

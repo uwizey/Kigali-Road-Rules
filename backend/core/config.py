@@ -7,7 +7,7 @@ load_dotenv()
 class Config:
     # Basic Flask config
     SECRET_KEY = os.getenv("SECRET_KEY", "Kigali-Road-Rules")
-
+     
     # MySQL database config
     SQLALCHEMY_DATABASE_URI = (
         f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Admin — Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="content-mgt.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">📚 ContentAdmin</div>
+  <div class="header-breadcrumb" id="headerBreadcrumb">
+    <span style="opacity:.4">Select a topic to begin</span>
+  </div>
+  <div class="header-right">
+    <div class="save-indicator" id="saveIndicator">✓ Saved</div>
+    <button class="btn-icon" id="btnShortcuts" title="Keyboard shortcuts">⌨️</button>
+  </div>
+</header>
+
+<div class="app-body">
+  <div class="panel-topics">
+    <div class="panel-label">Topics <span class="readonly-badge">READ ONLY</span></div>
+    <div class="topics-tree" id="topicsTree"></div>
+  </div>
+
+  <div class="panel-sections">
+    <div class="panel-label">Sections</div>
+    <div class="sections-topic-title" id="sectionsTopic">
+      <span style="opacity:.5">← Select a topic</span>
+    </div>
+    <div class="sections-list" id="sectionsList"></div>
+    <div class="sections-footer">
+      <button class="btn-add-section" id="btnAddSection" style="display:none">＋ Add Section</button>
+    </div>
+  </div>
+
+  <div class="panel-builder">
+    <div class="builder-header" id="builderHeader" style="display:none">
+      <div class="builder-section-name" id="builderSectionName"></div>
+      <div class="builder-header-actions">
+        <button class="btn-icon" id="btnCollapseAll" title="Collapse all components">⊟</button>
+      </div>
+    </div>
+    <div class="builder-body" id="builderBody">
+      <div class="empty-state">
+        <div class="icon">🏗️</div>
+        <h3>Section Builder</h3>
+        <p>Select a section from the middle panel<br>to start building its content.</p>
+      </div>
+    </div>
+    <div class="builder-footer" id="builderFooter" style="display:none">
+      <button class="btn-add-component" id="btnOpenCompModal">＋ Add Component</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modalAddComponent">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Add Component</h3>
+      <button class="modal-close" data-close="modalAddComponent">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:14px;font-size:13px;color:var(--gray);">Select a component type to add to this section:</p>
+      <div class="comp-type-grid" id="compTypeGrid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal confirm-modal" id="modalConfirm">
+  <div class="modal-box">
+    <div class="confirm-body">
+      <div class="confirm-icon">🗑️</div>
+      <h4 id="confirmTitle">Delete this item?</h4>
+      <p id="confirmMsg">This action cannot be undone.</p>
+      <div class="confirm-actions">
+        <button class="btn-cancel" data-close="modalConfirm">Cancel</button>
+        <button class="btn-danger" id="confirmBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/admin-content-script.js" type="module"></script>
+
+</body>
+</html>

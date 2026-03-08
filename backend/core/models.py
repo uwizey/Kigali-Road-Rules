@@ -95,10 +95,7 @@ class AnswerOption(db.Model):
 
     def __repr__(self):
         return f"<AnswerOption {self.answer_id}>"
-
-
-
-    
+   
 class Quiz(db.Model):
     __tablename__ = "quiz" 
     quiz_id = db.Column(db.Integer, primary_key=True, autoincrement=True) 
@@ -124,3 +121,66 @@ class QuizQuestion(db.Model):
         return f"<QuizQuestion quiz={self.quiz_id}, question={self.question_id}>"
 
 
+
+class Section(db.Model):
+    __tablename__ = "sections"
+
+    section_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    topic_id = db.Column(db.Integer, db.ForeignKey("topic.topic_id"), nullable=False)
+
+    title = db.Column(db.String(255), nullable=False)
+ 
+    order_index = db.Column(db.Integer, default=0)
+    is_locked = db.Column(db.Boolean, default=False)
+
+    created_at = db.Column(db.DateTime, default=db.func.now())
+
+    # Relationships
+    topic = db.relationship("Topic", backref="sections")
+    components = db.relationship("Component", back_populates="section", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<Section {self.title}>"
+
+
+class Component(db.Model):
+    __tablename__ = "components"
+
+    component_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    section_id = db.Column(db.Integer, db.ForeignKey("sections.section_id"), nullable=False)
+    # Explicit type: "content", "quiz", "exercise"
+    component_type = db.Column(db.String(50), default="content")
+
+    order_index = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+
+    # Relationships
+    section = db.relationship("Section", back_populates="components")
+    items = db.relationship("ComponentItem", back_populates="component", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<Component {self.component_id} type={self.component_type} format={self.format_type}>"
+
+
+class ComponentItem(db.Model):
+    __tablename__ = "component_items"
+
+    item_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    component_id = db.Column(db.Integer, db.ForeignKey("components.component_id"), nullable=False)
+     
+     # Instead of FK → content_formats, use a simple string
+    format_type = db.Column(db.String(50), default="content")
+    title = db.Column(db.String(255), nullable=False)
+    content = db.Column(db.Text, nullable=True)  # LONGTEXT equivalent
+    
+    order_index = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+
+    mimetype = db.Column(db.String(255), nullable=True)
+    image_data = db.Column(db.LargeBinary, nullable=True)
+
+    # Relationships
+    component = db.relationship("Component", back_populates="items")
+
+    def __repr__(self):
+        return f"<ComponentItem {self.title}>"
