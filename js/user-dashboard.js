@@ -2700,7 +2700,18 @@ function _renderComponentContent(components, container) {
     return;
   }
 
-  container.innerHTML = display.map(_renderOneComponent).join("");
+  container.innerHTML = display
+    .map((comp) => {
+      const titleHTML = comp.title
+        ? `<h3 class="heading">${comp.component_id}. ${comp.title}</h3>`
+        : "";
+      return `<div class="component-block" style="margin-bottom:40px;">
+      ${titleHTML}
+      ${_renderOneComponent(comp)}
+    </div>`;
+    })
+    .join("");
+
   initializeFormatInteractions();
 }
 
@@ -2710,6 +2721,7 @@ function _renderOneComponent(comp) {
 
   switch (comp.format_type) {
     case "flipcards":
+      console.log("flip card data",items);
       return renderFlipCards(
         items.map((it) => ({
           image: it.image ?? null,
@@ -2817,7 +2829,9 @@ async function _loadExerciseForSubtopic(subtopicName) {
 // Normalize a backend question to the shape renderExercise() expects
 function _normalizeExerciseQuestion(raw) {
   const keys = ["A", "B", "C", "D"];
+  const letterMap = { A: 0, B: 1, C: 2, D: 3 };
   const optionIds = [];
+
   const options = keys.map((k) => {
     const opt = raw.options?.[k];
     if (opt && typeof opt === "object") {
@@ -2829,17 +2843,35 @@ function _normalizeExerciseQuestion(raw) {
   });
 
   let correctAnswer = 0;
+
+  // 1. Backend sends correctAnswerId (numeric option id) — match against option ids
   if (raw.correctAnswerId != null && optionIds.some((id) => id != null)) {
     const i = optionIds.indexOf(raw.correctAnswerId);
     if (i !== -1) correctAnswer = i;
+
+    // 2. Backend sends correctAnswer as a letter string e.g. "D" → 3
+  } else if (
+    typeof raw.correctAnswer === "string" &&
+    raw.correctAnswer.length === 1
+  ) {
+    correctAnswer = letterMap[raw.correctAnswer.toUpperCase()] ?? 0;
+
+    // 3. Backend sends correctAnswer as a 0-based number
   } else if (typeof raw.correctAnswer === "number") {
     correctAnswer = raw.correctAnswer;
   }
+
+  // Build image data URI if backend returns base64 image + mimetype
+  const image =
+    raw.image && raw.mimetype
+      ? `data:${raw.mimetype};base64,${raw.image}`
+      : (raw.image ?? null);
 
   return {
     question: raw.statement ?? raw.question ?? "",
     options,
     correctAnswer,
+    image,
   };
 }
 
@@ -3092,6 +3124,14 @@ function renderExercise(exercise) {
       (q, index) => `
         <div class="exercise-question">
           <div class="exercise-question-text">${index + 1}. ${q.question}</div>
+          ${
+            q.image
+              ? `<div class="question-image-container" style="text-align:center;margin:10px 0;">
+            <img src="${q.image}" alt="Question image"
+              style="max-width:100%;max-height:260px;border-radius:var(--radius);box-shadow:var(--shadow);">
+          </div>`
+              : ""
+          }
           <div class="exercise-options">
             ${q.options
               .map(
@@ -3125,25 +3165,27 @@ function submitExercise() {
     const options = document.querySelectorAll(
       `input[name="exercise-${index}"]`,
     );
+    // correctAnswer is always a 0-based index after normalization
+    const correctIdx = q.correctAnswer;
 
     options.forEach((opt, optIndex) => {
       const parent = opt.parentElement;
       parent.classList.remove("correct", "incorrect");
 
-      if (optIndex === q.correctAnswer) {
+      if (optIndex === correctIdx) {
         parent.classList.add("correct");
       }
 
       if (
         selected &&
         parseInt(selected.value) === optIndex &&
-        optIndex !== q.correctAnswer
+        optIndex !== correctIdx
       ) {
         parent.classList.add("incorrect");
       }
     });
 
-    if (selected && parseInt(selected.value) === q.correctAnswer) {
+    if (selected && parseInt(selected.value) === correctIdx) {
       correctCount++;
     }
   });
@@ -3151,6 +3193,21 @@ function submitExercise() {
   const percentage = Math.round(
     (correctCount / exercise.questions.length) * 100,
   );
+
+  console.log(
+    `[Exercise] Score: ${correctCount}/${exercise.questions.length} (${percentage}%) — ` +
+      exercise.questions
+        .map((q, i) => {
+          const sel = document.querySelector(
+            `input[name="exercise-${i}"]:checked`,
+          );
+          const chosen = sel ? parseInt(sel.value) : null;
+          const isCorrect = chosen === q.correctAnswer;
+          return `Q${i + 1}: chose ${chosen !== null ? q.options[chosen] : "—"} | correct: ${q.options[q.correctAnswer]} | ${isCorrect ? "✓" : "✗"}`;
+        })
+        .join(" | "),
+  );
+
   const resultsDiv = document.getElementById("exerciseResults");
 
   resultsDiv.innerHTML = `

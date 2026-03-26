@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kigali Road Rules - Learning Analytics Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .glass { background: rgba(255, 255, 255, 1); }
+        .stat-card { border-left: 4px solid #3b82f6; }
+        .user-card { transition: all 0.2s ease; cursor: pointer; }
+        .user-card:hover { transform: translateY(-2px); }
+        .user-card.active { border-color: #3b82f6; background-color: #eff6ff; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <div id="app" class="w-full max-w-5xl">
+        <div class="mb-8 text-center">
+            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Enterprise Learning Analytics</h1>
+            <p class="text-slate-600 mt-2">Aggregated Multi-User Dataset & Deep Pedagogical Analysis</p>
+        </div>
+
+        <!-- User Selection Sidebar/Grid -->
+        <div class="mb-10">
+            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Select User Profile (Dataset: 20 Users | 240 Sessions)</h3>
+            <div id="user-selector" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                <!-- User pills injected here -->
+            </div>
+        </div>
+
+        <!-- Analysis View -->
+        <div id="results-screen" class="space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="glass p-6 rounded-2xl border border-slate-200 shadow-sm stat-card">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Aggregate Accuracy</p>
+                    <p id="stat-accuracy" class="text-3xl font-black text-slate-800">0%</p>
+                </div>
+                <div class="glass p-6 rounded-2xl border border-slate-200 shadow-sm stat-card" style="border-color: #10b981;">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Response Latency</p>
+                    <p id="stat-time" class="text-3xl font-black text-slate-800">0s</p>
+                </div>
+                <div class="glass p-6 rounded-2xl border border-slate-200 shadow-sm stat-card" style="border-color: #f59e0b;">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Independent Confidence</p>
+                    <p id="stat-confidence" class="text-3xl font-black text-slate-800">0%</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Topic Performance Analysis -->
+                <div class="glass rounded-3xl shadow-xl p-8 border border-slate-200">
+                    <h2 class="text-xl font-extrabold text-slate-800 mb-6 flex items-center">
+                        <span class="mr-2">📊</span> Domain Proficiency Map
+                    </h2>
+                    <div id="topic-analysis-grid" class="space-y-6"></div>
+                </div>
+
+                <!-- Advice Section -->
+                <div id="advice-section" class="glass rounded-3xl shadow-xl p-8 border border-slate-200 bg-white">
+                    <div class="flex items-start space-x-4">
+                        <div id="advice-icon" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 bg-slate-50">💡</div>
+                        <div>
+                            <h2 id="advice-title" class="text-2xl font-black text-slate-900 mb-2">Analyzing...</h2>
+                            <div id="advice-tags" class="flex flex-wrap gap-2 mb-4"></div>
+                            <p id="advice-body" class="text-slate-600 text-lg leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail Metrics Table -->
+            <div class="glass rounded-3xl shadow-lg p-6 border border-slate-200 overflow-hidden">
+                <h3 class="font-bold text-slate-800 mb-4 px-2">Longitudinal Session Data (Last 12 Quizzes)</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-bold">
+                                <th class="py-3 px-4 rounded-l-xl">Topic</th>
+                                <th class="py-3 px-4 text-center">Outcome</th>
+                                <th class="py-3 px-4 text-center">Reaction Time</th>
+                                <th class="py-3 px-4 text-center">Hint Dependency</th>
+                                <th class="py-3 px-4 rounded-r-xl text-center">Weighted Efficiency</th>
+                            </tr>
+                        </thead>
+                        <tbody id="metrics-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const topics = ["Priority Rules", "Speed Limits", "Road Markings", "Emergency"];
+        
+        const generateLargeDataset = () => {
+            const dataset = {};
+            const userProfiles = [
+                { name: "Jean Pierre", style: "Expert", speed: 5, accuracy: 0.95, hints: 0.05 },
+                { name: "Marie Louise", style: "Careful", speed: 12, accuracy: 0.88, hints: 0.1 },
+                { name: "Alphonse", style: "Struggler", speed: 18, accuracy: 0.4, hints: 0.6 },
+                { name: "Divine", style: "FastButWrong", speed: 4, accuracy: 0.5, hints: 0.1 },
+                { name: "Eric K.", style: "HintReliant", speed: 10, accuracy: 0.9, hints: 0.8 },
+                { name: "Sonia", style: "Expert", speed: 6, accuracy: 0.92, hints: 0.02 },
+                { name: "Gaspard", style: "Improving", speed: 14, accuracy: 0.75, hints: 0.3 },
+                { name: "Uwase", style: "Careful", speed: 13, accuracy: 0.85, hints: 0.15 },
+                { name: "Fabrice", style: "Struggler", speed: 20, accuracy: 0.35, hints: 0.7 },
+                { name: "Annette", style: "Average", speed: 11, accuracy: 0.7, hints: 0.2 },
+                { name: "Claude", style: "Average", speed: 10, accuracy: 0.65, hints: 0.25 },
+                { name: "Innocent", style: "FastButWrong", speed: 3, accuracy: 0.45, hints: 0.05 },
+                { name: "Beata", style: "Careful", speed: 15, accuracy: 0.9, hints: 0.1 },
+                { name: "Aimable", style: "Improving", speed: 9, accuracy: 0.8, hints: 0.2 },
+                { name: "Pacifique", style: "Expert", speed: 5, accuracy: 0.98, hints: 0.01 },
+                { name: "Vestine", style: "HintReliant", speed: 8, accuracy: 0.85, hints: 0.9 },
+                { name: "Theophile", style: "Average", speed: 12, accuracy: 0.6, hints: 0.3 },
+                { name: "Grace", style: "Expert", speed: 6, accuracy: 0.94, hints: 0.05 },
+                { name: "Olivier", style: "Struggler", speed: 22, accuracy: 0.3, hints: 0.8 },
+                { name: "Solange", style: "Average", speed: 11, accuracy: 0.72, hints: 0.18 }
+            ];
+
+            userProfiles.forEach((profile, index) => {
+                const userMetrics = [];
+                for (let i = 0; i < 12; i++) {
+                    const topic = topics[Math.floor(Math.random() * topics.length)];
+                    let accMod = profile.accuracy;
+                    if (topic === "Priority Rules" && profile.style !== "Expert") accMod *= 0.8; 
+                    
+                    userMetrics.push({
+                        id: i,
+                        topic: topic,
+                        time: profile.speed + (Math.random() * 4),
+                        correct: Math.random() < accMod,
+                        hint: Math.random() < profile.hints
+                    });
+                }
+                dataset[index] = { name: profile.name, metrics: userMetrics, style: profile.style };
+            });
+            return dataset;
+        };
+
+        const globalDataset = generateLargeDataset();
+        let currentUserId = 0;
+
+        const elements = {
+            userSelector: document.getElementById('user-selector'),
+            metricsTable: document.getElementById('metrics-table-body'),
+            topicAnalysis: document.getElementById('topic-analysis-grid'),
+            adviceTitle: document.getElementById('advice-title'),
+            adviceBody: document.getElementById('advice-body'),
+            adviceTags: document.getElementById('advice-tags'),
+            adviceIcon: document.getElementById('advice-icon'),
+            statAccuracy: document.getElementById('stat-accuracy'),
+            statTime: document.getElementById('stat-time'),
+            statConfidence: document.getElementById('stat-confidence')
+        };
+
+        function initUserSelector() {
+            Object.keys(globalDataset).forEach(id => {
+                const btn = document.createElement('div');
+                btn.className = `user-card p-3 rounded-xl border-2 border-slate-100 bg-white shadow-sm text-center ${id == currentUserId ? 'active' : ''}`;
+                btn.innerHTML = `
+                    <div class="text-[10px] font-black uppercase text-slate-400 mb-1">User ${parseInt(id)+1}</div>
+                    <div class="font-bold text-slate-800 text-sm truncate">${globalDataset[id].name}</div>
+                `;
+                btn.onclick = () => selectUser(id);
+                elements.userSelector.appendChild(btn);
+            });
+        }
+
+        function selectUser(id) {
+            currentUserId = id;
+            Array.from(elements.userSelector.children).forEach((card, idx) => {
+                card.classList.toggle('active', idx == id);
+            });
+            renderAnalysis(globalDataset[id].metrics);
+        }
+
+        function performDataAnalysis(metrics) {
+            const analysis = topics.map(topic => {
+                const items = metrics.filter(m => m.topic === topic);
+                if (items.length === 0) return { topic, accuracy: 0, efficiency: 0, confidence: 0, totalScore: 0, avgTime: 0, empty: true };
+                
+                const accuracy = items.filter(m => m.correct).length / items.length;
+                const avgTime = items.reduce((acc, m) => acc + m.time, 0) / items.length;
+                const efficiency = Math.max(0, 1 - (avgTime / 20)); 
+                const hints = items.filter(m => m.hint).length;
+                const confidence = 1 - (hints / items.length);
+                const totalScore = (accuracy * 0.5) + (efficiency * 0.3) + (confidence * 0.2);
+                
+                return { topic, accuracy, efficiency, confidence, totalScore, avgTime, count: items.length };
+            }).filter(a => !a.empty);
+
+            const overallScore = analysis.reduce((acc, a) => acc + a.totalScore, 0) / analysis.length;
+            const weakestTopic = [...analysis].sort((a, b) => a.totalScore - b.totalScore)[0];
+            const strongestTopic = [...analysis].sort((a, b) => b.totalScore - a.totalScore)[0];
+
+            return { analysis, overallScore, weakestTopic, strongestTopic };
+        }
+
+        function renderAnalysis(metrics) {
+            const report = performDataAnalysis(metrics);
+            const totalCorrect = metrics.filter(m => m.correct).length;
+            const totalAvgTime = metrics.reduce((acc, m) => acc + m.time, 0) / metrics.length;
+            const hintCount = metrics.filter(m => m.hint).length;
+            const accuracy = totalCorrect / metrics.length;
+            const hintRate = hintCount / metrics.length;
+
+            elements.statAccuracy.innerText = `${Math.round(accuracy * 100)}%`;
+            elements.statTime.innerText = `${totalAvgTime.toFixed(1)}s`;
+            elements.statConfidence.innerText = `${Math.round((1 - hintRate) * 100)}%`;
+
+            elements.topicAnalysis.innerHTML = '';
+            report.analysis.forEach(a => {
+                const color = a.totalScore > 0.8 ? 'bg-emerald-500' : (a.totalScore > 0.5 ? 'bg-amber-500' : 'bg-red-500');
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <div class="flex justify-between items-end mb-2">
+                        <div>
+                            <span class="text-slate-800 font-bold block">${a.topic}</span>
+                            <span class="text-[10px] text-slate-400 uppercase font-black tracking-widest">${a.avgTime.toFixed(1)}s AVG LATENCY</span>
+                        </div>
+                        <span class="text-sm font-black text-slate-700">${Math.round(a.totalScore * 100)}% Mastery</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                        <div class="${color} h-full transition-all duration-700" style="width: ${a.totalScore * 100}%"></div>
+                    </div>
+                `;
+                elements.topicAnalysis.appendChild(div);
+            });
+
+            // --- IMPROVED MULTI-DIMENSIONAL ADVICE ENGINE ---
+            const profiles = [];
+            
+            // 1. Accuracy Profile
+            if (accuracy > 0.9) profiles.push({ type: 'ACC', val: 2, label: 'High Precision' });
+            else if (accuracy < 0.5) profiles.push({ type: 'ACC', val: 0, label: 'Low Precision' });
+            else profiles.push({ type: 'ACC', val: 1, label: 'Moderate Precision' });
+
+            // 2. Latency Profile
+            if (totalAvgTime < 8) profiles.push({ type: 'SPD', val: 2, label: 'Fast Processing' });
+            else if (totalAvgTime > 15) profiles.push({ type: 'SPD', val: 0, label: 'High Latency' });
+            else profiles.push({ type: 'SPD', val: 1, label: 'Moderate Speed' });
+
+            // 3. Independence Profile
+            if (hintRate < 0.1) profiles.push({ type: 'IND', val: 2, label: 'Independent' });
+            else if (hintRate > 0.5) profiles.push({ type: 'IND', val: 0, label: 'Scaffold Dependent' });
+            else profiles.push({ type: 'IND', val: 1, label: 'Semi-Independent' });
+
+            // Combine into a Matrix Result
+            const acc = profiles.find(p => p.type === 'ACC').val;
+            const spd = profiles.find(p => p.type === 'SPD').val;
+            const ind = profiles.find(p => p.type === 'IND').val;
+
+            let title, icon, body, tags = profiles.map(p => p.label);
+
+            // Matrix Logic: (Accuracy, Speed, Independence)
+            if (acc === 2 && spd === 2 && ind === 2) {
+                title = "Total Road Competency";
+                icon = "🏆";
+                body = `${globalDataset[currentUserId].name} exhibits the 'Automaticity' phase of learning. Rules are internalized and applied instantly without external aid. Recommendation: Simulation of extreme weather or high-stress environments.`;
+            } else if (acc === 2 && spd === 0) {
+                title = "Reliable but Hesitant";
+                icon = "🐢";
+                body = `Knowledge is present, but processing is inefficient. While accurate on ${report.strongestTopic.topic}, the high response time (${totalAvgTime.toFixed(1)}s) suggests a lack of confidence that could cause traffic flow issues.`;
+            } else if (acc === 0 && spd === 2) {
+                title = "Impulsive Fault Pattern";
+                icon = "🛑";
+                body = `Classic Speed-Accuracy tradeoff. The user is prioritizing rapid response over correct identification. Significant intervention needed in **${report.weakestTopic.topic}** to force a 'Stop-Think' habit.`;
+            } else if (acc === 2 && ind === 0) {
+                title = "Illusory Mastery";
+                icon = "🧗";
+                body = `Accuracy is high, but the Independence metric is critical (Hint Rate: ${Math.round(hintRate*100)}%). The user cannot recall rules without prompts. We recommend a "Hard Mode" lock on hints for ${globalDataset[currentUserId].name}.`;
+            } else if (acc === 0 && spd === 0) {
+                title = "Fundamental Re-Learning Required";
+                icon = "⚠️";
+                body = `The learner is struggling across all vectors: accuracy, speed, and confidence. This indicates a failure in basic concept acquisition. Advise structured classroom theory before further testing.`;
+            } else {
+                title = "Iterative Growth Profile";
+                icon = "📈";
+                body = `The learner shows balanced but incomplete mastery. Strength in **${report.strongestTopic.topic}** is balanced by a need for faster processing in **${report.weakestTopic.topic}**. Steady progression is visible.`;
+            }
+
+            elements.adviceTitle.innerText = title;
+            elements.adviceIcon.innerText = icon;
+            elements.adviceBody.innerText = body;
+            elements.adviceTags.innerHTML = tags.map(t => `<span class="px-2 py-1 bg-blue-50 text-[10px] font-bold text-blue-600 rounded border border-blue-100 uppercase">${t}</span>`).join('');
+
+            elements.metricsTable.innerHTML = metrics.map(m => `
+                <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                    <td class="py-4 px-4 font-semibold text-slate-700">${m.topic}</td>
+                    <td class="py-4 px-4 text-center">
+                        <span class="px-2 py-1 rounded text-[10px] font-bold uppercase ${m.correct ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">
+                            ${m.correct ? 'Success' : 'Failure'}
+                        </span>
+                    </td>
+                    <td class="py-4 px-4 text-center text-slate-500">${m.time.toFixed(1)}s</td>
+                    <td class="py-4 px-4 text-center">${m.hint ? '🚨 Used' : '✅ None'}</td>
+                    <td class="py-4 px-4 text-center font-mono font-bold text-blue-600">${Math.round((m.correct ? 100 : 0) * (Math.max(0, 1 - (m.time/30))))}%</td>
+                </tr>
+            `).join('');
+        }
+
+        initUserSelector();
+        selectUser(0);
+    </script>
+</body>
+</html>

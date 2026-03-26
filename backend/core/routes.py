@@ -1213,6 +1213,7 @@ def get_components_by_section(section_id):
             comp_data = {
                 "component_id": comp.component_id,
                 "section_id": comp.section_id,
+                "title": comp.title,  # ✅ include title
                 "component_type": comp.component_type,   # "content", "quiz", "exercise"
                 "order_index": comp.order_index,
                 "created_at": comp.created_at.isoformat(),
@@ -1221,7 +1222,6 @@ def get_components_by_section(section_id):
 
             # Items hold format_type now
             for item in comp.items:
-                # Convert image_data to base64 if present
                 image_b64 = None
                 if item.image_data:
                     image_b64 = base64.b64encode(item.image_data).decode("utf-8")
@@ -1234,7 +1234,7 @@ def get_components_by_section(section_id):
                     "order_index": item.order_index,
                     "created_at": item.created_at.isoformat(),
                     "mimetype": item.mimetype,
-                    "image_data": image_b64  # base64 string or None
+                    "image_data": image_b64
                 })
 
             result.append(comp_data)
@@ -1256,24 +1256,30 @@ def get_components_by_section(section_id):
 def create_component():
     try:
         data = request.get_json()
+        logging.info(f"Received data for new component: {data}")
 
         # Create new component
         new_component = Component(
             section_id=data["section_id"],
-            component_type=data.get("type", "content"),   # "content", "quiz", "exercise"
-            order_index=data["order_index"]
+            title=data.get("title", "Untitled Component"),
+            component_type=data.get("format_type", "content"),   # "content", "quiz", "exercise"
+            order_index=data.get("order_index", 0)
         )
 
         db.session.add(new_component)
         db.session.flush()  # get component_id before commit
 
-        # Handle items if provided
+        # Handle items only if they are provided and not empty
         items_payload = data.get("items", [])
         for idx, item in enumerate(items_payload):
+            # Skip if item dict is empty or has no meaningful fields
+            if not item or (not item.get("title") and not item.get("content") and not item.get("format_type")):
+                continue
+
             new_item = ComponentItem(
                 component_id=new_component.component_id,
-                format_type=item.get("format_type", "content"),  # default "content"
-                title=item.get("title", data.get("title", f"Item {idx+1}")),
+                format_type=item.get("format_type", "content"),
+                title=item.get("title", f"Item {idx+1}"),
                 content=item.get("content", None),
                 order_index=item.get("order_index", idx),
                 mimetype=item.get("mimetype", None),
@@ -1344,6 +1350,7 @@ def update_component(component_id):
             return jsonify({"status": False, "message": f"Component {component_id} not found"}), 404
 
         # Step 1 — Update component row
+        comp.title = data.get("title", comp.title)  # ✅ update title
         comp.order_index = int(data.get("order_index", comp.order_index))
         comp.component_type = data.get("format_type", comp.component_type)
 
@@ -1374,7 +1381,7 @@ def update_component(component_id):
                     # Image handling
                     image_val = item_data.get("image")
                     if image_val == "__keep__":
-                        pass  # do nothing
+                        pass
                     elif image_val is None:
                         item.image_data = None
                         item.mimetype = None
@@ -1405,7 +1412,8 @@ def update_component(component_id):
         return jsonify({
             "status": True,
             "message": "Component updated successfully",
-            "component_id": comp.component_id
+            "component_id": comp.component_id,
+            "title": comp.title  # ✅ return updated title
         }), 200
 
     except Exception as e:

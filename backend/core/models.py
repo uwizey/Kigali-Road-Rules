@@ -149,8 +149,9 @@ class Component(db.Model):
     component_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     section_id = db.Column(db.Integer, db.ForeignKey("sections.section_id"), nullable=False)
     # Explicit type: "content", "quiz", "exercise"
+    title = db.Column(db.String(255), nullable=False)
     component_type = db.Column(db.String(50), default="content")
-
+    
     order_index = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=db.func.now())
 

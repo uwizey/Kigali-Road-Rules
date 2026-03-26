@@ -295,6 +295,7 @@ async function fetchSections(subtopicId) {
   if (DB.sections[subtopicId] !== undefined) return;
   try {
     const res = await FetchData(`/sections/${subtopicId}`, true);
+    
     DB.sections[subtopicId] = res.success ? res.data.sections || [] : [];
   } catch (err) {
     console.error("[fetchSections]", err);
@@ -479,7 +480,7 @@ async function createComponent() {
       {
         section_id: sid,
         format_type: "",
-        title: "New Component",
+        title: "New Component ",
         order_index: order,
         items: [{}],
       },
@@ -644,7 +645,7 @@ async function saveOneComponent(comp) {
 
     return jsonItem;
   });
-
+ console.log("items ", itemsForJson);
   form.append("items", JSON.stringify(itemsForJson));
 
   // UpdateData: detects FormData → does NOT JSON.stringify, does NOT set Content-Type
