@@ -37,9 +37,7 @@ def role_required(required_roles):
     return wrapper
 
 
-@app.route("/")
-def home():
-    return "Hello from the home route!"
+
 
 @jwt.unauthorized_loader
 def handle_missing_token(reason):
