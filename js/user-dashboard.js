@@ -2801,7 +2801,7 @@ function _renderOneComponent(comp) {
 async function _loadExerciseForSubtopic(subtopicName) {
   try {
     const res = await FetchData(
-      `/quiz/random?topic=${encodeURIComponent(subtopicName)}`,
+      `/exercise?topic=${encodeURIComponent(subtopicName)}`,
       true,
     );
 
@@ -3681,6 +3681,7 @@ async function showExamSelectionScreen(quiz) {
 
   try {
     const response = await FetchData("/quizzes", true);
+    alert("FETCHED /quizzes: ");
     const sessions = response.data.quizzes;
 
     if (!sessions || sessions.length === 0) {
@@ -3702,7 +3703,7 @@ async function showExamSelectionScreen(quiz) {
         <p class="exam-card-date"><i class="fas fa-calendar-alt"></i> ${formatUserDate(session.publish_date)}</p>
         <div class="exam-card-meta">
           <span class="exam-card-questions">
-            <i class="fas fa-list-ol"></i> ${session.questions.length} Questions
+            <i class="fas fa-list-ol"></i> ${session.question_count} Questions
           </span>
         </div>
         <button class="exam-start-btn">Start Exam <i class="fas fa-arrow-right"></i></button>
@@ -3715,13 +3716,19 @@ async function showExamSelectionScreen(quiz) {
         const btn = card.querySelector(".exam-start-btn");
         btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Loading...`;
         btn.disabled = true;
-
+        console.log(`Selected exam session ${session.quiz_id}:`, session.questions);
+        const fetchData = await FetchData(`/quiz/${session.quiz_id}`, true);
+        console.log(
+          `Fetched quiz details for session ${session.quiz_id}:`,
+          fetchData.data?.questions
+        );
+        const questions = fetchData.data?.questions ?? [];
         confirmQuizNavigation(async () => {
           try {
             await loadAndStartQuiz(
               session.quiz_id,
               session.title,
-              session.questions,
+              questions,
             );
           } catch (err) {
             console.error("Failed to start exam:", err);
@@ -3810,12 +3817,12 @@ function normalizeQuestion(raw) {
 // The questionIds array from the backend is actually an array of question
 // objects: [{question_id, correctAnswerId, statement, topicId}, ...].
 // We must extract .question_id from each object, not stringify the object itself.
-async function loadAndStartQuiz(quizId, quizTitle, questionObjects) {
-  console.log(`Loading questions for quiz ${quizId}:`, questionObjects);
+async function loadAndStartQuiz(quizId, quizTitle, questionlists) {
+  console.log(`Loading questions for quiz ${quizId}:`, questionlists);
 
   const results = await Promise.allSettled(
     // FIX: use q.question_id instead of passing the whole object as the URL param
-    questionObjects.map((q) => FetchData(`/question/${q.question_id}`, true)),
+    questionlists.map((q) => FetchData(`/question/${q}`, true)),
   );
 
   console.log("Question fetch results:", results);

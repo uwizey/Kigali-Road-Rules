@@ -3,13 +3,14 @@ import random
 import heapq
 from collections import defaultdict, deque
 from datetime import datetime
-from flask import Blueprint, request, jsonify
-from core.models import db, Quiz, QuizQuestion, Question, Topic
-from core.utils.decorators import role_required
+from flask import Blueprint, request, jsonify,g
+from core.models import db, Quiz, QuizQuestion, Question, Topic, Subscription
+from core.utils.decorators import role_required,subscription_required
+from flask_jwt_extended import get_jwt_identity
 
 quizzes_bp = Blueprint("quizzes", __name__)
 
-
+@subscription_required("quizzes")
 def _generate_random_quiz(quiz_size):
     TARGET_SIZE = quiz_size
     top_topics = Topic.query.filter_by(parent_topic=None).all()
@@ -116,9 +117,10 @@ def _generate_random_quiz(quiz_size):
             prev_topic = tid1
             if grouped[tid1]:
                 heapq.heappush(heap, (-len(grouped[tid1]), tid1))
-
+    
+    
+    
     return jsonify({"status": True, "questions": ordered}), 200
-
 
 @quizzes_bp.route("/quiz", methods=["POST"])
 @role_required("admin")
@@ -146,7 +148,6 @@ def create_quiz():
         logging.error(f"Error creating quiz: {str(e)}")
         return jsonify({"status": False, "message": "Error creating quiz"}), 500
 
-
 @quizzes_bp.route("/quizzes", methods=["GET"])
 @role_required(["admin", "client"])
 def get_all_quizzes():
@@ -156,12 +157,8 @@ def get_all_quizzes():
             {
                 "quiz_id": quiz.quiz_id, "title": quiz.title,
                 "description": quiz.description,
+                "question_count": len(quiz.questions),
                 "publish_date": quiz.publish_date.isoformat() if quiz.publish_date else None,
-                "questions": [
-                    {"question_id": qq.question.question_id, "statement": qq.question.content,
-                     "topicId": qq.question.topic_id, "correctAnswerId": qq.question.correct_answer_id}
-                    for qq in quiz.questions
-                ]
             }
             for quiz in quizzes
         ]
@@ -170,12 +167,20 @@ def get_all_quizzes():
         logging.error(f"Error retrieving quizzes: {str(e)}")
         return jsonify({"status": False, "message": "Error retrieving quizzes"}), 500
 
-
 @quizzes_bp.route("/quiz/<int:quiz_id>", methods=["GET"])
 @role_required(["admin", "client"])
+@subscription_required("template_exams")
 def get_quiz(quiz_id):
     try:
         quiz = Quiz.query.get(quiz_id)
+        sub = g.subscription
+        print(f"Before decrement: {sub.remaining_template_exams}")
+
+        sub.remaining_template_exams -= 1
+        db.session.commit()
+
+        print(f"After decrement: {sub.remaining_template_exams}")
+        
         if not quiz:
             return jsonify({"status": False, "message": "Quiz not found"}), 404
         return jsonify({
@@ -186,7 +191,6 @@ def get_quiz(quiz_id):
     except Exception as e:
         logging.error(f"Error retrieving quiz: {str(e)}")
         return jsonify({"status": False, "message": "Error retrieving quiz"}), 500
-
 
 @quizzes_bp.route("/quiz", methods=["PUT"])
 @role_required("admin")
@@ -218,7 +222,6 @@ def update_quiz():
         logging.error(f"Error updating quiz: {str(e)}")
         return jsonify({"status": False, "message": "Error updating quiz"}), 500
 
-
 @quizzes_bp.route("/quiz", methods=["DELETE"])
 @role_required("admin")
 def delete_quiz():
@@ -241,6 +244,64 @@ def delete_quiz():
         logging.error(f"Error deleting quiz: {str(e)}")
         return jsonify({"status": False, "message": "Error deleting quiz"}), 500
 
+def _handle_exercise_quiz(topic_name, target_size):
+    if not topic_name:
+        return jsonify({"status": False, "message": "Topic name required for exercises"}), 400
+
+    topic = Topic.query.filter_by(name=topic_name).first()
+    if not topic:
+        return jsonify({"status": False, "message": "Topic not found"}), 404
+
+    def collect_recursive(t):
+        qs = [q.question_id for q in t.questions]
+        for sub in t.subtopics:
+            qs.extend(collect_recursive(sub))
+        return qs
+
+    all_qs = collect_recursive(topic)
+    if not all_qs:
+        return jsonify({"status": False, "message": "No questions found"}), 404
+
+    questions = random.sample(all_qs, min(len(all_qs), target_size))
+    return jsonify({
+        "status": True,
+        "questions": questions,
+        "count": len(questions),
+        "topic": topic_name,
+        "exercise": True
+    }), 200
+
+@quizzes_bp.route("/exercise", methods=["GET"])
+@role_required("client")
+@subscription_required("topic_quizzes")
+def _handle_topic_quiz():
+    target_size = 5
+    topic_name = request.args.get("topic")
+    is_exercise = request.args.get("exercise", "false").lower() == "true"
+    topic = Topic.query.filter_by(name=topic_name).first()
+    if not topic:
+        return jsonify({"status": False, "message": "Topic not found"}), 404
+
+    def collect_recursive(t):
+        qs = [q.question_id for q in t.questions]
+        for sub in t.subtopics:
+            qs.extend(collect_recursive(sub))
+        return qs
+
+    all_qs = collect_recursive(topic)
+    if not all_qs:
+        return jsonify({"status": False, "message": "No questions found"}), 404
+
+    questions = random.sample(all_qs, min(len(all_qs), target_size))
+    sub = g.subscription
+    sub.remaining_topic_quizzes -= 1
+    db.session.commit()
+    return jsonify({
+        "status": True,
+        "questions": questions,
+        "count": len(questions),
+        "topic": topic_name
+    }), 200
 
 @quizzes_bp.route("/quiz/random", methods=["GET"])
 @role_required("client")
@@ -248,33 +309,19 @@ def random_quiz():
     try:
         topic_name = request.args.get("topic")
         is_exercise = request.args.get("exercise", "false").lower() == "true"
+        user_id = int(get_jwt_identity())
 
-        if is_exercise:
-            TARGET_SIZE = 5
-        elif topic_name:
-            TARGET_SIZE = 10
+        if topic_name:
+            return _handle_topic_quiz(topic_name, target_size=10)
         else:
+            sub = g.subscription
+            sub.remaining_quizzes -= 1
+            db.session.commit()
             return _generate_random_quiz(20)
 
-        topic = Topic.query.filter_by(name=topic_name).first()
-        if not topic:
-            return jsonify({"status": False, "message": "Topic not found"}), 404
-
-        def collect_questions_recursive(t):
-            qs = [q.question_id for q in t.questions]
-            for sub in t.subtopics:
-                qs.extend(collect_questions_recursive(sub))
-            return qs
-
-        all_qs = collect_questions_recursive(topic)
-        if not all_qs:
-            return jsonify({"status": False, "message": "No questions found"}), 404
-
-        questions = random.sample(all_qs, min(len(all_qs), TARGET_SIZE))
-        return jsonify({
-            "status": True, "questions": questions,
-            "count": len(questions), "topic": topic_name
-        }), 200
     except Exception as e:
+        db.session.rollback()
         logging.error(f"Error generating quiz: {e}")
         return jsonify({"status": False, "message": "Server error"}), 500
+
+

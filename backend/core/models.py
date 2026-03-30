@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from core import db
 import random 
 from collections import defaultdict, deque
+from datetime import datetime
 
 
 
@@ -21,6 +22,9 @@ class User(db.Model):
     created_at=db.Column(db.DateTime,default=datetime.utcnow)
     last_login=db.Column(db.DateTime,default=datetime.utcnow,onupdate=datetime.utcnow)
     
+    requests = db.relationship("Request", back_populates="user", cascade="all, delete-orphan")
+    subscriptions = db.relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f'<User {self.email}>'
 
@@ -185,3 +189,70 @@ class ComponentItem(db.Model):
 
     def __repr__(self):
         return f"<ComponentItem {self.title}>"
+
+
+
+class SubscriptionPlan(db.Model):
+    __tablename__ = "subscription_plans"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    plan_name = db.Column(db.String(255), nullable=False)
+    no_quizzes = db.Column(db.Integer, default=0)
+    no_template_exams = db.Column(db.Integer, default=0)
+    no_topic_quizzes = db.Column(db.Integer, default=0)
+    duration_days = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    requests = db.relationship("Request", back_populates="plan", cascade="all, delete-orphan")
+    subscriptions = db.relationship("Subscription", back_populates="plan", cascade="all, delete-orphan")
+
+
+class Request(db.Model):
+    __tablename__ = "requests"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    plan_id = db.Column(db.Integer, db.ForeignKey("subscription_plans.id"), nullable=False)
+    subscription_requested = db.Column(db.Boolean, default=False)
+    request_date = db.Column(db.DateTime, default=db.func.now())
+
+    # Four possible statuses: pending, approved, canceled, rejected
+    status = db.Column(db.String(50), default="pending", nullable=False)
+
+    # Relationships
+    user = db.relationship("User", back_populates="requests")
+    plan = db.relationship("SubscriptionPlan", back_populates="requests")
+    subscription = db.relationship("Subscription", back_populates="request", uselist=False)
+
+
+class Subscription(db.Model):
+    __tablename__ = "subscriptions"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    plan_id = db.Column(db.Integer, db.ForeignKey("subscription_plans.id"), nullable=False)
+    req_id = db.Column(db.Integer, db.ForeignKey("requests.id"), nullable=False)
+
+    start_date = db.Column(db.DateTime, default=db.func.now())
+    expiry_date = db.Column(db.DateTime, nullable=False)
+    active = db.Column(db.Boolean, default=True)
+
+    remaining_quizzes = db.Column(db.Integer, default=0)
+    remaining_template_exams = db.Column(db.Integer, default=0)
+    remaining_topic_quizzes = db.Column(db.Integer, default=0)
+
+    # Relationships
+    user = db.relationship("User", back_populates="subscriptions")
+    plan = db.relationship("SubscriptionPlan", back_populates="subscriptions")
+    request = db.relationship("Request", back_populates="subscription")
+
+    @property
+    def is_expired(self):
+        """Check if subscription is expired and auto-deactivate if needed."""
+        now = datetime.utcnow()
+        if self.expiry_date < now and self.active:
+            self.active = False
+            db.session.commit()
+        return self.expiry_date < now
+

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>My Subscription Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --cyan: #00c8d4;
+    --cyan-dark: #008a91;
+    --bg: #f8feff;
+    --card: #ffffff;
+    --text: #0d2e30;
+    --text-muted: #5a8a8e;
+    --border: #e0f7f8;
+    --shadow: 0 4px 20px rgba(0,200,212,0.08);
+    --danger: #ff4d4d;
+  }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 40px 20px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .layout { display: grid; grid-template-columns: 1fr 320px; gap: 30px; }
+  h1 { font-weight: 800; font-size: 1.8rem; margin-bottom: 25px; }
+  h1 span { color: var(--cyan); }
+
+  .section-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 15px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .status-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    margin-bottom: 25px;
+  }
+  .status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+  
+  .badge {
+    padding: 4px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+  }
+  .badge-active { background: #e6fcf5; color: #0ca678; }
+  .badge-expired { background: #fff5f5; color: #fa5252; }
+  .badge-pending { background: #fff9db; color: #f08c00; }
+  .badge-rejected { background: #f1f3f5; color: #868e96; }
+
+  .quota-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .quota-item { background: #f1fbfc; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid var(--border); }
+  .quota-val { font-family: 'DM Mono', monospace; font-size: 1.1rem; font-weight: 600; color: var(--cyan-dark); }
+  .quota-lab { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
+
+  .plans-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+  .plan-card {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 14px;
+    padding: 20px; transition: 0.2s; display: flex; flex-direction: column;
+  }
+  .plan-card:hover { border-color: var(--cyan); transform: translateY(-3px); }
+  .plan-name { font-size: 1.1rem; font-weight: 700; }
+  .plan-price { font-size: 1.4rem; font-weight: 800; margin: 10px 0; }
+  .plan-price span { font-size: 0.8rem; color: var(--text-muted); font-weight: 400; }
+  
+  .plan-features { list-style: none; margin-bottom: 20px; flex-grow: 1; font-size: 0.8rem; color: var(--text-muted); }
+  .plan-features li { margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .plan-features li::before { content: '•'; color: var(--cyan); font-weight: 900; }
+
+  .btn {
+    width: 100%; padding: 10px; border-radius: 8px; border: none;
+    font-family: 'Syne', sans-serif; font-weight: 700; cursor: pointer;
+    font-size: 0.75rem; text-transform: uppercase; transition: 0.2s;
+  }
+  .btn-primary { background: var(--cyan); color: white; }
+  .btn-primary:hover { background: var(--cyan-dark); }
+  .btn-disabled { background: #f1f3f5; color: #adb5bd; cursor: not-allowed; }
+
+  .history-panel { background: #fff; border-radius: 16px; border: 1px solid var(--border); padding: 20px; height: fit-content; }
+  .history-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .history-item:last-child { border-bottom: none; }
+  .history-date { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text-muted); }
+  .history-info { font-size: 0.8rem; font-weight: 600; margin-top: 4px; display: flex; justify-content: space-between; align-items: center; }
+
+  .btn-cancel {
+    background: none; border: 1px solid var(--danger); color: var(--danger);
+    font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; cursor: pointer; margin-top: 5px;
+    font-weight: 700; transition: 0.2s;
+  }
+  .btn-cancel:hover { background: var(--danger); color: white; }
+
+  .alert-pending {
+    background: #fff9db; color: #856404; padding: 12px; border-radius: 10px;
+    font-size: 0.8rem; margin-bottom: 20px; border: 1px solid #ffeeba;
+    display: flex; align-items: center; gap: 10px;
+  }
+</style>
+</head>
+<body>
+
+  <h1>My <span>Subscriptions</span></h1>
+
+  <div class="layout">
+    <div class="main-content">
+      <div id="pending-alert-box"></div>
+      <div class="section-title">Current Subscription</div>
+      <div id="active-sub-container"></div>
+      <div class="section-title">Upgrade or Renew</div>
+      <div id="plans-container" class="plans-container"></div>
+    </div>
+
+    <div class="side-panel">
+      <div class="section-title">Request History</div>
+      <div class="history-panel" id="history-list"></div>
+    </div>
+  </div>
+ <script type="module" src="../js/market.js"></script>
+</body>
+</html>

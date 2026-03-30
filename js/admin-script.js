@@ -1249,7 +1249,7 @@ async function loadExams() {
             <div class="exam-meta">
                 <div class="exam-meta-item">
                     <i class="fas fa-question-circle"></i>
-                    <span><strong>${exam.questions.length}</strong> Questions</span>
+                    <span><strong>${exam.question_count}</strong> Questions</span>
                 </div>
                 <div class="exam-meta-item">
                     <i class="fas fa-calendar"></i>

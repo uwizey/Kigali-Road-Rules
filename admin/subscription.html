@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Subscription Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --cyan: #00c8d4;
+    --cyan-light: #e0fafb;
+    --cyan-mid: #00a8b2;
+    --cyan-dark: #007a82;
+    --white: #ffffff;
+    --off-white: #f5feff;
+    --border: #cdf0f2;
+    --text: #0d2e30;
+    --text-muted: #5a8a8e;
+    --danger: #e05555;
+    --success: #2db87a;
+    --warn: #e0952a;
+    --shadow: 0 2px 16px rgba(0,200,212,0.10);
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--off-white);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  .layout { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 220px;
+    background: var(--text);
+    display: flex;
+    flex-direction: column;
+    padding: 28px 0;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--cyan);
+    padding: 0 24px 28px;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo span { color: var(--white); }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 24px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.18s;
+    text-transform: uppercase;
+  }
+  .nav-item:hover { color: var(--cyan); background: rgba(0,200,212,0.06); }
+  .nav-item.active { color: var(--cyan); border-left-color: var(--cyan); background: rgba(0,200,212,0.09); }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .main { margin-left: 220px; flex: 1; padding: 36px 40px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  .topbar h1 { font-size: 1.6rem; font-weight: 800; color: var(--text); }
+  .topbar h1 span { color: var(--cyan); }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px; height: 14px;
+    background: var(--cyan);
+    border-radius: 2px;
+  }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+
+  input, select, textarea {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.88rem;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--off-white);
+    color: var(--text);
+    outline: none;
+    transition: border 0.18s, box-shadow 0.18s;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(0,200,212,0.12);
+    background: var(--white);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+
+  .btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--cyan); color: var(--white); }
+  .btn-primary:hover { background: var(--cyan-mid); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,200,212,0.3); }
+  .btn-secondary { background: var(--cyan-light); color: var(--cyan-dark); border: 1.5px solid var(--cyan); }
+  .btn-secondary:hover { background: var(--cyan); color: var(--white); }
+  .btn-danger { background: #fde8e8; color: var(--danger); border: 1.5px solid #f5b8b8; }
+  .btn-danger:hover { background: var(--danger); color: var(--white); }
+  .btn-success { background: #d9f5eb; color: #1a8a55; border: 1.5px solid #9de5c6; }
+  .btn-success:hover { background: var(--success); color: var(--white); }
+  .btn-sm { padding: 6px 14px; font-size: 0.72rem; }
+  .btn-icon { padding: 7px 10px; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  thead tr { border-bottom: 2px solid var(--cyan-light); }
+  th {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--text-muted);
+    padding: 10px 14px; text-align: left; white-space: nowrap;
+  }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--cyan-light); }
+
+  .mono { font-family: 'DM Mono', monospace; font-size: 0.82rem; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.7; }
+  .badge-active { background: #d9f5eb; color: #1a7a4a; }
+  .badge-inactive { background: #f0f0f0; color: #888; }
+  .badge-pending { background: #fef3e2; color: #9a5e00; }
+  .badge-approved { background: #d9f5eb; color: #1a7a4a; }
+  .badge-rejected { background: #fde8e8; color: var(--danger); }
+
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+  }
+  .stat-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
+  .stat-value { font-size: 2rem; font-weight: 800; color: var(--text); line-height: 1; }
+  .stat-value.cyan { color: var(--cyan-dark); }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(13,46,48,0.45); z-index: 999;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--white); border-radius: 16px;
+    padding: 32px; width: 600px; max-width: 95vw;
+    box-shadow: 0 12px 48px rgba(0,200,212,0.18);
+    border: 1px solid var(--border);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .modal-title { font-size: 1.1rem; font-weight: 800; color: var(--text); }
+  .modal-close {
+    background: var(--cyan-light); border: none; border-radius: 6px;
+    width: 30px; height: 30px; cursor: pointer; font-size: 1.1rem;
+    color: var(--cyan-dark); display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: var(--cyan); color: white; }
+
+  .history-item {
+    display: flex; gap: 14px; padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--cyan); flex-shrink: 0; margin-top: 5px;
+  }
+  .history-label { font-size: 0.78rem; font-weight: 700; color: var(--text); }
+  .history-meta { font-size: 0.73rem; color: var(--text-muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .detail-item { background: var(--off-white); border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); }
+  .detail-item-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 4px; }
+  .detail-item-val { font-size: 0.9rem; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--text); }
+
+  .section-divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  .notif {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--text); color: var(--cyan);
+    padding: 12px 22px; border-radius: 10px;
+    font-size: 0.83rem; font-weight: 700; letter-spacing: 0.04em;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
+    z-index: 9999;
+  }
+  .notif.show { transform: translateY(0); opacity: 1; }
+
+  .search-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .search-bar input { max-width: 280px; margin: 0; }
+
+  .empty { text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.88rem; }
+
+  @media (max-width: 900px) {
+    .sidebar { width: 60px; }
+    .sidebar-logo, .nav-item span { display: none; }
+    .main { margin-left: 60px; padding: 20px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">Sub<span>Mgr</span></div>
+    <div class="nav-item active" data-view="plans">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span>Plans</span>
+    </div>
+    <div class="nav-item" data-view="requests">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span>Requests</span>
+    </div>
+    <div class="nav-item" data-view="subscriptions">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      <span>Subscriptions</span>
+    </div>
+    <div class="nav-item" data-view="users">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      <span>Users</span>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- PLANS VIEW -->
+    <div class="view active" id="view-plans">
+      <div class="topbar">
+        <h1>Subscription <span>Plans</span></h1>
+        <button class="btn btn-primary" id="btn-new-plan">+ New Plan</button>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Total Plans</div><div class="stat-value cyan" id="stat-plans">0</div></div>
+        <div class="stat-card"><div class="stat-label">Pending Requests</div><div class="stat-value" id="stat-requests">0</div></div>
+        <div class="stat-card"><div class="stat-label">Active Subs</div><div class="stat-value cyan" id="stat-active">0</div></div>
+        <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value" id="stat-users">0</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">All Plans</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>ID</th><th>Name</th><th>Price</th><th>Duration</th>
+              <th>Quizzes</th><th>Templates</th><th>Topic Quizzes</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="plans-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- REQUESTS VIEW -->
+    <div class="view" id="view-requests">
+      <div class="topbar"><h1>Subscription <span>Requests</span></h1></div>
+      <div class="card">
+        <div class="card-title">Pending Approval</div>
+        <div class="search-bar">
+          <input type="text" id="search-requests" placeholder="Search by user or plan…"/>
+          <select id="filter-status">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="rejected">Canceled</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Req ID</th><th>User</th><th>Plan</th><th>Date</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="requests-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBSCRIPTIONS VIEW -->
+    <div class="view" id="view-subscriptions">
+      <div class="topbar"><h1>Active <span>Subscriptions</span></h1></div>
+      <div class="card">
+        <div class="card-title">All Subscriptions</div>
+        <div class="search-bar">
+          <input type="text" id="search-subs" placeholder="Search by user or plan…"/>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Sub ID</th><th>User</th><th>Plan</th><th>Start</th><th>Expiry</th>
+              <th>Status</th><th>Quizzes Left</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="subs-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS VIEW -->
+    <div class="view" id="view-users">
+      <div class="topbar"><h1>User <span>Subscriptions</span></h1></div>
+      <div class="card">
+        <div class="card-title">All Users</div>
+        <div class="search-bar">
+          <input type="text" id="search-users" placeholder="Search user…"/>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>User ID</th><th>Email</th><th>Active Plan</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Plan Modal -->
+<div class="modal-overlay" id="modal-plan">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="plan-modal-title">New Subscription Plan</div>
+      <button class="modal-close" data-close="modal-plan">✕</button>
+    </div>
+    <div class="form-grid">
+      <input type="hidden" id="plan-id"/>
+      <div class="form-group"><label>Plan Name</label><input type="text" id="plan-name" placeholder="e.g. Basic, Pro, Enterprise"/></div>
+      <div class="form-group"><label>Price (RWF)</label><input type="number" id="plan-price" placeholder="e.g. 5000" min="0"/></div>
+      <div class="form-group"><label>Duration (Days)</label><input type="number" id="plan-duration" placeholder="e.g. 30" min="1"/></div>
+      <div class="form-group"><label>Max Quizzes</label><input type="number" id="plan-quizzes" placeholder="e.g. 50" min="0"/></div>
+      <div class="form-group"><label>Template Exams</label><input type="number" id="plan-templates" placeholder="e.g. 10" min="0"/></div>
+      <div class="form-group"><label>Topic Quizzes</label><input type="number" id="plan-topic-quizzes" placeholder="e.g. 20" min="0"/></div>
+      <div class="form-group full"><label>Description</label><textarea id="plan-desc" placeholder="Plan description…"></textarea></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-save-plan">Save Plan</button>
+      <button class="btn btn-secondary" data-close="modal-plan">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Subscription Detail Modal -->
+<div class="modal-overlay" id="modal-sub-detail">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Subscription Detail</div>
+      <button class="modal-close" data-close="modal-sub-detail">✕</button>
+    </div>
+    <div id="sub-detail-content"></div>
+  </div>
+</div>
+
+<!-- User History Modal -->
+<div class="modal-overlay" id="modal-user-history">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="history-modal-title">User Subscription History</div>
+      <button class="modal-close" data-close="modal-user-history">✕</button>
+    </div>
+    <div id="user-history-content"></div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script type="module" src="../js/subscription-mgt.js"></script>
+</body>
+</html>
