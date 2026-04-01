@@ -1,8 +1,8 @@
 import logging
 from flask import Blueprint, request, jsonify
 from sqlalchemy.exc import SQLAlchemyError
-from core.models import db, Topic
-from core.utils.decorators import role_required
+from core.models import db, Topic,User
+from core.utils.decorators import role_required,rate_limit
 
 topics_bp = Blueprint("topics", __name__)
 
@@ -33,10 +33,21 @@ def create_topic():
         db.session.add(Topic(name=name, parent_topic=None))
         db.session.commit()
         return jsonify({"status": True, "message": "New topic added successfully"}), 201
+    
+    except TypeError as e:
+        db.session.rollback()
+        logging.error(f"Invalid field in Topic: {e}")
+        return jsonify({"status": False, "message": "Invalid field provided"}), 400
+    
     except SQLAlchemyError as e:
         db.session.rollback()
         logging.error(f"Database error: {str(e)}")
         return jsonify({"status": False, "message": "Database error occurred"}), 500
+    
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Unexpected error: {str(e)}")
+        return jsonify({"status": False, "message": "Server error"}), 500
 
 
 @topics_bp.route("/topic", methods=["GET"])
@@ -77,13 +88,25 @@ def update_topic():
         topic = Topic.query.get(topic_id)
         if not topic:
             return jsonify({"status": False, "message": "Topic not found"}), 404
+        
         topic.name = new_name
         db.session.commit()
         return jsonify({"status": True, "message": "Topic updated successfully"}), 200
+    
+    except TypeError as e:
+        db.session.rollback()
+        logging.error(f"Invalid field in Topic: {e}")
+        return jsonify({"status": False, "message": "Invalid field provided"}), 400
+    
     except SQLAlchemyError as e:
         db.session.rollback()
         logging.error(f"Database error: {str(e)}")
         return jsonify({"status": False, "message": "Database error occurred"}), 500
+    
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Unexpected error: {str(e)}")
+        return jsonify({"status": False, "message": "Server error"}), 500
 
 
 @topics_bp.route("/topic", methods=["DELETE"])
@@ -102,6 +125,7 @@ def delete_topic():
         db.session.delete(topic)
         db.session.commit()
         return jsonify({"status": True, "message": "Topic deleted successfully"}), 200
+    
     except SQLAlchemyError as e:
         db.session.rollback()
         logging.error(f"Database error: {str(e)}")

@@ -1,121 +1,179 @@
 // ===== IMPORTS =====
 import { FetchData, PostData, DeleteData, UpdateData } from "../js/api/crud.js";
 
-// ===== SAMPLE DATA =====
-let topics = [
-  {
-    id: 1,
-    name: "Mathematics",
-    description: "Advanced mathematical concepts and problem solving",
-    subtopics: [
-      { id: 1, name: "Algebra", topicId: 1 },
-      { id: 2, name: "Geometry", topicId: 1 },
-      { id: 3, name: "Calculus", topicId: 1 },
-    ],
-  },
-  {
-    id: 2,
-    name: "Physics",
-    description: "Fundamental physics principles and applications",
-    subtopics: [
-      { id: 4, name: "Mechanics", topicId: 2 },
-      { id: 5, name: "Thermodynamics", topicId: 2 },
-    ],
-  },
-  {
-    id: 3,
-    name: "Chemistry",
-    description: "Chemical reactions and molecular structures",
-    subtopics: [
-      { id: 6, name: "Organic Chemistry", topicId: 3 },
-      { id: 7, name: "Inorganic Chemistry", topicId: 3 },
-    ],
-  },
-];
+/**
+ * The core engine for all modals and popups.
+ * Handles DOM creation, styling, and event cleanup.
+ */
+function createBasePopup({
+  title = "",
+  message = "",
+  icon = "fas fa-info-circle",
+  iconColor = "#0097b2",
+  confirmText = "Confirm",
+  cancelText = "Close",
+  showCancel = true,
+  showConfirm = true,
+  onConfirm = () => {},
+  onCancel = () => {},
+  confirmBtnStyle = "",
+  cancelBtnStyle = ""
+}) {
+  // 1. Prevent duplicate popups by removing any existing ones
+  const existingOverlay = document.getElementById("progressWarningOverlay");
+  if (existingOverlay) existingOverlay.remove();
 
-let questions = [
-  {
-    id: 1,
-    statement: "What is the derivative of x²?",
-    topic: "Mathematics",
-    topicId: 1,
-    image: null,
-    options: {
-      A: "2x",
-      B: "x",
-      C: "x²",
-      D: "2",
-    },
-    correctAnswer: "A",
-    created: "2026-01-20",
-  },
-  {
-    id: 2,
-    statement: "What is Newton's first law of motion?",
-    topic: "Physics",
-    topicId: 2,
-    image: null,
-    options: {
-      A: "F = ma",
-      B: "An object in motion stays in motion",
-      C: "Every action has an equal reaction",
-      D: "Energy is conserved",
-    },
-    correctAnswer: "B",
-    created: "2026-01-21",
-  },
-];
+  // 2. Create the overlay container
+  const overlay = document.createElement("div");
+  overlay.id = "progressWarningOverlay";
+  
+  // 3. Build the inner HTML structure
+  // We use the iconColor for the icon and optional inline styles for buttons
+  overlay.innerHTML = `
+    <div id="progressWarningBox">
+      <div class="pw-icon" style="color: ${iconColor}">
+        <i class="${icon}"></i>
+      </div>
+      <h3>${title}</h3>
+      <div class="pw-message-content">${message}</div>
+      <div class="pw-actions">
+        ${showCancel ? `
+          <button class="pw-btn pw-btn-cancel" style="${cancelBtnStyle}">
+            ${cancelText}
+          </button>` : ''
+        }
+        ${showConfirm ? `
+          <button class="pw-btn pw-btn-confirm" style="${confirmBtnStyle}">
+            ${confirmText}
+          </button>` : ''
+        }
+      </div>
+    </div>
+  `;
 
-let users = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    role: "admin",
-    joined: "2025-12-15",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane@example.com",
-    role: "user",
-    joined: "2026-01-05",
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "Bob Johnson",
-    email: "bob@example.com",
-    role: "user",
-    joined: "2026-01-10",
-    status: "inactive",
-  },
-];
+  // 4. Append to the document body
+  document.body.appendChild(overlay);
 
-let exams = [
-  {
-    id: 1,
-    name: "Mid-Term Mathematics Exam",
-    description: "Comprehensive test covering algebra and geometry",
-    questions: [1, 2],
-    created: "2026-01-15",
-  },
-  {
-    id: 2,
-    name: "Physics Final Exam",
-    description:
-      "Complete physics assessment including mechanics and thermodynamics",
-    questions: [2],
-    created: "2026-01-20",
-  },
-];
+  // 5. Helper function to close and cleanup
+  const closePopup = () => {
+    overlay.remove();
+  };
 
-let nextTopicId = 4;
-let nextSubtopicId = 8;
-let nextQuestionId = 3;
-let nextUserId = 4;
-let nextExamId = 3;
+  // 6. Event Listeners
+  
+  // Cancel/Close Button
+  if (showCancel) {
+    overlay.querySelector(".pw-btn-cancel").addEventListener("click", () => {
+      closePopup();
+      onCancel();
+    });
+  }
+
+  // Confirm Button
+  if (showConfirm) {
+    overlay.querySelector(".pw-btn-confirm").addEventListener("click", () => {
+      closePopup();
+      onConfirm();
+    });
+  }
+
+  // Click outside the box (on the overlay) to close
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) {
+      closePopup();
+      onCancel();
+    }
+  });
+}
+/**
+ * A standardized informational popup for the UI.
+ * Used for errors, warnings, and success messages.
+ */
+function showInfoPopup(
+  title,
+  message,
+  icon = "fas fa-info-circle",
+  iconColor = "#0097b2"
+) {
+  // Use the base popup logic to ensure consistent behavior/overlay
+  createBasePopup({
+    title: title,
+    message: message,
+    icon: icon,
+    iconColor: iconColor,
+    
+    // Admin/Info specific settings:
+    showConfirm: false,         // Only one button needed for info
+    cancelText: "OK",           // The button text
+    showCancel: true,           // Ensure the OK button (mapped to cancel) is visible
+    
+    // Style the "OK" button to match the theme
+    cancelBtnStyle: `background: ${iconColor}; color: #fff; border: none;`,
+    
+    // Logic for closing
+    onCancel: () => {
+      console.log(`Popup "${title}" dismissed.`);
+    }
+  });
+}
+/**
+ * Processes any API response and shows the appropriate popup for errors.
+ * @param {Object} response - The object returned by FetchData/PostData/etc.
+ * @returns {boolean} - Returns true if an error was handled, false if successful.
+ */
+function handleApiResponse(response) {
+  console.log("API Response:", response);
+  // If the request was successful, we don't show an error popup
+  if (response?.success !== false && response?.status < 400) {
+    return false;
+  }
+
+  // Define styling based on specific status codes
+  let config = {
+    title: "Error",
+    icon: "fas fa-exclamation-circle",
+    color: "#e74c3c" // Default Red
+  };
+
+  if (response.status === 403) {
+    config = {
+      title: "Access Restricted",
+      icon: "fas fa-lock",
+      color: "#f39c12" // Warning Orange
+    };
+  } else if (response.status === 401) {
+    config = {
+      title: "Session Expired",
+      icon: "fas fa-user-shield",
+      color: "#3498db" // Info Blue
+    };
+  } else if (response.status >= 500) {
+    config = {
+      title: "Server Error",
+      icon: "fas fa-server",
+      color: "#c0392b" // Dark Red
+    };
+  } else if (!response.status) {
+    config = {
+      title: "Network Issue",
+      icon: "fas fa-wifi",
+      color: "#95a5a6" // Grey
+    };
+  }
+
+  // Call your existing popup function with the determined config
+  showInfoPopup(
+    config.title,
+    response.userMessage || "An unexpected error occurred.",
+    config.icon,
+    config.color
+  );
+
+  return true;
+}
+// Runtime state (populated from backend on load)
+let users = [];
+let questions = [];
 let selectedQuestionIds = [];
 
 // ===== NAVIGATION FUNCTIONS =====
@@ -235,15 +293,17 @@ async function initializeCharts() {
   });
 
   // User Growth Chart
+  // TODO: Replace with backend endpoint e.g. FetchData("/stats/user-growth", true)
+  // Expected response shape: { labels: [...months], data: [...counts] }
   var usersCtx = document.getElementById("usersChart").getContext("2d");
   new Chart(usersCtx, {
     type: "line",
     data: {
-      labels: ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan"],
+      labels: [],
       datasets: [
         {
           label: "New Users",
-          data: [450, 589, 720, 890, 1200, 1542],
+          data: [],
           borderColor: "#0097b2",
           backgroundColor: "rgba(0, 151, 178, 0.1)",
           tension: 0.4,
@@ -254,29 +314,23 @@ async function initializeCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      plugins: {
-        legend: {
-          display: false,
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-        },
-      },
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } },
     },
   });
 
   // Activity Chart
+  // TODO: Replace with backend endpoint e.g. FetchData("/stats/activity", true)
+  // Expected response shape: { labels: [...days], data: [...counts] }
   var activityCtx = document.getElementById("activityChart").getContext("2d");
   new Chart(activityCtx, {
     type: "bar",
     data: {
-      labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      labels: [],
       datasets: [
         {
           label: "Tests Taken",
-          data: [1200, 1500, 1300, 1700, 1400, 900, 800],
+          data: [],
           backgroundColor: "#0097b2",
           borderRadius: 5,
         },
@@ -285,31 +339,25 @@ async function initializeCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      plugins: {
-        legend: {
-          display: false,
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-        },
-      },
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } },
     },
   });
 
   // Performance Chart
+  // TODO: Replace with backend endpoint e.g. FetchData("/stats/performance", true)
+  // Expected response shape: { labels: [...topics], data: [...avgScores] }
   var performanceCtx = document
     .getElementById("performanceChart")
     .getContext("2d");
   new Chart(performanceCtx, {
     type: "radar",
     data: {
-      labels: ["Math", "Physics", "Chemistry", "Biology", "History"],
+      labels: [],
       datasets: [
         {
           label: "Average Score",
-          data: [85, 78, 82, 75, 88],
+          data: [],
           backgroundColor: "rgba(0, 151, 178, 0.2)",
           borderColor: "#0097b2",
           pointBackgroundColor: "#0097b2",
@@ -322,12 +370,7 @@ async function initializeCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      scales: {
-        r: {
-          beginAtZero: true,
-          max: 100,
-        },
-      },
+      scales: { r: { beginAtZero: true, max: 100 } },
     },
   });
 }
@@ -341,6 +384,7 @@ async function loadTopics() {
   var topicsList = document.getElementById("topicsList");
   topicsList.innerHTML = "";
   const response = await FetchData("/topic", true);
+  if (handleApiResponse(response)) return; // Handle errors and exit if needed
   const data = response.data.topics || [];
   document.getElementById("totalTopics").textContent = data.length;
   data.forEach(function (topic) {
@@ -403,6 +447,7 @@ async function openTopicModal(topicId) {
 
   if (topicId) {
     const response = await FetchData(`/topic/${topicId}`, true);
+    if (handleApiResponse(response)) return;
     const topic = response.data.topic;
     if (topic) {
       title.textContent = "Edit Topic";
@@ -491,21 +536,14 @@ async function handleTopicSubmit(event) {
 
   if (topicId) {
     // Update existing topic
-    const res = await UpdateData(`/topic`, { id: topicId, topicName: name });
-    if (res.success) {
-      alert("Topic updated!");
-    } else {
-      alert("Failed to update topic");
-    }
+    const response = await UpdateData(`/topic`, { id: topicId, topicName: name });
+    if (handleApiResponse(response)) return;
+    alert("Topic updated!");
   } else {
     // Create new topic
     const payload = { topicName: name };
-    const res = await PostData("/topic", payload, true);
-    if (res.success) {
-      alert("Topic created!");
-    } else {
-      alert("Failed to add topic");
-    }
+    const response = await PostData("/topic", payload, true);
+   if (handleApiResponse(response)) return;
   }
 
   loadTopics();
@@ -532,12 +570,7 @@ async function deleteTopic(topicId) {
     )
   ) {
     const response = await DeleteData(`/topic`, { id: topicId }, true);
-
-    if (response.success) {
-      alert("Topic " + topicId + " deleted");
-    } else {
-      alert("Failed to delete Topic " + topicId);
-    }
+    if (handleApiResponse(response)) return;
     loadTopics();
     loadTopicOptions();
   }
@@ -576,6 +609,7 @@ async function openSubtopicModal(topicId, subtopicId) {
 
   if (subtopicId) {
     const response = await FetchData(`/topic/${subtopicId}`, true);
+    if (handleApiResponse(response)) return;
     const subtopic = response.data.topic;
     if (subtopic) {
       title.textContent = "Edit Subtopic";
@@ -612,21 +646,12 @@ async function handleSubtopicSubmit(event) {
     // Update existing subtopic
     const payload = { id: subtopicId, topicName: name };
     const response = await UpdateData(`/topic`, payload, true);
-    if (response.success) {
-      alert("Subtopic " + subtopicId + ' updated to "' + name + '"');
-    } else {
-      alert(" Failed to update Subtopic");
-    }
+    if (handleApiResponse(response)) return;
   } else {
     // Create new subtopic
     const payload = { subtopicName: name, parentId: topicId };
     const response = await PostData("/subtopic", payload, true);
-
-    if (response.success) {
-      alert('Subtopic "' + name + '" added to topic ' + topicId);
-    } else {
-      alert(" Failed to Add Subtopic");
-    }
+    if (handleApiResponse(response)) return;
   }
 
   loadTopics();
@@ -641,12 +666,7 @@ async function handleSubtopicSubmit(event) {
 async function deleteSubtopic(topicId, subtopicId) {
   if (confirm("Are you sure you want to delete this subtopic?")) {
     const response = await DeleteData(`/topic`, { id: subtopicId }, true);
-
-    if (response.success) {
-      alert("SubTopic " + subtopicId + " deleted");
-    } else {
-      alert("Failed to delete subTopic " + subtopicId);
-    }
+    if (handleApiResponse(response)) return;
     loadTopics();
     loadTopicOptions();
   }
@@ -661,6 +681,7 @@ async function loadQuestions() {
   var tbody = document.getElementById("questionsTableBody");
   tbody.innerHTML = "";
   const response = await FetchData("/questions", true);
+  if (handleApiResponse(response)) return;
   const questions = response.data.questions;
   document.getElementById("totalQuestions").textContent = questions.length;
   questions.forEach(function (question) {
@@ -697,6 +718,7 @@ async function openQuestionModal(questionId) {
 
   if (questionId) {
     const response = await FetchData(`/question/${questionId}`, true);
+    if (handleApiResponse(response)) return;
     const question = response.data.question;
 
     if (question) {
@@ -788,6 +810,7 @@ async function populateTopicSelects() {
   const filterTopic = document.getElementById("filterTopic");
   let optionsHtml = "";
   const response = await FetchData("/topic", true);
+  if (handleApiResponse(response)) return;
 
   const data = response.data.topics || [];
 
@@ -806,6 +829,7 @@ async function populateTopicSelects() {
 async function populateTopicSelects_2(select) {
   let optionsHtml = "";
   const response = await FetchData("/topic", true);
+  if (handleApiResponse(response)) return;
 
   const data = response.data.topics || [];
 
@@ -876,15 +900,10 @@ async function handleQuestionSubmit(event) {
     formData.append("options", JSON.stringify(options));
 
     const response = await UpdateData("/question", formData, true);
-
-    if (response.success) {
-      alert("Question updated successfully");
-    } else {
-      alert("Failed to update question");
-    }
+    if (handleApiResponse(response)) return;
   } else {
     // Append options as JSON string
-    
+
     var options = {
       A: document.getElementById("optionA").value,
       B: document.getElementById("optionB").value,
@@ -894,11 +913,7 @@ async function handleQuestionSubmit(event) {
 
     formData.append("options", JSON.stringify(options));
     const response = await PostData("/question", formData, true);
-    if (response.success) {
-      alert("New question created");
-    } else {
-      alert("Failed to create new question");
-    }
+    if (handleApiResponse(response)) return;
   }
 
   loadQuestions();
@@ -920,12 +935,7 @@ function editQuestion(questionId) {
 async function deleteQuestion(questionId) {
   if (confirm("Are you sure you want to delete this question?")) {
     const response = await DeleteData(`/question`, { id: questionId }, true);
-
-    if (response.success) {
-      alert("Question " + questionId + " deleted");;
-    } else {
-      alert("Failed to delete question " + questionId);
-    }
+    if (handleApiResponse(response)) return;
     loadQuestions();
   }
 }
@@ -961,52 +971,6 @@ function filterQuestions() {
 function searchQuestions() {
   filterQuestions();
 }
-// Add this event listener
-document.getElementById("searchQuestion").addEventListener("input", function(e) {
-  var searchText = e.target.value.toLowerCase().trim();
-  var tableRows = document.querySelectorAll("#questionsTable tbody tr");
-  
-  tableRows.forEach(function(row) {
-    var questionText = row.querySelector(".question-text");
-    
-    if (questionText) {
-      var content = questionText.textContent.toLowerCase();
-      
-      if (content.includes(searchText)) {
-        row.style.display = ""; // Show the row
-      } else {
-        row.style.display = "none"; // Hide the row
-      }
-    }
-  });
-});
-
-/**
- * Display filtered questions
- * @param {Array} filtered - Array of filtered questions
- */
-function displayFilteredQuestions(filtered) {
-  var tbody = document.getElementById("questionsTableBody");
-  tbody.innerHTML = "";
-
-  filtered.forEach(function (question) {
-    var row = document.createElement("tr");
-    row.innerHTML = `
-            <td>${question.id}</td>
-            <td class="question-text" title="${question.statement}">${question.statement}</td>
-            <td>${question.topic}</td>
-            <td class="image-indicator">${question.image ? '<i class="fas fa-image" style="color: #0097b2;"></i>' : "-"}</td>
-            <td>${question.created}</td>
-            <td>
-                <div class="table-actions">
-                    <button class="btn-edit" data-action="edit-question" data-id="${question.id}">Edit</button>
-                    <button class="btn-delete" data-action="delete-question" data-id="${question.id}">Delete</button>
-                </div>
-            </td>
-        `;
-    tbody.appendChild(row);
-  });
-}
 
 /**
  * Load topic options into select dropdowns
@@ -1024,6 +988,7 @@ async function loadUsers() {
   var tbody = document.getElementById("usersTableBody");
   tbody.innerHTML = "";
   const response = await FetchData("/users", true);
+  if (handleApiResponse(response)) return;
   users = response.data.users;
   document.getElementById("totalUsers").textContent = users.length;
   users.forEach(function (user) {
@@ -1091,7 +1056,7 @@ function closeUserModal() {
  * Handle user form submission
  * @param {Event} event - Form submit event
  */
-function handleUserSubmit(event) {
+async function handleUserSubmit(event) {
   event.preventDefault();
 
   var userId = document.getElementById("userId").value;
@@ -1103,32 +1068,15 @@ function handleUserSubmit(event) {
 
   if (userId) {
     // Update existing user
-    var user = users.find(function (u) {
-      return u.id === parseInt(userId);
-    });
-    if (user) {
-      user.name = name;
-      user.email = email;
-      user.role = role;
-      user.status = status;
-      if (password) {
-        console.log("Password updated for user " + userId);
-      }
-      console.log("User updated:", user);
-    }
+    var payload = { id: parseInt(userId), name, email, role, status };
+    if (password) payload.password = password;
+    const response = await UpdateData("/user", payload, true);
+    if (handleApiResponse(response)) return;
   } else {
     // Create new user
-    var newUser = {
-      id: nextUserId++,
-      name: name,
-      email: email,
-      role: role,
-      status: status,
-      joined: new Date().toISOString().split("T")[0],
-    };
-    users.push(newUser);
-    console.log("User created:", newUser);
-    console.log("Password set for new user");
+    var payload = { name, email, role, status, password };
+    const response = await PostData("/user", payload, true);
+    if (handleApiResponse(response)) return;
   }
 
   loadUsers();
@@ -1147,13 +1095,11 @@ function editUser(userId) {
  * Delete a user
  * @param {number} userId - ID of user to delete
  */
-function deleteUser(userId) {
+async function deleteUser(userId) {
   if (confirm("Are you sure you want to delete this user?")) {
-    users = users.filter(function (u) {
-      return u.id !== userId;
-    });
+    const response = await DeleteData("/user", { id: userId }, true);
+    if (handleApiResponse(response)) return;
     loadUsers();
-    console.log("User " + userId + " deleted");
   }
 }
 
@@ -1220,14 +1166,14 @@ async function loadExams() {
   var examsList = document.getElementById("examsList");
   examsList.innerHTML = "";
 
- 
   const response = await FetchData("/quizzes", true);
-  const exams = response.data.quizzes
-   if (exams.length === 0) {
-     examsList.innerHTML =
-       '<p style="text-align: center; color: var(--gray); padding: 40px;">No exams created yet. Click "Add New Exam" to get started.</p>';
-     return;
-   }
+  if (handleApiResponse(response)) return;
+  const exams = response.data.quizzes;
+  if (exams.length === 0) {
+    examsList.innerHTML =
+      '<p style="text-align: center; color: var(--gray); padding: 40px;">No exams created yet. Click "Add New Exam" to get started.</p>';
+    return;
+  }
   exams.forEach(function (exam) {
     var examCard = document.createElement("div");
     examCard.className = "exam-card";
@@ -1280,8 +1226,9 @@ async function openExamModal(examId) {
   populateTopicSelects_2(topicFilter);
 
   if (examId) {
-    const response= await FetchData(`/quiz/${examId}`);
-    const exam = response.data
+    const response = await FetchData(`/quiz-admin/${examId}`);
+    if (handleApiResponse(response)) return;
+    const exam = response.data;
     if (exam) {
       title.textContent = "Edit Exam";
       document.getElementById("examId").value = exam.quiz_id;
@@ -1316,6 +1263,7 @@ async function loadAvailableQuestions() {
     .getElementById("examQuestionSearch")
     .value.toLowerCase();
   const response = await FetchData("/questions", true);
+  if (handleApiResponse(response)) return;
   questions = response.data.questions;
   // var filtered = questions.filter(function (q) {
   //   var matchesTopic = !topicFilter || q.topic === topicFilter;
@@ -1332,9 +1280,8 @@ async function loadAvailableQuestions() {
 
   container.innerHTML = "";
   questions.forEach(function (question) {
-    console.log(question)
-    var isSelected =
-      selectedQuestionIds.indexOf(question.question_id) > -1;
+    console.log(question);
+    var isSelected = selectedQuestionIds.indexOf(question.question_id) > -1;
     var item = document.createElement("div");
     item.className = "question-checkbox-item";
     item.innerHTML = `
@@ -1375,7 +1322,7 @@ function toggleQuestionSelection(questionId) {
  * Update selected questions display
  */
 function updateSelectedQuestionsDisplay() {
-  console.log(selectedQuestionIds)
+  console.log(selectedQuestionIds);
   var container = document.getElementById("selectedQuestions");
   var countSpan = document.getElementById("selectedCount");
 
@@ -1449,13 +1396,8 @@ async function handleExamSubmit(event) {
       description: description,
       questions: selectedQuestionIds.slice(),
     };
-    const res = await UpdateData("/quiz", payload, true);
-    if (res.success) {
-      alert("Exam updated successfully");
-    } else {
-      alert("Failed to update Exam");
-    }
-
+    const response = await UpdateData("/quiz", payload, true);
+    if (handleApiResponse(response)) return;
   } else {
     // Create new exam
     var payload = {
@@ -1464,12 +1406,8 @@ async function handleExamSubmit(event) {
       questions: selectedQuestionIds.slice(),
     };
 
-    const res = await PostData("/quiz", payload, true);
-    if (res.success) {
-      alert("Exam created successfully");;
-    } else {
-      alert("Failed to add Exam");
-    }
+    const response = await PostData("/quiz", payload, true);
+    if (handleApiResponse(response)) return;
   }
 
   loadExams();
@@ -1490,12 +1428,8 @@ function editExam(examId) {
  */
 async function deleteExam(examId) {
   if (confirm("Are you sure you want to delete this exam?")) {
-    const res = await DeleteData("/quiz", {id: examId}, true);
-    if (res.success) {
-      alert("Exam " + examId + " deleted");;
-    } else {
-      alert("Failed to delete Exam");
-    }
+    const response = await DeleteData("/quiz", { id: examId }, true);
+    if (handleApiResponse(response)) return;
     loadExams();
   }
 }
@@ -1516,12 +1450,12 @@ document.addEventListener("DOMContentLoaded", function () {
   loadExams();
   loadTopicOptions();
 
-
   // ===== Logout Event Listener =====
   document
     .getElementById("btn-logout")
     .addEventListener("click", async function () {
       var response = await FetchData("/logout", true);
+      if (handleApiResponse(response)) return;
       if (response.success) {
         localStorage.removeItem("token");
         alert("Succeessfull Logout");
@@ -1894,12 +1828,5 @@ document.addEventListener("DOMContentLoaded", function () {
         modal.classList.remove("active");
       }
     });
-  });
-
-  console.log("All data loaded:", {
-    topics: topics,
-    questions: questions,
-    users: users,
-    exams: exams,
   });
 });

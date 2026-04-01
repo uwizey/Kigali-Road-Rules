@@ -3,7 +3,7 @@ import logging
 from datetime import timedelta,datetime
 from flask import Blueprint,request,jsonify
 from core.models import db,Subscription,Request,SubscriptionPlan
-from core.utils.decorators import role_required
+from core.utils.decorators import role_required,rate_limit
 from flask_jwt_extended import get_jwt_identity
 
 
@@ -11,6 +11,7 @@ subscription_bp = Blueprint("subscription",__name__)
 
 @subscription_bp.route("/allplans", methods=["GET"])
 @role_required(["admin", "client"])
+@rate_limit(capacity=5, refill_rate=1) 
 def get_all_subscription_plans():
     try:
         plans = SubscriptionPlan.query.all()
@@ -46,6 +47,7 @@ def get_all_subscription_plans():
 
 @subscription_bp.route("/plans/<int:id>", methods=["GET"])
 @role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1) 
 def get_subscription_plans(id):
     try:
         plan = SubscriptionPlan.query.get(id)
@@ -80,6 +82,7 @@ def get_subscription_plans(id):
 
 @subscription_bp.route("/plans", methods=["POST"])
 @role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1) 
 def create_subscription_plan():
     try:
         data = request.get_json()
@@ -120,6 +123,7 @@ def create_subscription_plan():
 
 @subscription_bp.route("/plans/<int:plan_id>", methods=["PUT"])
 @role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1) 
 def update_subscription_plan(plan_id):
     try:
         data = request.get_json()
@@ -165,6 +169,7 @@ def update_subscription_plan(plan_id):
 
 @subscription_bp.route("/allrequests", methods=["GET"])
 @role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1) 
 def get_all_requests():
     try:
         # Order by request_date descending so latest requests come first
@@ -205,6 +210,7 @@ def get_all_requests():
 
 @subscription_bp.route("/myrequests", methods=["GET"])   # ✅ ensures only authenticated users can access
 @role_required(["client"])
+@rate_limit(capacity=5, refill_rate=1) 
 def get_user_requests():
     try:
         # ✅ Extract user_id from token
@@ -250,6 +256,7 @@ def get_user_requests():
 
 @subscription_bp.route("/request", methods=["POST"])
 @role_required(["client"])
+@rate_limit(capacity=5, refill_rate=1) 
 def create_request():
     try:
         data = request.get_json()
@@ -305,6 +312,7 @@ def create_request():
 
 @subscription_bp.route("/request/<int:req_id>/cancel", methods=["PUT"])
 @role_required(["client"])
+@rate_limit(capacity=5, refill_rate=1) 
 def cancel_request(req_id):
     try:
         # ✅ Extract user_id from token
@@ -354,6 +362,7 @@ def cancel_request(req_id):
 
 @subscription_bp.route("/request/<int:req_id>/reject", methods=["PUT"])
 @role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1) 
 def reject_request(req_id):
     try:
         # ✅ Find the request
@@ -392,6 +401,7 @@ def reject_request(req_id):
 
 @subscription_bp.route("/request/<int:req_id>/approve", methods=["PUT"])
 @role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1) 
 def approve_request(req_id):
     try:
         # ✅ Find the request
@@ -467,6 +477,7 @@ def approve_request(req_id):
 
 @subscription_bp.route("/my-subscription", methods=["GET"])
 @role_required(["client"])
+@rate_limit(capacity=5, refill_rate=1) 
 def get_latest_subscription():
     try:
         # ✅ Extract user_id from token
@@ -511,6 +522,7 @@ def get_latest_subscription():
 
 @subscription_bp.route("/all-subscriptions", methods=["GET"])
 @role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1) 
 def get_all_subscriptions():
     try:
         # ✅ Order by expiry_date descending so latest subscriptions come first
@@ -569,6 +581,7 @@ def get_all_subscriptions():
 
 @subscription_bp.route("/subscription/<int:sub_id>", methods=["GET"])
 @role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1) 
 def get_subscription(sub_id):
     try:
         # ✅ Find the subscription
@@ -614,6 +627,7 @@ def get_subscription(sub_id):
 
 @subscription_bp.route("/subscription/<int:sub_id>/status", methods=["PUT"])
 @role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1) 
 def toggle_subscription_status(sub_id):
     try:
         data = request.get_json()
@@ -667,7 +681,8 @@ def toggle_subscription_status(sub_id):
 
 
 @subscription_bp.route("/user/<int:user_id>/history", methods=["GET"])
-@role_required(["admin"])   # ✅ only admins can view any user's history
+@role_required(["admin"]) 
+@rate_limit(capacity=5, refill_rate=1) # ✅ only admins can view any user's history
 def get_user_history(user_id):
     try:
         # ✅ Fetch all requests for this user, latest first
@@ -733,6 +748,7 @@ def get_user_history(user_id):
 
 @subscription_bp.route("/users-subscriptions", methods=["GET"])
 @role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1) 
 def get_users_subscriptions():
     try:
         # ✅ Fetch all subscriptions, latest expiry first

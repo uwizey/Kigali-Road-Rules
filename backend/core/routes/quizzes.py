@@ -5,13 +5,14 @@ from collections import defaultdict, deque
 from datetime import datetime
 from flask import Blueprint, request, jsonify,g
 from core.models import db, Quiz, QuizQuestion, Question, Topic, Subscription
-from core.utils.decorators import role_required,subscription_required
+from core.utils.decorators import role_required,subscription_required,rate_limit
 from flask_jwt_extended import get_jwt_identity
 
 quizzes_bp = Blueprint("quizzes", __name__)
 
 @subscription_required("quizzes")
 def _generate_random_quiz(quiz_size):
+    
     TARGET_SIZE = quiz_size
     top_topics = Topic.query.filter_by(parent_topic=None).all()
     if not top_topics:
@@ -124,6 +125,7 @@ def _generate_random_quiz(quiz_size):
 
 @quizzes_bp.route("/quiz", methods=["POST"])
 @role_required("admin")
+@rate_limit(capacity=5, refill_rate=1) 
 def create_quiz():
     try:
         payload = request.get_json(force=True, silent=True)
@@ -141,7 +143,11 @@ def create_quiz():
             if not Question.query.get(q_id):
                 return jsonify({"status": False, "message": f"Question {q_id} not found"}), 404
             db.session.add(QuizQuestion(quiz_id=new_quiz.quiz_id, question_id=q_id))
+
+        sub = g.subscription
+        sub.remaining_quizzes -= 1
         db.session.commit()
+        
         return jsonify({"status": True, "message": "Quiz created successfully", "quiz_id": new_quiz.quiz_id}), 201
     except Exception as e:
         db.session.rollback()
@@ -150,6 +156,7 @@ def create_quiz():
 
 @quizzes_bp.route("/quizzes", methods=["GET"])
 @role_required(["admin", "client"])
+@rate_limit(capacity=5, refill_rate=1) 
 def get_all_quizzes():
     try:
         quizzes = Quiz.query.all()
@@ -170,6 +177,7 @@ def get_all_quizzes():
 @quizzes_bp.route("/quiz/<int:quiz_id>", methods=["GET"])
 @role_required(["admin", "client"])
 @subscription_required("template_exams")
+@rate_limit(capacity=5, refill_rate=1) 
 def get_quiz(quiz_id):
     try:
         quiz = Quiz.query.get(quiz_id)
@@ -192,8 +200,28 @@ def get_quiz(quiz_id):
         logging.error(f"Error retrieving quiz: {str(e)}")
         return jsonify({"status": False, "message": "Error retrieving quiz"}), 500
 
+
+@quizzes_bp.route("/quiz-admin/<int:quiz_id>", methods=["GET"])
+@role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1) 
+def get_quiz_admin(quiz_id):
+    try:
+        quiz = Quiz.query.get(quiz_id)
+        if not quiz:
+            return jsonify({"status": False, "message": "Quiz not found"}), 404
+        return jsonify({
+            "quiz_id": quiz.quiz_id, "title": quiz.title,
+            "description": quiz.description,
+            "questions": [qq.question_id for qq in quiz.questions]
+        }), 200
+    except Exception as e:
+        logging.error(f"Error retrieving quiz: {str(e)}")
+        return jsonify({"status": False, "message": "Error retrieving quiz"}), 500
+
+
 @quizzes_bp.route("/quiz", methods=["PUT"])
 @role_required("admin")
+@rate_limit(capacity=5, refill_rate=1) 
 def update_quiz():
     try:
         payload = request.get_json(force=True, silent=True)
@@ -224,6 +252,7 @@ def update_quiz():
 
 @quizzes_bp.route("/quiz", methods=["DELETE"])
 @role_required("admin")
+@rate_limit(capacity=5, refill_rate=1) 
 def delete_quiz():
     try:
         payload = request.get_json(force=True, silent=True)
@@ -244,7 +273,13 @@ def delete_quiz():
         logging.error(f"Error deleting quiz: {str(e)}")
         return jsonify({"status": False, "message": "Error deleting quiz"}), 500
 
-def _handle_exercise_quiz(topic_name, target_size):
+@quizzes_bp.route("/exercise", methods=["GET"])
+@role_required("client")
+@rate_limit(capacity=5, refill_rate=1) 
+def _handle_exercise_quiz():
+    target_size=5
+    topic_name = request.args.get("topic")
+    is_exercise = request.args.get("exercise", "false").lower() == "true"
     if not topic_name:
         return jsonify({"status": False, "message": "Topic name required for exercises"}), 400
 
@@ -271,13 +306,10 @@ def _handle_exercise_quiz(topic_name, target_size):
         "exercise": True
     }), 200
 
-@quizzes_bp.route("/exercise", methods=["GET"])
-@role_required("client")
+
 @subscription_required("topic_quizzes")
-def _handle_topic_quiz():
-    target_size = 5
-    topic_name = request.args.get("topic")
-    is_exercise = request.args.get("exercise", "false").lower() == "true"
+def _handle_topic_quiz(topic_name, target_size):
+    
     topic = Topic.query.filter_by(name=topic_name).first()
     if not topic:
         return jsonify({"status": False, "message": "Topic not found"}), 404
@@ -305,18 +337,16 @@ def _handle_topic_quiz():
 
 @quizzes_bp.route("/quiz/random", methods=["GET"])
 @role_required("client")
+@rate_limit(capacity=5, refill_rate=1) 
 def random_quiz():
     try:
         topic_name = request.args.get("topic")
         is_exercise = request.args.get("exercise", "false").lower() == "true"
         user_id = int(get_jwt_identity())
-
+        print(f"User {user_id} requested a random quiz with topic='{topic_name}' and exercise={is_exercise}")
         if topic_name:
             return _handle_topic_quiz(topic_name, target_size=10)
         else:
-            sub = g.subscription
-            sub.remaining_quizzes -= 1
-            db.session.commit()
             return _generate_random_quiz(20)
 
     except Exception as e:

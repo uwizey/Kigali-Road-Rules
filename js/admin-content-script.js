@@ -3,6 +3,183 @@
 // ════════════════════════════════════════════════════════════════════════════
 import { FetchData, PostData, DeleteData, UpdateData } from "../js/api/crud.js";
 
+/**
+ * The core engine for all modals and popups.
+ * Handles DOM creation, styling, and event cleanup.
+ */
+function createBasePopup({
+  title = "",
+  message = "",
+  icon = "fas fa-info-circle",
+  iconColor = "#0097b2",
+  confirmText = "Confirm",
+  cancelText = "Close",
+  showCancel = true,
+  showConfirm = true,
+  onConfirm = () => {},
+  onCancel = () => {},
+  confirmBtnStyle = "",
+  cancelBtnStyle = "",
+}) {
+  // 1. Prevent duplicate popups by removing any existing ones
+  const existingOverlay = document.getElementById("progressWarningOverlay");
+  if (existingOverlay) existingOverlay.remove();
+
+  // 2. Create the overlay container
+  const overlay = document.createElement("div");
+  overlay.id = "progressWarningOverlay";
+
+  // 3. Build the inner HTML structure
+  // We use the iconColor for the icon and optional inline styles for buttons
+  overlay.innerHTML = `
+    <div id="progressWarningBox">
+      <div class="pw-icon" style="color: ${iconColor}">
+        <i class="${icon}"></i>
+      </div>
+      <h3>${title}</h3>
+      <div class="pw-message-content">${message}</div>
+      <div class="pw-actions">
+        ${
+          showCancel
+            ? `
+          <button class="pw-btn pw-btn-cancel" style="${cancelBtnStyle}">
+            ${cancelText}
+          </button>`
+            : ""
+        }
+        ${
+          showConfirm
+            ? `
+          <button class="pw-btn pw-btn-confirm" style="${confirmBtnStyle}">
+            ${confirmText}
+          </button>`
+            : ""
+        }
+      </div>
+    </div>
+  `;
+
+  // 4. Append to the document body
+  document.body.appendChild(overlay);
+
+  // 5. Helper function to close and cleanup
+  const closePopup = () => {
+    overlay.remove();
+  };
+
+  // 6. Event Listeners
+
+  // Cancel/Close Button
+  if (showCancel) {
+    overlay.querySelector(".pw-btn-cancel").addEventListener("click", () => {
+      closePopup();
+      onCancel();
+    });
+  }
+
+  // Confirm Button
+  if (showConfirm) {
+    overlay.querySelector(".pw-btn-confirm").addEventListener("click", () => {
+      closePopup();
+      onConfirm();
+    });
+  }
+
+  // Click outside the box (on the overlay) to close
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) {
+      closePopup();
+      onCancel();
+    }
+  });
+}
+/**
+ * A standardized informational popup for the UI.
+ * Used for errors, warnings, and success messages.
+ */
+function showInfoPopup(
+  title,
+  message,
+  icon = "fas fa-info-circle",
+  iconColor = "#0097b2",
+) {
+  // Use the base popup logic to ensure consistent behavior/overlay
+  createBasePopup({
+    title: title,
+    message: message,
+    icon: icon,
+    iconColor: iconColor,
+
+    // Admin/Info specific settings:
+    showConfirm: false, // Only one button needed for info
+    cancelText: "OK", // The button text
+    showCancel: true, // Ensure the OK button (mapped to cancel) is visible
+
+    // Style the "OK" button to match the theme
+    cancelBtnStyle: `background: ${iconColor}; color: #fff; border: none;`,
+
+    // Logic for closing
+    onCancel: () => {
+      console.log(`Popup "${title}" dismissed.`);
+    },
+  });
+}
+/**
+ * Processes any API response and shows the appropriate popup for errors.
+ * @param {Object} response - The object returned by FetchData/PostData/etc.
+ * @returns {boolean} - Returns true if an error was handled, false if successful.
+ */
+function handleApiResponse(response) {
+  console.log("API Response:", response);
+  // If the request was successful, we don't show an error popup
+  if (response?.success !== false && response?.status < 400) {
+    return false;
+  }
+
+  // Define styling based on specific status codes
+  let config = {
+    title: "Error",
+    icon: "fas fa-exclamation-circle",
+    color: "#e74c3c", // Default Red
+  };
+
+  if (response.status === 403) {
+    config = {
+      title: "Access Restricted",
+      icon: "fas fa-lock",
+      color: "#f39c12", // Warning Orange
+    };
+  } else if (response.status === 401) {
+    config = {
+      title: "Session Expired",
+      icon: "fas fa-user-shield",
+      color: "#3498db", // Info Blue
+    };
+  } else if (response.status >= 500) {
+    config = {
+      title: "Server Error",
+      icon: "fas fa-server",
+      color: "#c0392b", // Dark Red
+    };
+  } else if (!response.status) {
+    config = {
+      title: "Network Issue",
+      icon: "fas fa-wifi",
+      color: "#95a5a6", // Grey
+    };
+  }
+
+  // Call your existing popup function with the determined config
+  showInfoPopup(
+    config.title,
+    response.userMessage || "An unexpected error occurred.",
+    config.icon,
+    config.color,
+  );
+
+  return true;
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // FORMAT TYPES — all supported component format types.
 // Key = format_type value stored on the server.
@@ -277,7 +454,11 @@ function bindEvents() {
 async function fetchTopics() {
   try {
     const res = await FetchData("/topic", true);
-    DB.topics = res.success ? res.data.topics || [] : [];
+    if (handleApiResponse(res)) {
+      renderTopics();
+      return;
+    }
+    DB.topics = res.data.topics || [];
   } catch (err) {
     console.error("[fetchTopics]", err);
     DB.topics = [];
@@ -295,8 +476,11 @@ async function fetchSections(subtopicId) {
   if (DB.sections[subtopicId] !== undefined) return;
   try {
     const res = await FetchData(`/sections/${subtopicId}`, true);
-    
-    DB.sections[subtopicId] = res.success ? res.data.sections || [] : [];
+    if (handleApiResponse(res)) {
+      DB.sections[subtopicId] = [];
+      return;
+    }
+    DB.sections[subtopicId] = res.data.sections || [];
   } catch (err) {
     console.error("[fetchSections]", err);
     DB.sections[subtopicId] = [];
@@ -322,11 +506,9 @@ async function createSection() {
     );
 
     if (res.success) {
-      console.log("Section created on server:", res.data);
       const newSec = res.data.section;
       if (!DB.sections[tid]) DB.sections[tid] = [];
       DB.sections[tid].push(newSec);
-      console.log("Section created:", newSec);
       DB.components[newSec.section_id] = [];
       renderSections();
       triggerSave();
@@ -334,6 +516,8 @@ async function createSection() {
         selectSection(newSec.section_id);
         startRename(newSec.section_id);
       }, 80);
+    } else {
+      handleApiResponse(res);
     }
   } catch (err) {
     console.error("[createSection]", err);
@@ -404,6 +588,7 @@ async function deleteSection(id) {
     async () => {
       try {
         const res = await DeleteData(`/sections/${id}`, true);
+        if (handleApiResponse(res)) return;
         if (res.data?.status) {
           const tid = state.activeTopic.id;
           DB.sections[tid] = (DB.sections[tid] || []).filter(
@@ -415,8 +600,6 @@ async function deleteSection(id) {
           renderSections();
           renderBuilder();
           triggerSave();
-        } else {
-          alert("Delete failed: " + (res.data?.message || "Unknown error"));
         }
       } catch (err) {
         console.error("[deleteSection]", err);
@@ -435,9 +618,11 @@ async function fetchComponents(sectionId) {
   if (DB.components[sectionId] !== undefined) return;
   try {
     const res = await FetchData(`/sections/${sectionId}/components`, true);
-    DB.components[sectionId] = (
-      res.success ? res.data.components || [] : []
-    ).map(normalizeComp);
+    if (handleApiResponse(res)) {
+      DB.components[sectionId] = [];
+      return;
+    }
+    DB.components[sectionId] = (res.data.components || []).map(normalizeComp);
   } catch (err) {
     console.error("[fetchComponents]", err);
     DB.components[sectionId] = [];
@@ -475,6 +660,7 @@ async function createComponent() {
 
   // POST in the background; swap temp id for the real server-assigned id
   try {
+    alert("Creating component on server...");
     const res = await PostData(
       "/component",
       {
@@ -482,7 +668,7 @@ async function createComponent() {
         format_type: "",
         title: "New Component ",
         order_index: order,
-        items: [{}],
+        items: [],
       },
       true,
     );
@@ -645,12 +831,12 @@ async function saveOneComponent(comp) {
 
     return jsonItem;
   });
- console.log("items ", itemsForJson);
   form.append("items", JSON.stringify(itemsForJson));
 
   // UpdateData: detects FormData → does NOT JSON.stringify, does NOT set Content-Type
   // Browser sets: Content-Type: multipart/form-data; boundary=...  automatically
-  await UpdateData(`/component/${comp.id}`, form, true);
+  const res = await UpdateData(`/component/${comp.id}`, form, true);
+  handleApiResponse(res);
 }
 
 // Auto-save removed — components are saved explicitly via the "Save Changes" button.
@@ -1288,9 +1474,14 @@ function handleBuilderChange(e) {
   // Format type — structural change, auto-save immediately so the backend
   // knows the format before any items are added.
   if (e.target.classList.contains("comp-type-select")) {
-    const comp = (DB.components[sid] || []).find(
-      (c) => c.id === parseInt(e.target.dataset.compId),
-    );
+    // Always resolve the comp via the card's data-id, which gets updated when
+    // the server returns a real id to replace the temp id. The select's own
+    // data-comp-id may still hold the stale temp id at this point.
+    const card = e.target.closest(".component-card");
+    const cardId = card
+      ? parseInt(card.dataset.id)
+      : parseInt(e.target.dataset.compId);
+    const comp = (DB.components[sid] || []).find((c) => c.id === cardId);
     if (!comp) return;
     comp.format_type = e.target.value;
     comp.type = e.target.value;
@@ -1513,13 +1704,8 @@ function onCompDrop(e) {
 // ════════════════════════════════════════════════════════════════════════════
 // PREVIEW MODAL
 // ════════════════════════════════════════════════════════════════════════════
-function openPreviewModal(comp) {
-  const items = (comp.items || []).filter((i) => i.title || i.content || i.url);
-  if (!items.length) {
-    alert("Add some content first.");
-    return;
-  }
-  const html = buildPreviewHtml(comp.format_type, items);
+async function openPreviewModal(comp) {
+  // Ensure the modal shell exists before we start loading
   let modal = document.getElementById("compPreviewModal");
   if (!modal) {
     modal = document.createElement("div");
@@ -1534,8 +1720,36 @@ function openPreviewModal(comp) {
       </div>`;
     document.body.appendChild(modal);
   }
-  document.getElementById("compPreviewBody").innerHTML = html;
+
+  // Show a loading state immediately so the user gets feedback
+  const body = document.getElementById("compPreviewBody");
+  body.innerHTML = `<p style="text-align:center;color:#9ca3af;padding:40px">&#128247; Loading preview...</p>`;
   modal.classList.add("active");
+
+  // Fetch fresh component data from the backend so images are real server URLs,
+  // not stale in-memory File objects or data: URLs that only exist in this session.
+  const res = await FetchData(`/component/${comp.id}`, true);
+  console.log("[Preview fetch]", handleApiResponse(res) ,res);
+  
+  if (handleApiResponse(res)) {
+    modal.classList.remove("active");
+    return;
+  }
+
+  // Normalize the server response the same way fetchComponents does —
+  // this converts image_data (base64) + mimetype into a renderable data: URL.
+  const freshComp = normalizeComp(res.data.component || res.data);
+
+  const items = (freshComp.items || []).filter(
+    (i) => i.title || i.content || i.url || i.image,
+  );
+
+  if (!items.length) {
+    body.innerHTML = `<p style="text-align:center;color:#9ca3af;padding:40px">No content to preview yet — save your changes first.</p>`;
+    return;
+  }
+
+  body.innerHTML = buildPreviewHtml(freshComp.format_type, items);
 }
 
 function buildPreviewHtml(type, items) {

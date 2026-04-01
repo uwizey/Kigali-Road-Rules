@@ -17,376 +17,6 @@ let _allSubtopics = []; // flat ordered list used for prev/next navigation
 let _currentExercise = null; // { questions[] } — set by loadExerciseForSubtopic
 
 // REMOVED: static CONTENT_DATA — kept only so the closing brace below is valid
-const CONTENT_DATA = {
-  topics: [
-    {
-      id: "overview",
-      title: "Overview",
-      icon: "fas fa-map",
-      subtopics: [
-        {
-          id: "intro",
-          title: "Introduction",
-          formatType: "flip_card",
-          content: {
-            cards: [
-              {
-                image:
-                  "https://via.placeholder.com/400x300/0097b2/ffffff?text=Road+Safety",
-                title: "Road Safety Basics",
-                description:
-                  "Understanding road safety is crucial for all drivers and pedestrians. Learn the fundamental principles that keep everyone safe on the road.",
-              },
-              {
-                image:
-                  "https://via.placeholder.com/400x300/1e40af/ffffff?text=Traffic+Rules",
-                title: "Traffic Rules",
-                description:
-                  "Traffic rules are designed to create order and predictability on the roads. Following these rules prevents accidents and saves lives.",
-              },
-              {
-                image:
-                  "https://via.placeholder.com/400x300/16a34a/ffffff?text=Driver+Responsibility",
-                title: "Driver Responsibility",
-                description:
-                  "Every driver has a responsibility to ensure their own safety and the safety of others. This includes being alert, following rules, and maintaining your vehicle.",
-              },
-            ],
-          },
-          exercise: {
-            questions: [
-              {
-                question: "What is the primary purpose of traffic rules?",
-                options: [
-                  "To make driving difficult",
-                  "To create order and prevent accidents",
-                  "To generate revenue",
-                  "To slow down traffic",
-                ],
-                correctAnswer: 1,
-              },
-              {
-                question: "Who is responsible for road safety?",
-                options: [
-                  "Only the police",
-                  "Only drivers",
-                  "Everyone using the road",
-                  "Only pedestrians",
-                ],
-                correctAnswer: 2,
-              },
-            ],
-          },
-        },
-        {
-          id: "getting-started",
-          title: "Getting Started",
-          formatType: "image_right",
-          content: {
-            title: "Your Journey to Safe Driving",
-            text: [
-              "Starting your driving journey requires preparation and knowledge. Before you get behind the wheel, it's essential to understand the basics of vehicle operation and road safety.",
-              "The first step is obtaining your learner's permit. This involves studying traffic laws, understanding road signs, and passing a written examination. Take your time to study and ensure you understand all the material.",
-              "Practice is crucial. Start in low-traffic areas and gradually progress to busier roads as you gain confidence. Always practice with a licensed driver who can provide guidance and feedback.",
-              "Remember that learning to drive is a gradual process. Don't rush - focus on building good habits from the beginning.",
-            ],
-            image:
-              "https://via.placeholder.com/400x500/0097b2/ffffff?text=Getting+Started",
-          },
-          exercise: {
-            questions: [
-              {
-                question: "What should you do before getting behind the wheel?",
-                options: [
-                  "Jump in and start driving",
-                  "Study traffic laws and understand road signs",
-                  "Buy an expensive car",
-                  "Get insurance only",
-                ],
-                correctAnswer: 1,
-              },
-            ],
-          },
-        },
-        {
-          id: "basics",
-          title: "Road Basics",
-          formatType: "accordion",
-          content: {
-            sections: [
-              {
-                title: "Understanding Road Markings",
-                text: "Road markings are painted lines and symbols on the road surface that provide information to drivers. White lines separate lanes of traffic moving in the same direction, while yellow lines separate traffic moving in opposite directions.",
-                image:
-                  "https://via.placeholder.com/500x300/0097b2/ffffff?text=Road+Markings",
-              },
-              {
-                title: "Lane Discipline",
-                text: "Maintaining proper lane discipline is essential for safe driving. Always stay in your lane unless you need to change lanes. Use your turn signals before changing lanes and check your mirrors and blind spots.",
-                image:
-                  "https://via.placeholder.com/500x300/1e40af/ffffff?text=Lane+Discipline",
-              },
-              {
-                title: "Speed Management",
-                text: "Driving at appropriate speeds is crucial for safety. Always observe posted speed limits and adjust your speed based on road conditions, weather, and traffic. Remember that speed limits are maximums, not targets.",
-                image:
-                  "https://via.placeholder.com/500x300/16a34a/ffffff?text=Speed+Management",
-              },
-            ],
-          },
-          exercise: {
-            questions: [
-              {
-                question:
-                  "What color are the lines that separate opposing traffic?",
-                options: ["White", "Yellow", "Red", "Blue"],
-                correctAnswer: 1,
-              },
-            ],
-          },
-        },
-      ],
-    },
-    {
-      id: "traffic-signs",
-      title: "Traffic Signs",
-      icon: "fas fa-traffic-light",
-      subtopics: [
-        {
-          id: "warning",
-          title: "Warning Signs",
-          formatType: "timeline",
-          content: {
-            steps: [
-              {
-                title: "Sharp Curve Ahead",
-                description:
-                  "This sign warns you that there is a sharp curve ahead. Reduce your speed before entering the curve and maintain a safe speed throughout.",
-                image:
-                  "https://via.placeholder.com/400x300/f59e0b/000000?text=Curve+Warning",
-              },
-              {
-                title: "Intersection Warning",
-                description:
-                  "Indicates that you are approaching an intersection. Be prepared to slow down or stop, and watch for cross traffic.",
-                image:
-                  "https://via.placeholder.com/400x300/f59e0b/000000?text=Intersection",
-              },
-              {
-                title: "Animal Crossing",
-                description:
-                  "Watch for animals that may cross the road. Be especially alert during dawn and dusk when animals are most active.",
-                image:
-                  "https://via.placeholder.com/400x300/f59e0b/000000?text=Animal+Crossing",
-              },
-            ],
-          },
-          exercise: {
-            questions: [
-              {
-                question:
-                  "What should you do when you see a curve warning sign?",
-                options: [
-                  "Speed up",
-                  "Reduce speed before the curve",
-                  "Ignore it",
-                  "Honk your horn",
-                ],
-                correctAnswer: 1,
-              },
-            ],
-          },
-        },
-        {
-          id: "regulatory",
-          title: "Regulatory Signs",
-          formatType: "tabs",
-          content: {
-            tabs: [
-              {
-                title: "Stop Signs",
-                content:
-                  "A stop sign requires you to come to a complete stop. You must stop before the stop line, crosswalk, or intersection. Look left, right, and left again before proceeding.",
-                image:
-                  "https://via.placeholder.com/600x400/dc2626/ffffff?text=STOP",
-              },
-              {
-                title: "Yield Signs",
-                content:
-                  "Yield signs indicate that you must slow down and be prepared to stop. Give the right-of-way to vehicles and pedestrians already in the intersection or approaching from another direction.",
-                image:
-                  "https://via.placeholder.com/600x400/f59e0b/ffffff?text=YIELD",
-              },
-              {
-                title: "Speed Limit Signs",
-                content:
-                  "Speed limit signs show the maximum legal speed. You may drive slower than the posted speed but never faster. Adjust your speed for weather and road conditions.",
-                image:
-                  "https://via.placeholder.com/600x400/0097b2/ffffff?text=50+KM/H",
-              },
-            ],
-          },
-          exercise: {
-            questions: [
-              {
-                question: "What must you do at a stop sign?",
-                options: [
-                  "Slow down",
-                  "Come to a complete stop",
-                  "Honk and proceed",
-                  "Speed up",
-                ],
-                correctAnswer: 1,
-              },
-            ],
-          },
-        },
-        {
-          id: "information",
-          title: "Information Signs",
-          formatType: "image_left",
-          content: {
-            title: "Understanding Information Signs",
-            text: [
-              "Information signs provide helpful details about services, destinations, and points of interest. They are typically blue or green and are designed to help you navigate.",
-              "Green signs indicate directions and distances to cities and towns. Blue signs show services such as gas stations, hospitals, and rest areas.",
-              "Brown signs point to recreational areas, parks, and tourist attractions. These signs help you plan your route and find necessary services along the way.",
-            ],
-            image:
-              "https://via.placeholder.com/400x500/16a34a/ffffff?text=Information+Signs",
-          },
-          exercise: {
-            questions: [
-              {
-                question: "What color are service information signs?",
-                options: ["Red", "Green", "Blue", "Yellow"],
-                correctAnswer: 2,
-              },
-            ],
-          },
-        },
-      ],
-    },
-    {
-      id: "road-rules",
-      title: "Road Rules",
-      icon: "fas fa-road",
-      subtopics: [
-        {
-          id: "speed-limits",
-          title: "Speed Limits",
-          formatType: "image_overlay",
-          content: {
-            title: "Understanding Speed Limits",
-            description:
-              "Speed limits are set to ensure the safety of all road users. They vary depending on the type of road, location, and conditions. Always observe posted limits and adjust your speed for weather and traffic.",
-            image:
-              "https://via.placeholder.com/1200x500/0097b2/ffffff?text=Speed+Limits",
-          },
-          exercise: {
-            questions: [
-              {
-                question: "Can you drive faster than the posted speed limit?",
-                options: [
-                  "Yes, if traffic is light",
-                  "Yes, if you're in a hurry",
-                  "No, never",
-                  "Yes, on highways only",
-                ],
-                correctAnswer: 2,
-              },
-            ],
-          },
-        },
-        {
-          id: "right-of-way",
-          title: "Right of Way",
-          formatType: "flip_card",
-          content: {
-            cards: [
-              {
-                image:
-                  "https://via.placeholder.com/400x300/0097b2/ffffff?text=Intersection",
-                title: "At Intersections",
-                description:
-                  "At a four-way stop, the first vehicle to arrive has the right-of-way. If multiple vehicles arrive simultaneously, the vehicle on the right has priority.",
-              },
-              {
-                image:
-                  "https://via.placeholder.com/400x300/1e40af/ffffff?text=Pedestrian",
-                title: "Pedestrian Crossings",
-                description:
-                  "Pedestrians always have the right-of-way at marked crosswalks. Always stop and allow them to cross safely before proceeding.",
-              },
-              {
-                image:
-                  "https://via.placeholder.com/400x300/16a34a/ffffff?text=Emergency",
-                title: "Emergency Vehicles",
-                description:
-                  "Emergency vehicles with lights and sirens always have the right-of-way. Pull over to the right and stop until they pass.",
-              },
-            ],
-          },
-          exercise: {
-            questions: [
-              {
-                question: "Who has the right-of-way at a pedestrian crossing?",
-                options: [
-                  "The driver",
-                  "The pedestrian",
-                  "Whoever gets there first",
-                  "The larger vehicle",
-                ],
-                correctAnswer: 1,
-              },
-            ],
-          },
-        },
-        {
-          id: "parking",
-          title: "Parking Rules",
-          formatType: "accordion",
-          content: {
-            sections: [
-              {
-                title: "Parallel Parking",
-                text: "When parallel parking, ensure you are within 30cm of the curb. Turn your wheels away from the curb when parking uphill, and toward the curb when parking downhill.",
-                image:
-                  "https://via.placeholder.com/500x300/0097b2/ffffff?text=Parallel+Parking",
-              },
-              {
-                title: "No Parking Zones",
-                text: "Never park in fire lanes, in front of driveways, within 5 meters of a fire hydrant, or in designated no-parking zones. Violations can result in fines and towing.",
-                image:
-                  "https://via.placeholder.com/500x300/dc2626/ffffff?text=No+Parking",
-              },
-              {
-                title: "Parking Lots",
-                text: "In parking lots, observe all signs and markings. Park within the lines, and be especially careful when backing out as visibility may be limited.",
-                image:
-                  "https://via.placeholder.com/500x300/16a34a/ffffff?text=Parking+Lot",
-              },
-            ],
-          },
-          exercise: {
-            questions: [
-              {
-                question: "How close to a fire hydrant can you park?",
-                options: [
-                  "As close as you want",
-                  "At least 3 meters away",
-                  "At least 5 meters away",
-                  "At least 10 meters away",
-                ],
-                correctAnswer: 2,
-              },
-            ],
-          },
-        },
-      ],
-    },
-  ],
-};
 
 // ===== QUIZ MODE DATA =====
 const QUIZ_DATA = {
@@ -2497,6 +2127,18 @@ async function loadContentSidebar() {
   let topics = [];
   try {
     const res = await FetchData("/topic", true);
+    console.log("Response->: ", res);
+    if (res?.success === false || res?.status >= 400) {
+      console.log("Error loading topics:", res);
+      showInfoPopup(
+        "Oops!",
+        res.userMessage || "An error occurred",
+        "fas fa-exclamation-circle",
+        "#e74c3c",
+      );
+      _renderFallbackTopics(quizNav);
+      return;
+    }
     topics = res?.data?.topics ?? [];
   } catch (err) {
     console.error("[loadContentSidebar]", err);
@@ -2620,6 +2262,16 @@ async function loadContent(event, dataset) {
     // 1. Fetch sections for this subtopic (cached)
     if (!_contentCache.sections[subtopicId]) {
       const res = await FetchData(`/sections/${subtopicId}`, true);
+      if (res?.success === false || res?.status >= 400) {
+        showInfoPopup(
+          "Oops!",
+          res.userMessage || "Database error occurred",
+          "fas fa-exclamation-circle",
+          "#e74c3c",
+        );
+        _renderFallbackTopics(quizNav);
+        return;
+      }
       _contentCache.sections[subtopicId] = res?.data?.sections ?? [];
     }
     const sections = _contentCache.sections[subtopicId];
@@ -2633,6 +2285,17 @@ async function loadContent(event, dataset) {
             `/sections/${sec.section_id}/components`,
             true,
           );
+          if (res?.success === false || res?.status >= 400) {
+            showInfoPopup(
+              "Oops!",
+              res.userMessage,
+              "fas fa-exclamation-circle",
+              "#e74c3c",
+            );
+            _renderFallbackTopics(quizNav);
+            return;
+          }
+          console.log(`Components for section ${sec.section_id}:`, res);
           _contentCache.components[sec.section_id] = (
             res?.data?.components ?? []
           ).map(_normalizeComponent);
@@ -2660,7 +2323,6 @@ async function loadContent(event, dataset) {
     // 5. Update prev/next navigation
     _updateTopicNavFromAPI(subtopicId);
   } catch (err) {
-    console.error("[loadContent]", err);
     container.innerHTML = `<div style="padding:40px;text-align:center;color:#dc2626;">
       <i class="fas fa-exclamation-triangle"></i>
       <p style="margin-top:8px;">Failed to load content. Please try again.</p></div>`;
@@ -2721,7 +2383,7 @@ function _renderOneComponent(comp) {
 
   switch (comp.format_type) {
     case "flipcards":
-      console.log("flip card data",items);
+      console.log("flip card data", items);
       return renderFlipCards(
         items.map((it) => ({
           image: it.image ?? null,
@@ -2804,7 +2466,16 @@ async function _loadExerciseForSubtopic(subtopicName) {
       `/exercise?topic=${encodeURIComponent(subtopicName)}`,
       true,
     );
-
+    if (res?.success === false || res?.status >= 400) {
+      showInfoPopup(
+        "Oops!",
+        res.userMessage,
+        "fas fa-exclamation-circle",
+        "#e74c3c",
+      );
+      _renderFallbackTopics(quizNav);
+      return;
+    }
     const questionIds = res?.data?.questions ?? [];
     if (!questionIds.length) return;
 
@@ -3294,8 +2965,19 @@ async function loadQuizSidebar() {
   // 2. Fetch topics from backend
   try {
     const response = await FetchData("/topic", true);
+
+    if (response?.success === false || response?.status >= 400) {
+      showInfoPopup(
+        "Oops!",
+        response.userMessage || "Database error occurred",
+        "fas fa-exclamation-circle",
+        "#e74c3c",
+      );
+      _renderFallbackTopics(quizNav);
+      return;
+    }
+
     const topics = response?.data?.topics ?? [];
-    console.log("Fetched topics from backend:", topics);
 
     if (topics.length === 0) {
       // Fallback to static QUIZ_DATA (excluding the already-pinned multi-session entry)
@@ -3508,6 +3190,25 @@ async function fetchAndStartOverviewQuiz() {
   console.log("Fetching overview quiz: /quiz/random");
 
   const response = await FetchData("/quiz/random", true);
+  if (response?.success === false || response?.status >= 400) {
+      if (response.status === 403) {
+        showInfoPopup(
+          "Access Restricted",
+          response.userMessage,
+          "fas fa-lock",
+          "#f39c12", // Warning orange/yellow
+        );
+        return;
+      }
+    showInfoPopup(
+      "Oops!",
+      response.userMessage,
+      "fas fa-exclamation-circle",
+      "#e74c3c",
+    );
+    _renderFallbackTopics(quizNav);
+    return;
+  }
 
   if (!response?.success) {
     throw new Error(response?.error ?? "Backend returned an error");
@@ -3561,8 +3262,25 @@ async function fetchAndStartTopicQuiz(topicName) {
 
   const response = await FetchData(endpoint, true);
 
-  if (!response?.success) {
-    throw new Error(response?.error ?? "Backend returned an error");
+
+  if (response?.success === false || response?.status >= 400) {
+    if (response.status === 403) {
+      showInfoPopup(
+        "Access Restricted",
+        response.userMessage,
+        "fas fa-lock",
+        "#f39c12", // Warning orange/yellow
+      );
+      return;
+    }
+    showInfoPopup(
+      "Oops!",
+      response.userMessage,
+      "fas fa-exclamation-circle",
+      "#e74c3c",
+    );
+    _renderFallbackTopics(quizNav);
+    return;
   }
 
   // Backend returns questions as plain IDs e.g. [42, 41, 43]
@@ -3681,8 +3399,27 @@ async function showExamSelectionScreen(quiz) {
 
   try {
     const response = await FetchData("/quizzes", true);
-    alert("FETCHED /quizzes: ");
+      if (response?.success === false || response?.status >= 400) {
+        if (response.status === 403) {
+          showInfoPopup(
+            "Access Restricted",
+            response.userMessage,
+            "fas fa-lock",
+            "#f39c12", // Warning orange/yellow
+          );
+          return;
+        }
+        showInfoPopup(
+          "Oops!",
+          response.userMessage,
+          "fas fa-exclamation-circle",
+          "#e74c3c",
+        );
+        _renderFallbackTopics(quizNav);
+        return;
+      }
     const sessions = response.data.quizzes;
+
 
     if (!sessions || sessions.length === 0) {
       grid.innerHTML = `<p class="exam-empty">No exams available yet. Check back later.</p>`;
@@ -3716,20 +3453,34 @@ async function showExamSelectionScreen(quiz) {
         const btn = card.querySelector(".exam-start-btn");
         btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Loading...`;
         btn.disabled = true;
-        console.log(`Selected exam session ${session.quiz_id}:`, session.questions);
-        const fetchData = await FetchData(`/quiz/${session.quiz_id}`, true);
         console.log(
-          `Fetched quiz details for session ${session.quiz_id}:`,
-          fetchData.data?.questions
+          `Selected exam session ${session.quiz_id}:`,
+          session.questions,
         );
-        const questions = fetchData.data?.questions ?? [];
+        const response = await FetchData(`/quiz/${session.quiz_id}`, true);
+         if (response?.success === false || response?.status >= 400) {
+           if (response.status === 403) {
+             showInfoPopup(
+               "Access Restricted",
+               response.userMessage,
+               "fas fa-lock",
+               "#f39c12", // Warning orange/yellow
+             );
+             return;
+           }
+           showInfoPopup(
+             "Oops!",
+             response.userMessage,
+             "fas fa-exclamation-circle",
+             "#e74c3c",
+           );
+           _renderFallbackTopics(quizNav);
+           return;
+         }
+        const questions = response.data?.questions ?? [];
         confirmQuizNavigation(async () => {
           try {
-            await loadAndStartQuiz(
-              session.quiz_id,
-              session.title,
-              questions,
-            );
+            await loadAndStartQuiz(session.quiz_id, session.title, questions);
           } catch (err) {
             console.error("Failed to start exam:", err);
             btn.innerHTML = `Start Exam <i class="fas fa-arrow-right"></i>`;
@@ -3863,9 +3614,68 @@ async function loadAndStartQuiz(quizId, quizTitle, questionlists) {
  * shows a confirmation popup before running onConfirm.
  * If no quiz is in progress, calls onConfirm immediately.
  */
+function createBasePopup({
+  title = "",
+  message = "",
+  icon = "fas fa-info-circle",
+  iconColor = "",
+  confirmText = "Yes",
+  cancelText = "No",
+  showCancel = true,
+  showConfirm = true,
+  onConfirm = () => {},
+  onCancel = () => {},
+  confirmBtnStyle = "",
+  cancelBtnStyle = "",
+}) {
+  // Remove existing popups to prevent stacking
+  document.getElementById("progressWarningOverlay")?.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "progressWarningOverlay";
+
+  const iconStyle = iconColor ? `style="color:${iconColor}"` : "";
+
+  overlay.innerHTML = `
+    <div id="progressWarningBox">
+      <div class="pw-icon" ${iconStyle}><i class="${icon}"></i></div>
+      <h3>${title}</h3>
+      <p>${message}</p>
+      <div class="pw-actions">
+        ${showCancel ? `<button class="pw-btn pw-btn-cancel" style="${cancelBtnStyle}">${cancelText}</button>` : ""}
+        ${showConfirm ? `<button class="pw-btn pw-btn-confirm" style="${confirmBtnStyle}">${confirmText}</button>` : ""}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+
+  if (showCancel) {
+    overlay.querySelector(".pw-btn-cancel").addEventListener("click", () => {
+      close();
+      onCancel();
+    });
+  }
+
+  if (showConfirm) {
+    overlay.querySelector(".pw-btn-confirm").addEventListener("click", () => {
+      close();
+      onConfirm();
+    });
+  }
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) close();
+  });
+}
+
+/**
+ * Refactored original functions using the base popup
+ */
+
 function confirmQuizNavigation(onConfirm) {
-  // Quiz is "in progress" when the quiz interface is visible AND we are not
-  // in review mode (results screen counts as done, not in-progress).
   const quizInterfaceVisible =
     document.getElementById("quizInterface")?.style.display !== "none";
   const inProgress =
@@ -3879,68 +3689,35 @@ function confirmQuizNavigation(onConfirm) {
   const answered = userAnswers.filter((a) => a !== null).length;
   const total = currentQuiz.questions.length;
 
-  const overlay = document.createElement("div");
-  overlay.id = "progressWarningOverlay";
-  overlay.innerHTML = `
-    <div id="progressWarningBox">
-      <div class="pw-icon"><i class="fas fa-exclamation-triangle"></i></div>
-      <h3>Quiz in progress!</h3>
-      <p>You have answered <strong>${answered}</strong> of <strong>${total}</strong> questions.<br>
-        Leaving now will lose all your progress.</p>
-      <div class="pw-actions">
-        <button class="pw-btn pw-btn-cancel">Keep going</button>
-        <button class="pw-btn pw-btn-confirm">Yes, leave</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(overlay);
-
-  overlay.querySelector(".pw-btn-cancel").addEventListener("click", () => {
-    overlay.remove();
-  });
-  overlay.querySelector(".pw-btn-confirm").addEventListener("click", () => {
-    overlay.remove();
-    clearInterval(timerInterval);
-    onConfirm();
-  });
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) overlay.remove();
+  createBasePopup({
+    title: "Quiz in progress!",
+    message: `You have answered <strong>${answered}</strong> of <strong>${total}</strong> questions.<br>Leaving now will lose all your progress.`,
+    icon: "fas fa-exclamation-triangle",
+    confirmText: "Yes, leave",
+    cancelText: "Keep going",
+    onConfirm: () => {
+      if (typeof timerInterval !== "undefined") clearInterval(timerInterval);
+      onConfirm();
+    },
   });
 }
 
-// Shows a simple info/error popup — used for empty question sets and other user-facing errors
 function showInfoPopup(
   title,
   message,
   icon = "fas fa-info-circle",
   iconColor = "#0097b2",
 ) {
-  // Remove any existing popup first
-  document.getElementById("progressWarningOverlay")?.remove();
-
-  const overlay = document.createElement("div");
-  overlay.id = "progressWarningOverlay";
-  overlay.innerHTML = `
-    <div id="progressWarningBox">
-      <div class="pw-icon" style="color:${iconColor}"><i class="${icon}"></i></div>
-      <h3>${title}</h3>
-      <p>${message}</p>
-      <div class="pw-actions">
-        <button class="pw-btn pw-btn-cancel" style="background:#0097b2;color:#fff;">OK</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(overlay);
-  overlay
-    .querySelector(".pw-btn-cancel")
-    .addEventListener("click", () => overlay.remove());
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) overlay.remove();
+  createBasePopup({
+    title,
+    message,
+    icon,
+    iconColor,
+    showConfirm: false,
+    cancelText: "OK",
+    cancelBtnStyle: "background:#0097b2; color:#fff;",
   });
 }
-
 // ============================================
 // QUIZ REPORT
 // ============================================

@@ -1,13 +1,14 @@
 import logging
 from flask import Blueprint, request, jsonify
 from core.models import db, Section, ComponentItem
-from core.utils.decorators import role_required
+from core.utils.decorators import role_required,rate_limit
 
 sections_bp = Blueprint("sections", __name__)
 
 
 @sections_bp.route("/sections/<int:topic_id>", methods=["GET"])
 @role_required(["admin", "client"])
+@rate_limit(capacity=5, refill_rate=1) 
 def get_sections_by_topic(topic_id):
     try:
         sections = Section.query.filter_by(topic_id=topic_id).order_by(Section.order_index).all()
@@ -26,6 +27,7 @@ def get_sections_by_topic(topic_id):
 
 @sections_bp.route("/section", methods=["POST"])
 @role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1) 
 def create_section():
     try:
         data = request.get_json()
@@ -51,6 +53,7 @@ def create_section():
 
 @sections_bp.route("/sections/<int:section_id>", methods=["PUT"])
 @role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1) 
 def update_section(section_id):
     try:
         data = request.get_json()

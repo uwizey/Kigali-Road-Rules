@@ -3,7 +3,7 @@ import base64
 import logging
 from flask import Blueprint, request, jsonify
 from core.models import db, Question, AnswerOption
-from core.utils.decorators import role_required
+from core.utils.decorators import role_required,rate_limit
 
 questions_bp = Blueprint("questions", __name__)
 
@@ -24,6 +24,7 @@ def _map_correct_answer(question, correct_answer, options_map):
 
 @questions_bp.route("/question", methods=["POST"])
 @role_required("admin")
+@rate_limit(capacity=5, refill_rate=1) 
 def create_question():
     try:
         statement = request.form.get("statement")
@@ -81,6 +82,7 @@ def create_question():
 
 @questions_bp.route("/questions", methods=["GET"])
 @role_required("admin")
+@rate_limit(capacity=5, refill_rate=1) 
 def get_all_questions():
     try:
         questions = Question.query.all()
@@ -97,6 +99,7 @@ def get_all_questions():
 
 @questions_bp.route("/question/<int:question_id>", methods=["GET"])
 @role_required(["admin", "client"])
+@rate_limit(capacity=20, refill_rate=1) 
 def get_question(question_id):
     try:
         question = Question.query.get(question_id)
@@ -130,6 +133,7 @@ def get_question(question_id):
 
 @questions_bp.route("/question", methods=["PUT"])
 @role_required("admin")
+@rate_limit(capacity=5, refill_rate=1) 
 def update_question():
     try:
         payload = request.form
@@ -191,6 +195,7 @@ def update_question():
 
 @questions_bp.route("/question", methods=["DELETE"])
 @role_required("admin")
+@rate_limit(capacity=5, refill_rate=1) 
 def delete_question():
     try:
         payload = request.get_json(force=True, silent=True)
