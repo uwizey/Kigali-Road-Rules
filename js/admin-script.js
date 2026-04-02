@@ -988,26 +988,39 @@ async function loadUsers() {
   var tbody = document.getElementById("usersTableBody");
   tbody.innerHTML = "";
   const response = await FetchData("/users", true);
+
   if (handleApiResponse(response)) return;
   users = response.data.users;
+  console.log("Response-user: ", users);
   document.getElementById("totalUsers").textContent = users.length;
+
   users.forEach(function (user) {
+    const isDeactivated = !user.is_active || user.deleted_at !== null;
+
     var row = document.createElement("tr");
     row.innerHTML = `
-            <td>${user.id}</td>
-            <td>${user.email}</td>
-            <td>${user.role.toUpperCase()}</td>
-            <td>
-                <div class="table-actions">
-                    <button class="btn-edit" data-action="edit-user" data-id="${user.id}">Edit</button>
-                    <button class="btn-delete" data-action="delete-user" data-id="${user.id}">Delete</button>
-                </div>
-            </td>
-        `;
+      <td>${user.id}</td>
+      <td>${user.email}</td>
+      <td>${user.role.toUpperCase()}</td>
+      <td>
+        <span class="status-badge ${isDeactivated ? "status-inactive" : "status-active"}">
+          ${isDeactivated ? "Inactive" : "Active"}
+        </span>
+      </td>
+      <td>
+        <div class="table-actions">
+          ${
+            isDeactivated
+              ? `<button class="btn-activate" data-action="activate-user" data-id="${user.id}">Activate</button>`
+              : `<button class="btn-edit" data-action="edit-user" data-id="${user.id}">Edit</button>
+               <button class="btn-delete" data-action="delete-user" data-id="${user.id}">Delete</button>`
+          }
+        </div>
+      </td>
+    `;
     tbody.appendChild(row);
   });
 }
-
 /**
  * Open user modal for add or edit
  * @param {number|null} userId - ID of user to edit, or null for new
@@ -1029,10 +1042,6 @@ function openUserModal(userId) {
     if (user) {
       title.textContent = "Edit User";
       document.getElementById("userId").value = user.id;
-      document.getElementById("userName").value = user.name;
-      document.getElementById("userEmail").value = user.email;
-      document.getElementById("userRole").value = user.role;
-      document.getElementById("userStatus").value = user.status;
       passwordInput.required = false;
       passwordHelp.style.display = "block";
     }
@@ -1060,24 +1069,16 @@ async function handleUserSubmit(event) {
   event.preventDefault();
 
   var userId = document.getElementById("userId").value;
-  var name = document.getElementById("userName").value;
-  var email = document.getElementById("userEmail").value;
-  var role = document.getElementById("userRole").value;
   var password = document.getElementById("userPassword").value;
-  var status = document.getElementById("userStatus").value;
+
 
   if (userId) {
     // Update existing user
-    var payload = { id: parseInt(userId), name, email, role, status };
-    if (password) payload.password = password;
-    const response = await UpdateData("/user", payload, true);
+    const payload = { id: parseInt(userId),password: password };
+    console.log(payload);
+    const response = await UpdateData("/admin/reset-password", payload, true);
     if (handleApiResponse(response)) return;
-  } else {
-    // Create new user
-    var payload = { name, email, role, status, password };
-    const response = await PostData("/user", payload, true);
-    if (handleApiResponse(response)) return;
-  }
+  } 
 
   loadUsers();
   closeUserModal();
@@ -1096,13 +1097,30 @@ function editUser(userId) {
  * @param {number} userId - ID of user to delete
  */
 async function deleteUser(userId) {
+  alert(userId);
   if (confirm("Are you sure you want to delete this user?")) {
-    const response = await DeleteData("/user", { id: userId }, true);
+    const response = await UpdateData(
+      `/admin/deactivate-user/${userId}`,
+      { id: userId },
+      true,
+    );
     if (handleApiResponse(response)) return;
     loadUsers();
   }
 }
 
+async function activateUser(userId) {
+  alert(userId);
+  if (confirm("Are you sure you want to activate this user?")) {
+    const response = await UpdateData(
+      `/admin/activate-user/${userId}`,
+      { id: userId },
+      true,
+    );
+    if (handleApiResponse(response)) return;
+    loadUsers();
+  }
+}
 /**
  * Filter users based on role and search term
  */
@@ -1752,6 +1770,9 @@ document.addEventListener("DOMContentLoaded", function () {
           break;
         case "delete-user":
           deleteUser(id);
+          break;
+        case "activate-user": 
+          activateUser(id);
           break;
       }
     });

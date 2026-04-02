@@ -21,6 +21,9 @@ class User(db.Model):
     role=db.Column(db.String(50),nullable=False,default=Role.User)
     created_at=db.Column(db.DateTime,default=datetime.utcnow)
     last_login=db.Column(db.DateTime,default=datetime.utcnow,onupdate=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    deleted_at = db.Column(db.DateTime, nullable=True)
+    
     
     requests = db.relationship("Request", back_populates="user", cascade="all, delete-orphan")
     subscriptions = db.relationship("Subscription", back_populates="user", cascade="all, delete-orphan")

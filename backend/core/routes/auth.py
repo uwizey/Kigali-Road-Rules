@@ -5,7 +5,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from core.models import db, User
 from core import jwt, jwt_blacklist
-from datetime import timedelta
+from datetime import timedelta,datetime
+from core.utils.decorators import role_required
 
 
 auth_bp = Blueprint("auth", __name__)
@@ -52,23 +53,49 @@ def login():
         payload = request.get_json(force=True, silent=True)
         if not payload:
             return jsonify({"status": False, "message": "Invalid or missing JSON payload"}), 400
+
         email = payload.get("email", "").strip().lower()
         password = payload.get("password")
+
         if not email or not password:
             return jsonify({"status": False, "message": "Email and password are required"}), 400
+
         user = User.query.filter_by(email=email).first()
+
+        # Invalid credentials
         if not user or not check_password_hash(user.password, password):
             logging.warning(f"Login failed for email: {email}")
             return jsonify({"status": False, "message": "Invalid credentials"}), 401
+
+        # ❌ Soft-deleted or deactivated user
+        if not user.is_active:
+            return jsonify({"status": False, "message": "Your account has been deactivated"}), 403
+
+        # Store previous login time before updating
+        previous_login = user.last_login.isoformat() if user.last_login else None
+
+        # Update last login timestamp
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+
+        # Create JWT
         access_token = create_access_token(
             identity=str(user.id),
             additional_claims={"email": user.email, "role": user.role}
         )
-        return jsonify({"status": True, "token": access_token, "role": user.role}), 200
+
+        return jsonify({
+            "status": True,
+            "token": access_token,
+            "role": user.role,
+            "last_login": previous_login
+        }), 200
+
     except SQLAlchemyError as e:
         db.session.rollback()
         logging.error(f"Database error: {str(e)}")
         return jsonify({"status": False, "message": "Database error occurred"}), 500
+
     except Exception as e:
         logging.error(f"Unexpected error: {str(e)}")
         return jsonify({"status": False, "message": "Unexpected error occurred"}), 500
@@ -92,8 +119,6 @@ def profile():
     get_jwt_identity()
     claims = get_jwt()
     return jsonify({"status": True, "data": {"email": claims["email"], "role": claims["role"]}}), 200
-
-
 
 
 @auth_bp.route("/user/update-email", methods=["PUT"])
@@ -145,8 +170,6 @@ def update_email():
         return jsonify({"status": False, "message": "Server error"}), 500
 
 
-
-
 @auth_bp.route("/user/update-password", methods=["PUT"])
 @jwt_required()
 def update_password():
@@ -194,12 +217,29 @@ def update_password():
 
 
 @auth_bp.route("/users", methods=["GET"])
+@role_required(["admin"])
 def get_all_users():
-    from core.utils.decorators import role_required
     try:
         users = User.query.filter(User.role == "client").all()
-        response = [{"id": u.id, "email": u.email, "role": u.role} for u in users]
-        return jsonify({"status": True, "users": response}), 200
+
+        response = []
+        for u in users:
+            response.append({
+                "id": u.id,
+                "email": u.email,
+                "role": u.role,
+                "is_active": u.is_active,
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+                "last_login": u.last_login.isoformat() if u.last_login else None,
+                "deleted_at": u.deleted_at.isoformat() if u.deleted_at else None
+            })
+
+        return jsonify({
+            "status": True,
+            "users": response,
+            "count": len(response)
+        }), 200
+
     except Exception as e:
         logging.error(f"Error retrieving users: {str(e)}")
         return jsonify({"status": False, "message": "Error retrieving users"}), 500
@@ -250,3 +290,106 @@ def get_user_email():
     except Exception as e:
         logging.error(f"Error retrieving user email: {str(e)}")
         return jsonify({"status": False, "message": "Error retrieving user email"}), 500
+
+
+@auth_bp.route("/admin/reset-password", methods=["PUT"])
+@role_required(["admin"])   # Only admins can use this
+def admin_reset_password():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": False, "message": "Invalid or missing JSON payload"}), 400
+
+        user_id = data.get("id")
+        new_password = data.get("password")
+
+        if not user_id or not new_password:
+            return jsonify({"status": False, "message": "User ID and new password are required"}), 400
+
+        # Fetch user
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"status": False, "message": f"User with ID {user_id} not found"}), 404
+
+        # Prevent admin from using this endpoint on themselves
+        admin_id = get_jwt_identity()
+        if admin_id == user_id:
+            return jsonify({"status": False, "message": "Admins cannot reset their own password using this route"}), 403
+
+        # Hash and update password
+        user.password = generate_password_hash(new_password)
+        db.session.commit()
+
+        return jsonify({
+            "status": True,
+            "message": f"Password for user {user_id} has been updated successfully"
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Admin password reset error: {e}")
+        db.session.rollback()
+        return jsonify({"status": False, "message": "Server error while resetting password"}), 500
+
+
+@auth_bp.route("/admin/deactivate-user/<int:user_id>", methods=["PUT"])
+@role_required(["admin"])
+def deactivate_user(user_id):
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"status": False, "message": f"User {user_id} not found"}), 404
+
+        if not user.is_active:
+            return jsonify({"status": False, "message": "User already deactivated"}), 400
+
+        # Prevent admin from deactivating themselves
+        admin_id = get_jwt_identity()
+        if admin_id == user_id:
+            return jsonify({"status": False, "message": "You cannot deactivate your own account"}), 403
+
+        user.is_active = False
+        user.deleted_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            "status": True,
+            "message": f"User {user_id} deactivated successfully",
+            "deleted_at": user.deleted_at.isoformat()
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error deactivating user {user_id}: {e}")
+        db.session.rollback()
+        return jsonify({"status": False, "message": "Server error while deactivating user"}), 500
+
+@auth_bp.route("/admin/activate-user/<int:user_id>", methods=["PUT"])
+@role_required(["admin"])
+def activate_user(user_id):
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"status": False, "message": f"User {user_id} not found"}), 404
+
+        # Already active
+        if user.is_active:
+            return jsonify({"status": False, "message": "User is already active"}), 400
+
+        # Optional: prevent admin from activating themselves through this route
+        admin_id = get_jwt_identity()
+        if admin_id == user_id:
+            return jsonify({"status": False, "message": "You cannot activate your own account using this route"}), 403
+
+        # Reactivate user
+        user.is_active = True
+        user.deleted_at = None
+        db.session.commit()
+
+        return jsonify({
+            "status": True,
+            "message": f"User {user_id} activated successfully"
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error activating user {user_id}: {e}")
+        db.session.rollback()
+        return jsonify({"status": False, "message": "Server error while activating user"}), 500

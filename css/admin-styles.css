@@ -287,7 +287,20 @@ body {
     transition: var(--speed);
     font-size: 13px;
 }
-
+.btn-activate {
+    background: rgb(197, 255, 197);
+    color: rgb(4, 193, 4);
+    border: none;
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--speed);
+    font-size: 13px;
+}
+.btn-activate:hover {
+    background: rgb(144, 255, 144);
+}
 .btn-edit:hover {
     background: #bfdbfe;
 }
