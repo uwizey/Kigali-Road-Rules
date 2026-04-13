@@ -39,7 +39,7 @@ def get_components_by_section(section_id):
 
 
 @components_bp.route("/component", methods=["POST"])
-@role_required(["admin", "client"])
+@role_required(["admin"])
 @rate_limit(capacity=5, refill_rate=1) 
 def create_component():
     try:
@@ -135,7 +135,7 @@ def get_component(component_id):
 
 
 @components_bp.route("/component/<int:component_id>", methods=["PUT"])
-@role_required(["admin", "client"])
+@role_required(["admin"])
 @rate_limit(capacity=5, refill_rate=1) 
 def update_component(component_id):
     try:
@@ -225,7 +225,7 @@ def update_component(component_id):
         return jsonify({"status": False, "message": "Server error while updating component"}), 500
 
 @components_bp.route("/component/<int:component_id>", methods=["DELETE"])
-@role_required(["admin", "client"])
+@role_required(["admin"])
 @rate_limit(capacity=5, refill_rate=1)
 def delete_component(component_id):
     try:

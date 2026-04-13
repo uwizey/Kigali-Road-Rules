@@ -27,7 +27,14 @@ class User(db.Model):
     
     requests = db.relationship("Request", back_populates="user", cascade="all, delete-orphan")
     subscriptions = db.relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
-
+    
+    analytics_events = db.relationship(
+        "AnalyticsEvent",
+        backref="user",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
+    
     def __repr__(self):
         return f'<User {self.email}>'
 
@@ -259,3 +266,16 @@ class Subscription(db.Model):
             db.session.commit()
         return self.expiry_date < now
 
+
+class AnalyticsEvent(db.Model):
+    __tablename__ = "analytics_events"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    event_type = db.Column(db.String(100), nullable=False)
+    event_metadata = db.Column(db.JSON, nullable=True)
+    device = db.Column(db.String(100))
+    os = db.Column(db.String(100))
+    browser = db.Column(db.String(100))
+    ip_address = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

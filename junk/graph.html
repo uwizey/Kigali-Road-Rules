@@ -1,366 +1,158 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kigali Road Rules - Learning Analytics Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .glass { background: rgba(255, 255, 255, 1); }
-        .stat-card { border-left: 4px solid #3b82f6; }
-        .user-card { transition: all 0.2s ease; cursor: pointer; }
-        .user-card:hover { transform: translateY(-2px); }
-        .user-card.active { border-color: #3b82f6; background-color: #eff6ff; }
-        .dot { transition: all 0.3s ease; cursor: pointer; }
-        .dot:hover { r: 8; stroke-width: 3; }
-        .dot.active { r: 10; stroke: #000; stroke-width: 2; }
-    </style>
+  <title>Analytics Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial; background:#0f172a; color:white; }
+    .container { width:90%; margin:auto; }
+    .controls { margin:20px 0; display:flex; gap:10px; }
+    button, input { padding:8px 12px; border:none; border-radius:6px; }
+    button { background:#00bcd4; color:white; cursor:pointer; }
+    canvas { background:#111827; padding:10px; border-radius:10px; }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+<body>
 
-    <div id="app" class="w-full max-w-5xl">
-        <div class="mb-8 text-center">
-            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Enterprise Learning Analytics</h1>
-            <p class="text-slate-600 mt-2">Aggregated Multi-User Dataset & Deep Pedagogical Analysis</p>
-        </div>
+<div class="container">
 
-        <!-- Vector Graph Section -->
-        <div class="mb-10 glass rounded-3xl shadow-xl p-8 border border-slate-200 bg-white">
-            <h2 class="text-xl font-extrabold text-slate-800 mb-2 flex items-center">
-                <span class="mr-2">🎯</span> User Performance Vector Map
-            </h2>
-            <p class="text-slate-500 text-sm mb-6">Visualizing 20 users based on the trade-off between Accuracy and Response Speed.</p>
-            
-            <div class="relative w-full aspect-[2/1] bg-slate-50 rounded-xl border border-slate-100 overflow-hidden">
-                <!-- Axes Labels -->
-                <div class="absolute top-4 left-1/2 -translate-x-1/2 text-[10px] font-black text-slate-400 uppercase tracking-widest">High Accuracy (Knowledge Mastery)</div>
-                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Low Accuracy</div>
-                <div class="absolute left-4 top-1/2 -rotate-90 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fast (Low Latency)</div>
-                <div class="absolute right-4 top-1/2 rotate-90 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Slow (High Latency)</div>
+  <h2>📊 Analytics Dashboard</h2>
 
-                <!-- Quadrant Labels -->
-                <div class="absolute top-10 left-10 text-emerald-600 text-[10px] font-bold opacity-30">EXPERTS</div>
-                <div class="absolute top-10 right-10 text-blue-600 text-[10px] font-bold opacity-30">DILIGENT</div>
-                <div class="absolute bottom-10 left-10 text-red-600 text-[10px] font-bold opacity-30">IMPULSIVE</div>
-                <div class="absolute bottom-10 right-10 text-amber-600 text-[10px] font-bold opacity-30">STRUGGLING</div>
+  <!-- Filters -->
+  <div class="controls">
+    <button onclick="applyRange(7)">Last 7 Days</button>
+    <button onclick="applyRange(30)">Last 30 Days</button>
 
-                <svg id="vector-graph" viewBox="0 0 1000 500" class="w-full h-full">
-                    <!-- Grid Lines -->
-                    <line x1="500" y1="0" x2="500" y2="500" stroke="#e2e8f0" stroke-dasharray="4" />
-                    <line x1="0" y1="250" x2="1000" y2="250" stroke="#e2e8f0" stroke-dasharray="4" />
-                    <!-- Dots will be injected here -->
-                </svg>
-            </div>
-        </div>
+    <input type="date" id="startDate">
+    <input type="date" id="endDate">
+    <button onclick="applyCustom()">Apply</button>
+  </div>
 
-        <!-- User Selection Sidebar/Grid -->
-        <div class="mb-10">
-            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Select User Profile</h3>
-            <div id="user-selector" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3"></div>
-        </div>
+  <!-- Charts -->
+  <canvas id="eventsChart" height="100"></canvas>
+  <br>
+  <canvas id="topicsChart" height="100"></canvas>
+  <br>
+  <canvas id="devicesChart" height="100"></canvas>
 
-        <!-- Analysis View -->
-        <div id="results-screen" class="space-y-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="glass p-6 rounded-2xl border border-slate-200 shadow-sm stat-card">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Aggregate Accuracy</p>
-                    <p id="stat-accuracy" class="text-3xl font-black text-slate-800">0%</p>
-                </div>
-                <div class="glass p-6 rounded-2xl border border-slate-200 shadow-sm stat-card" style="border-color: #10b981;">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Response Latency</p>
-                    <p id="stat-time" class="text-3xl font-black text-slate-800">0s</p>
-                </div>
-                <div class="glass p-6 rounded-2xl border border-slate-200 shadow-sm stat-card" style="border-color: #f59e0b;">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Independent Confidence</p>
-                    <p id="stat-confidence" class="text-3xl font-black text-slate-800">0%</p>
-                </div>
-            </div>
+</div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="glass rounded-3xl shadow-xl p-8 border border-slate-200">
-                    <h2 class="text-xl font-extrabold text-slate-800 mb-6 flex items-center">
-                        <span class="mr-2">📊</span> Domain Proficiency Map
-                    </h2>
-                    <div id="topic-analysis-grid" class="space-y-6"></div>
-                </div>
+<script>
+/* ==== YOUR DATASET (shortened for demo, replace with full D) ==== */
+const D = window.D || {
+  labels: ['Apr 1','Apr 2','Apr 3','Apr 4','Apr 5','Apr 6','Apr 7','Apr 8','Apr 9','Apr 10','Apr 11','Apr 12'],
+  events:{
+    login:[90,100,110,95,105,120,130,115,125,135,140,145],
+    quiz:[70,80,85,75,82,90,95,88,92,100,105,108],
+    topicQuiz:[45,50,55,48,52,60,65,58,62,70,75,80]
+  },
+  topics:{
+    algebra:[25,28,30,27,29,32,35,33,34,36,38,40],
+    physics:[20,22,25,21,23,26,28,27,29,30,32,35],
+    cs:[30,35,38,34,36,40,42,39,41,45,48,50]
+  },
+  devices:{
+    mobile:[50,55,58,52,56,60,65,62,64,68,70,72],
+    desktop:[25,28,30,27,29,32,35,33,34,36,38,40],
+    tablet:[8,9,10,8,9,10,12,11,11,12,13,14]
+  }
+};
 
-                <div id="advice-section" class="glass rounded-3xl shadow-xl p-8 border border-slate-200 bg-white">
-                    <div class="flex items-start space-x-4">
-                        <div id="advice-icon" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 bg-slate-50">💡</div>
-                        <div>
-                            <h2 id="advice-title" class="text-2xl font-black text-slate-900 mb-2">Analyzing...</h2>
-                            <div id="advice-tags" class="flex flex-wrap gap-2 mb-4"></div>
-                            <p id="advice-body" class="text-slate-600 text-lg leading-relaxed"></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+/* ==== STATE ==== */
+let startIndex = 0;
+let endIndex = D.labels.length;
 
-            <div class="glass rounded-3xl shadow-lg p-6 border border-slate-200 overflow-hidden">
-                <h3 class="font-bold text-slate-800 mb-4 px-2">Longitudinal Session Data (Last 12 Quizzes)</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead>
-                            <tr class="bg-slate-50 text-slate-500 font-bold">
-                                <th class="py-3 px-4 rounded-l-xl">Topic</th>
-                                <th class="py-3 px-4 text-center">Outcome</th>
-                                <th class="py-3 px-4 text-center">Reaction Time</th>
-                                <th class="py-3 px-4 text-center">Hint Dependency</th>
-                                <th class="py-3 px-4 rounded-r-xl text-center">Weighted Efficiency</th>
-                            </tr>
-                        </thead>
-                        <tbody id="metrics-table-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+/* ==== FILTER FUNCTIONS ==== */
+function applyRange(days) {
+  endIndex = D.labels.length;
+  startIndex = Math.max(0, endIndex - days);
+  updateCharts();
+}
 
-    <script>
-        const topics = ["Priority Rules", "Speed Limits", "Road Markings", "Emergency"];
-        
-        const generateLargeDataset = () => {
-            const dataset = {};
-            const userProfiles = [
-                { name: "Jean Pierre", style: "Expert", speed: 5, accuracy: 0.95, hints: 0.05 },
-                { name: "Marie Louise", style: "Careful", speed: 12, accuracy: 0.88, hints: 0.1 },
-                { name: "Alphonse", style: "Struggler", speed: 18, accuracy: 0.4, hints: 0.6 },
-                { name: "Divine", style: "FastButWrong", speed: 4, accuracy: 0.5, hints: 0.1 },
-                { name: "Eric K.", style: "HintReliant", speed: 10, accuracy: 0.9, hints: 0.8 },
-                { name: "Sonia", style: "Expert", speed: 6, accuracy: 0.92, hints: 0.02 },
-                { name: "Gaspard", style: "Improving", speed: 14, accuracy: 0.75, hints: 0.3 },
-                { name: "Uwase", style: "Careful", speed: 13, accuracy: 0.85, hints: 0.15 },
-                { name: "Fabrice", style: "Struggler", speed: 20, accuracy: 0.35, hints: 0.7 },
-                { name: "Annette", style: "Average", speed: 11, accuracy: 0.7, hints: 0.2 },
-                { name: "Claude", style: "Average", speed: 10, accuracy: 0.65, hints: 0.25 },
-                { name: "Innocent", style: "FastButWrong", speed: 3, accuracy: 0.45, hints: 0.05 },
-                { name: "Beata", style: "Careful", speed: 15, accuracy: 0.9, hints: 0.1 },
-                { name: "Aimable", style: "Improving", speed: 9, accuracy: 0.8, hints: 0.2 },
-                { name: "Pacifique", style: "Expert", speed: 5, accuracy: 0.98, hints: 0.01 },
-                { name: "Vestine", style: "HintReliant", speed: 8, accuracy: 0.85, hints: 0.9 },
-                { name: "Theophile", style: "Average", speed: 12, accuracy: 0.6, hints: 0.3 },
-                { name: "Grace", style: "Expert", speed: 6, accuracy: 0.94, hints: 0.05 },
-                { name: "Olivier", style: "Struggler", speed: 22, accuracy: 0.3, hints: 0.8 },
-                { name: "Solange", style: "Average", speed: 11, accuracy: 0.72, hints: 0.18 }
-            ];
+function applyCustom() {
+  const start = document.getElementById('startDate').value;
+  const end = document.getElementById('endDate').value;
 
-            userProfiles.forEach((profile, index) => {
-                const userMetrics = [];
-                for (let i = 0; i < 12; i++) {
-                    const topic = topics[Math.floor(Math.random() * topics.length)];
-                    let accMod = profile.accuracy;
-                    if (topic === "Priority Rules" && profile.style !== "Expert") accMod *= 0.8; 
-                    
-                    userMetrics.push({
-                        id: i,
-                        topic: topic,
-                        time: profile.speed + (Math.random() * 4),
-                        correct: Math.random() < accMod,
-                        hint: Math.random() < profile.hints
-                    });
-                }
-                dataset[index] = { 
-                    name: profile.name, 
-                    metrics: userMetrics, 
-                    style: profile.style,
-                    avgAcc: userMetrics.filter(m => m.correct).length / 12,
-                    avgTime: userMetrics.reduce((acc, m) => acc + m.time, 0) / 12
-                };
-            });
-            return dataset;
-        };
+  const labels = D.labels;
+  startIndex = labels.findIndex(l => l.includes(start.split('-')[2]));
+  endIndex = labels.findIndex(l => l.includes(end.split('-')[2])) + 1;
 
-        const globalDataset = generateLargeDataset();
-        let currentUserId = 0;
+  if (startIndex === -1 || endIndex === 0) return alert("Invalid range");
+  updateCharts();
+}
 
-        const elements = {
-            userSelector: document.getElementById('user-selector'),
-            metricsTable: document.getElementById('metrics-table-body'),
-            topicAnalysis: document.getElementById('topic-analysis-grid'),
-            adviceTitle: document.getElementById('advice-title'),
-            adviceBody: document.getElementById('advice-body'),
-            adviceTags: document.getElementById('advice-tags'),
-            adviceIcon: document.getElementById('advice-icon'),
-            statAccuracy: document.getElementById('stat-accuracy'),
-            statTime: document.getElementById('stat-time'),
-            statConfidence: document.getElementById('stat-confidence'),
-            vectorGraph: document.getElementById('vector-graph')
-        };
+/* ==== SLICE DATA ==== */
+function slice(arr){ return arr.slice(startIndex, endIndex); }
+function sliceLabels(){ return D.labels.slice(startIndex, endIndex); }
 
-        function drawVectorGraph() {
-            elements.vectorGraph.querySelectorAll('.dot').forEach(el => el.remove());
-            
-            Object.keys(globalDataset).forEach(id => {
-                const user = globalDataset[id];
-                // X = Speed (0s to 25s), Y = Accuracy (0 to 1)
-                // Normalize: X 0-1000, Y 0-500
-                const x = (user.avgTime / 25) * 1000;
-                const y = 500 - (user.avgAcc * 500);
-                
-                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                circle.setAttribute("cx", x);
-                circle.setAttribute("cy", y);
-                circle.setAttribute("r", "6");
-                circle.setAttribute("class", `dot ${id == currentUserId ? 'active' : ''}`);
-                
-                // Color based on Quadrant
-                let color = "#94a3b8"; // Default
-                if (user.avgAcc > 0.7 && user.avgTime < 10) color = "#10b981"; // Expert
-                else if (user.avgAcc > 0.7 && user.avgTime >= 10) color = "#3b82f6"; // Careful
-                else if (user.avgAcc <= 0.7 && user.avgTime < 10) color = "#ef4444"; // Impulsive
-                else color = "#f59e0b"; // Struggling
-                
-                circle.setAttribute("fill", color);
-                circle.onclick = () => selectUser(id);
-                elements.vectorGraph.appendChild(circle);
-            });
-        }
+/* ==== CHARTS ==== */
+let eventsChart, topicsChart, devicesChart;
 
-        function initUserSelector() {
-            Object.keys(globalDataset).forEach(id => {
-                const btn = document.createElement('div');
-                btn.className = `user-card p-3 rounded-xl border-2 border-slate-100 bg-white shadow-sm text-center ${id == currentUserId ? 'active' : ''}`;
-                btn.innerHTML = `
-                    <div class="text-[10px] font-black uppercase text-slate-400 mb-1">U${parseInt(id)+1}</div>
-                    <div class="font-bold text-slate-800 text-xs truncate">${globalDataset[id].name}</div>
-                `;
-                btn.onclick = () => selectUser(id);
-                elements.userSelector.appendChild(btn);
-            });
-        }
+function buildCharts() {
 
-        function selectUser(id) {
-            currentUserId = id;
-            Array.from(elements.userSelector.children).forEach((card, idx) => {
-                card.classList.toggle('active', idx == id);
-            });
-            drawVectorGraph();
-            renderAnalysis(globalDataset[id].metrics);
-        }
+  eventsChart = new Chart(document.getElementById('eventsChart'), {
+    type:'line',
+    data:{
+      labels:sliceLabels(),
+      datasets:[
+        {label:'Login', data:slice(D.events.login), borderWidth:2},
+        {label:'Quiz', data:slice(D.events.quiz), borderWidth:2},
+        {label:'Topic Quiz', data:slice(D.events.topicQuiz), borderWidth:2}
+      ]
+    },
+    options:{responsive:true}
+  });
 
-        function performDataAnalysis(metrics) {
-            const analysis = topics.map(topic => {
-                const items = metrics.filter(m => m.topic === topic);
-                if (items.length === 0) return { topic, accuracy: 0, efficiency: 0, confidence: 0, totalScore: 0, avgTime: 0, empty: true };
-                
-                const accuracy = items.filter(m => m.correct).length / items.length;
-                const avgTime = items.reduce((acc, m) => acc + m.time, 0) / items.length;
-                const efficiency = Math.max(0, 1 - (avgTime / 20)); 
-                const hints = items.filter(m => m.hint).length;
-                const confidence = 1 - (hints / items.length);
-                const totalScore = (accuracy * 0.5) + (efficiency * 0.3) + (confidence * 0.2);
-                
-                return { topic, accuracy, efficiency, confidence, totalScore, avgTime, count: items.length };
-            }).filter(a => !a.empty);
+  topicsChart = new Chart(document.getElementById('topicsChart'), {
+    type:'line',
+    data:{
+      labels:sliceLabels(),
+      datasets:[
+        {label:'Algebra', data:slice(D.topics.algebra)},
+        {label:'Physics', data:slice(D.topics.physics)},
+        {label:'CS', data:slice(D.topics.cs)}
+      ]
+    }
+  });
 
-            const overallScore = analysis.reduce((acc, a) => acc + a.totalScore, 0) / analysis.length;
-            const weakestTopic = [...analysis].sort((a, b) => a.totalScore - b.totalScore)[0];
-            const strongestTopic = [...analysis].sort((a, b) => b.totalScore - a.totalScore)[0];
+  devicesChart = new Chart(document.getElementById('devicesChart'), {
+    type:'bar',
+    data:{
+      labels:sliceLabels(),
+      datasets:[
+        {label:'Mobile', data:slice(D.devices.mobile)},
+        {label:'Desktop', data:slice(D.devices.desktop)},
+        {label:'Tablet', data:slice(D.devices.tablet)}
+      ]
+    },
+    options:{responsive:true}
+  });
+}
 
-            return { analysis, overallScore, weakestTopic, strongestTopic };
-        }
+/* ==== UPDATE ==== */
+function updateCharts(){
+  eventsChart.data.labels = sliceLabels();
+  eventsChart.data.datasets[0].data = slice(D.events.login);
+  eventsChart.data.datasets[1].data = slice(D.events.quiz);
+  eventsChart.data.datasets[2].data = slice(D.events.topicQuiz);
+  eventsChart.update();
 
-        function renderAnalysis(metrics) {
-            const report = performDataAnalysis(metrics);
-            const totalCorrect = metrics.filter(m => m.correct).length;
-            const totalAvgTime = metrics.reduce((acc, m) => acc + m.time, 0) / metrics.length;
-            const hintCount = metrics.filter(m => m.hint).length;
-            const accuracy = totalCorrect / metrics.length;
-            const hintRate = hintCount / metrics.length;
+  topicsChart.data.labels = sliceLabels();
+  topicsChart.data.datasets[0].data = slice(D.topics.algebra);
+  topicsChart.data.datasets[1].data = slice(D.topics.physics);
+  topicsChart.data.datasets[2].data = slice(D.topics.cs);
+  topicsChart.update();
 
-            elements.statAccuracy.innerText = `${Math.round(accuracy * 100)}%`;
-            elements.statTime.innerText = `${totalAvgTime.toFixed(1)}s`;
-            elements.statConfidence.innerText = `${Math.round((1 - hintRate) * 100)}%`;
+  devicesChart.data.labels = sliceLabels();
+  devicesChart.data.datasets[0].data = slice(D.devices.mobile);
+  devicesChart.data.datasets[1].data = slice(D.devices.desktop);
+  devicesChart.data.datasets[2].data = slice(D.devices.tablet);
+  devicesChart.update();
+}
 
-            elements.topicAnalysis.innerHTML = '';
-            report.analysis.forEach(a => {
-                const color = a.totalScore > 0.8 ? 'bg-emerald-500' : (a.totalScore > 0.5 ? 'bg-amber-500' : 'bg-red-500');
-                const div = document.createElement('div');
-                div.innerHTML = `
-                    <div class="flex justify-between items-end mb-2">
-                        <div>
-                            <span class="text-slate-800 font-bold block">${a.topic}</span>
-                            <span class="text-[10px] text-slate-400 uppercase font-black tracking-widest">${a.avgTime.toFixed(1)}s AVG LATENCY</span>
-                        </div>
-                        <span class="text-sm font-black text-slate-700">${Math.round(a.totalScore * 100)}% Mastery</span>
-                    </div>
-                    <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-                        <div class="${color} h-full transition-all duration-700" style="width: ${a.totalScore * 100}%"></div>
-                    </div>
-                `;
-                elements.topicAnalysis.appendChild(div);
-            });
+/* INIT */
+buildCharts();
+</script>
 
-            // Advice Logic
-            const profiles = [];
-            if (accuracy > 0.9) profiles.push({ type: 'ACC', val: 2, label: 'High Precision' });
-            else if (accuracy < 0.5) profiles.push({ type: 'ACC', val: 0, label: 'Low Precision' });
-            else profiles.push({ type: 'ACC', val: 1, label: 'Moderate Precision' });
-
-            if (totalAvgTime < 8) profiles.push({ type: 'SPD', val: 2, label: 'Fast Processing' });
-            else if (totalAvgTime > 15) profiles.push({ type: 'SPD', val: 0, label: 'High Latency' });
-            else profiles.push({ type: 'SPD', val: 1, label: 'Moderate Speed' });
-
-            if (hintRate < 0.1) profiles.push({ type: 'IND', val: 2, label: 'Independent' });
-            else if (hintRate > 0.5) profiles.push({ type: 'IND', val: 0, label: 'Scaffold Dependent' });
-            else profiles.push({ type: 'IND', val: 1, label: 'Semi-Independent' });
-
-            const acc = profiles.find(p => p.type === 'ACC').val;
-            const spd = profiles.find(p => p.type === 'SPD').val;
-            const ind = profiles.find(p => p.type === 'IND').val;
-
-            let title, icon, body, tags = profiles.map(p => p.label);
-
-            if (acc === 2 && spd === 2 && ind === 2) {
-                title = "Total Road Competency";
-                icon = "🏆";
-                body = `${globalDataset[currentUserId].name} exhibits the 'Automaticity' phase of learning. Rules are internalized and applied instantly.`;
-            } else if (acc === 2 && spd === 0) {
-                title = "Reliable but Hesitant";
-                icon = "🐢";
-                body = `Knowledge is present, but processing is inefficient. Response time (${totalAvgTime.toFixed(1)}s) suggests hesitation.`;
-            } else if (acc === 0 && spd === 2) {
-                title = "Impulsive Fault Pattern";
-                icon = "🛑";
-                body = `Prioritizing speed over identification. Intervention needed in ${report.weakestTopic.topic}.`;
-            } else if (acc === 2 && ind === 0) {
-                title = "Illusory Mastery";
-                icon = "🧗";
-                body = `High accuracy but dependent on hints (${Math.round(hintRate*100)}%). Internalize rules further.`;
-            } else if (acc === 0 && spd === 0) {
-                title = "Fundamental Re-Learning";
-                icon = "⚠️";
-                body = `Struggling across accuracy, speed, and confidence. Theory review recommended.`;
-            } else {
-                title = "Iterative Growth Profile";
-                icon = "📈";
-                body = `Steady progression. Focus on ${report.weakestTopic.topic} to improve overall mastery.`;
-            }
-
-            elements.adviceTitle.innerText = title;
-            elements.adviceIcon.innerText = icon;
-            elements.adviceBody.innerText = body;
-            elements.adviceTags.innerHTML = tags.map(t => `<span class="px-2 py-1 bg-blue-50 text-[10px] font-bold text-blue-600 rounded border border-blue-100 uppercase">${t}</span>`).join('');
-
-            elements.metricsTable.innerHTML = metrics.map(m => `
-                <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                    <td class="py-4 px-4 font-semibold text-slate-700">${m.topic}</td>
-                    <td class="py-4 px-4 text-center">
-                        <span class="px-2 py-1 rounded text-[10px] font-bold uppercase ${m.correct ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">
-                            ${m.correct ? 'Success' : 'Failure'}
-                        </span>
-                    </td>
-                    <td class="py-4 px-4 text-center text-slate-500">${m.time.toFixed(1)}s</td>
-                    <td class="py-4 px-4 text-center">${m.hint ? '🚨 Used' : '✅ None'}</td>
-                    <td class="py-4 px-4 text-center font-mono font-bold text-blue-600">${Math.round((m.correct ? 100 : 0) * (Math.max(0, 1 - (m.time/30))))}%</td>
-                </tr>
-            `).join('');
-        }
-
-        initUserSelector();
-        selectUser(0);
-    </script>
 </body>
 </html>

@@ -5,6 +5,7 @@ from .quizzes import quizzes_bp
 from .sections import sections_bp
 from .components import components_bp
 from .subscription import subscription_bp
+from .analytics import analytics_bp
 
 
 def register_blueprints(app):
@@ -16,3 +17,4 @@ def register_blueprints(app):
     app.register_blueprint(sections_bp)
     app.register_blueprint(components_bp)
     app.register_blueprint(subscription_bp)
+    app.register_blueprint(analytics_bp)

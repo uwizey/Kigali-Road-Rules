@@ -1,12 +1,14 @@
 from functools import wraps
+from user_agents import parse
 from flask import jsonify
 from flask import g
+import json
 from datetime import datetime
-from core.models import db,Subscription
+from flask import request
+from core.models import db,Subscription,AnalyticsEvent
 from flask_jwt_extended import verify_jwt_in_request, get_jwt,get_jwt_identity
 import logging
 import time
-
 
 
 def role_required(required_roles):
@@ -33,7 +35,6 @@ def role_required(required_roles):
             return fn(*args, **kwargs)
         return decorator
     return wrapper
-
 
 
 def subscription_required(resource_type):
@@ -91,7 +92,6 @@ def subscription_required(resource_type):
     return decorator
 
 
-
 # Store buckets per user
 buckets = {}
 
@@ -130,4 +130,76 @@ def rate_limit(capacity=10, refill_rate=1):
             else:
                 return jsonify({"status": False, "message": "Rate limit exceeded"}), 429
         return wrapper
+    return decorator
+
+
+def track_event(default_event_type):
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            result = fn(*args, **kwargs)  # run the actual function first
+
+            try:
+                user_id = None
+                try:
+                    user_id = get_jwt_identity()
+                except Exception:
+                    pass
+
+                # Parse User-Agent string
+                ua_string = request.headers.get("User-Agent", "")
+                parsed_ua = parse(ua_string)
+
+                # Decide device category
+                if parsed_ua.is_mobile:
+                    device_type = "mobile"
+                elif parsed_ua.is_tablet:
+                    device_type = "tablet"
+                elif parsed_ua.is_pc:
+                    device_type = "desktop"
+                else:
+                    device_type = "other"
+
+                # Allow the function to override event_type/metadata if needed
+                event_type = default_event_type
+                metadata = {}
+
+                if isinstance(result, dict):
+                    event_type = result.pop("_event_type", default_event_type)
+                    metadata = result.pop("_event_metadata", {})
+
+                # Ensure metadata is JSON serializable
+                event_metadata = {
+                    "path": request.path,
+                    "method": request.method,
+                    "args": request.args.to_dict(),
+                    "json": request.get_json(silent=True),
+                    "user_agent": ua_string,
+                    **metadata,
+                }
+
+                event = AnalyticsEvent(
+                    user_id=user_id,
+                    event_type=event_type,
+                    event_metadata=json.dumps(event_metadata),  # <-- serialize!
+                    device=device_type,
+                    os=parsed_ua.os.family or "unknown",
+                    browser=parsed_ua.browser.family or "unknown",
+                    ip_address=request.remote_addr,
+                )
+
+                db.session.add(event)
+                db.session.commit()
+                logging.info(
+                    f"Logged event: {event_type} for user_id: {user_id}, device: {device_type}"
+                )
+                print(f"Logged event: {event_type} for user_id: {user_id}, device: {device_type}")
+            except Exception as e:
+                db.session.rollback()  # <-- rollback on error
+                logging.error(f"Analytics logging failed: {e}", exc_info=True)
+
+            return result  # always return the original response untouched
+
+        return wrapper
+
     return decorator

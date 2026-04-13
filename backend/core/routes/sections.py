@@ -1,28 +1,54 @@
 import logging
 from flask import Blueprint, request, jsonify
 from core.models import db, Section, ComponentItem
-from core.utils.decorators import role_required,rate_limit
+from core.utils.decorators import role_required,rate_limit,track_event
 
 sections_bp = Blueprint("sections", __name__)
 
 
 @sections_bp.route("/sections/<int:topic_id>", methods=["GET"])
 @role_required(["admin", "client"])
-@rate_limit(capacity=5, refill_rate=1) 
+@rate_limit(capacity=5, refill_rate=1)
+@track_event("sections_reading")   # 👈 added decorator
 def get_sections_by_topic(topic_id):
     try:
         sections = Section.query.filter_by(topic_id=topic_id).order_by(Section.order_index).all()
         if not sections:
-            return jsonify({"status": False, "message": f"No sections found for topic_id {topic_id}"}), 200
+            return {
+                "status": False,
+                "message": f"No sections found for topic_id {topic_id}",
+                "_event_type": "sections_failed",
+                "_event_metadata": {"topic_id": topic_id, "reason": "no_sections"}
+            }, 200
+
         result = [
-            {"section_id": s.section_id, "title": s.title, "order_index": s.order_index,
-             "is_locked": s.is_locked, "created_at": s.created_at.isoformat()}
+            {
+                "section_id": s.section_id,
+                "title": s.title,
+                "order_index": s.order_index,
+                "is_locked": s.is_locked,
+                "created_at": s.created_at.isoformat()
+            }
             for s in sections
         ]
-        return jsonify({"status": True, "topic_id": topic_id, "sections": result, "count": len(result)}), 200
+
+        return {
+            "status": True,
+            "topic_id": topic_id,
+            "sections": result,
+            "count": len(result),
+            "_event_type": "sections_success",
+            "_event_metadata": {"topic_id": topic_id, "count": len(result)}
+        }, 200
+
     except Exception as e:
         logging.error(f"Error retrieving sections for topic_id {topic_id}: {e}")
-        return jsonify({"status": False, "message": "Server error while retrieving sections"}), 500
+        return {
+            "status": False,
+            "message": "Server error while retrieving sections",
+            "_event_type": "sections_error",
+            "_event_metadata": {"topic_id": topic_id, "error": str(e)}
+        }, 500
 
 
 @sections_bp.route("/section", methods=["POST"])

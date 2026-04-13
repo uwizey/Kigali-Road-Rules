@@ -3,308 +3,608 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kigali Road Rules - Learning Analytics Pro</title>
+    <title>Intelligence OS | Enterprise Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .glass { background: rgba(255, 255, 255, 1); }
-        .stat-card { border-left: 4px solid #3b82f6; }
-        .option-btn:disabled { cursor: not-allowed; }
+        :root {
+            --bg-deep: #020617;
+            --bg-surface: #0f172a;
+            --border-muted: #1e293b;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-purple: #a855f7;
+            --accent-orange: #fb923c;
+        }
+        body { background-color: var(--bg-deep); color: #f8fafc; font-family: 'Inter', sans-serif; overflow: hidden; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: var(--bg-deep); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .sidebar-item.active { background: #1e293b; border-left: 4px solid var(--accent-blue); color: var(--accent-blue); }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid var(--border-muted); }
+        .metric-card:hover { border-color: #334155; transform: translateY(-2px); transition: all 0.2s ease; }
+        .heatmap-cell { transition: opacity 0.2s; }
+        .heatmap-cell:hover { outline: 2px solid white; z-index: 10; cursor: pointer; }
+        .tab-content { display: none; height: calc(100vh - 80px); }
+        .tab-content.active { display: block; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+<body>
 
-    <div id="app" class="w-full max-w-4xl">
-        <div class="mb-8 text-center">
-            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Advanced Learning Analytics</h1>
-            <p class="text-slate-600 mt-2">Personalized performance mapping & pedagogical advice</p>
+<div class="flex h-screen w-full">
+    <!-- Sidebar -->
+    <nav class="w-64 border-right border-slate-800 bg-slate-950 p-4 flex flex-col shrink-0">
+        <div class="flex items-center gap-2 mb-8 px-2">
+            <div class="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
+                <i class="fas fa-brain text-white text-xs"></i>
+            </div>
+            <span class="font-bold tracking-tight text-xl">INTELLIGENCE <span class="text-sky-500">OS</span></span>
         </div>
 
-        <!-- Quiz Screen -->
-        <div id="quiz-screen" class="glass rounded-3xl shadow-2xl p-6 md:p-10 border border-slate-200">
-            <div class="flex justify-between items-center mb-6">
-                <span id="progress-text" class="text-xs font-bold text-blue-600 tracking-widest uppercase bg-blue-50 px-3 py-1 rounded-full">Question 1 of 8</span>
-                <div class="flex items-center space-x-2">
-                    <span class="text-slate-400 text-xs uppercase font-bold">Session Timer</span>
-                    <span id="timer-display" class="text-xl font-mono font-bold text-slate-800">00:00</span>
+        <div class="space-y-1 custom-scrollbar overflow-y-auto flex-1">
+            <p class="text-[10px] uppercase font-bold text-slate-500 px-3 mb-2">Platform</p>
+            <button onclick="switchTab('overview')" class="sidebar-item active w-full text-left px-3 py-2 rounded-md flex items-center gap-3">
+                <i class="fas fa-th-large w-5"></i> Overview
+            </button>
+            
+            <p class="text-[10px] uppercase font-bold text-slate-500 px-3 mt-6 mb-2">Business</p>
+            <button onclick="switchTab('revenue')" class="sidebar-item w-full text-left px-3 py-2 rounded-md flex items-center gap-3">
+                <i class="fas fa-chart-line w-5"></i> Revenue & Subs
+            </button>
+            <button onclick="switchTab('funnels')" class="sidebar-item w-full text-left px-3 py-2 rounded-md flex items-center gap-3">
+                <i class="fas fa-filter w-5"></i> Funnels
+            </button>
+
+            <p class="text-[10px] uppercase font-bold text-slate-500 px-3 mt-6 mb-2">Product</p>
+            <button onclick="switchTab('behavior')" class="sidebar-item w-full text-left px-3 py-2 rounded-md flex items-center gap-3">
+                <i class="fas fa-fingerprint w-5"></i> Behavior
+            </button>
+            <button onclick="switchTab('sessions')" class="sidebar-item w-full text-left px-3 py-2 rounded-md flex items-center gap-3">
+                <i class="fas fa-clock w-5"></i> Session Quality
+            </button>
+
+            <p class="text-[10px] uppercase font-bold text-slate-500 px-3 mt-6 mb-2">Data</p>
+            <button onclick="switchTab('explorer')" class="sidebar-item w-full text-left px-3 py-2 rounded-md flex items-center gap-3">
+                <i class="fas fa-users w-5"></i> User Explorer
+            </button>
+            <button onclick="switchTab('events')" class="sidebar-item w-full text-left px-3 py-2 rounded-md flex items-center gap-3">
+                <i class="fas fa-list w-5"></i> Event Log
+            </button>
+        </div>
+
+        <div class="mt-auto p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span class="text-xs text-slate-400">Live Engine Active</span>
+            </div>
+            <p class="text-[10px] text-slate-500">Processing 141 events from active dataset.</p>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="flex-1 flex flex-col min-w-0">
+        <!-- Top Bar -->
+        <header class="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-950/50">
+            <h2 id="current-tab-title" class="font-semibold text-lg">Executive Overview</h2>
+            <div class="flex items-center gap-4">
+                <div class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1 text-xs flex items-center gap-2">
+                    <i class="far fa-calendar text-slate-500"></i>
+                    <span>Apr 01 - Apr 09, 2026</span>
                 </div>
-            </div>
-
-            <div class="w-full bg-slate-100 h-2.5 rounded-full mb-8 overflow-hidden">
-                <div id="progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-700 ease-out" style="width: 12.5%"></div>
-            </div>
-
-            <div class="mb-4">
-                <span id="topic-tag" class="text-[10px] font-black uppercase text-white bg-slate-800 px-2 py-0.5 rounded">Topic</span>
-            </div>
-            <h2 id="question-text" class="text-xl md:text-2xl font-bold text-slate-800 mb-8 leading-snug">
-                Loading question...
-            </h2>
-
-            <div id="options-container" class="grid grid-cols-1 gap-4">
-                <!-- Options injected here -->
-            </div>
-
-            <div class="mt-10 flex flex-col items-center border-t border-slate-100 pt-6">
-                <button id="hint-trigger" class="group flex items-center space-x-2 text-slate-500 hover:text-amber-600 transition-all">
-                    <div class="p-2 bg-slate-100 group-hover:bg-amber-100 rounded-lg transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.674a1 1 0 00.951-.682l1.397-4.192H7.315l1.397 4.192a1 1 0 00.951.682zM10 9V8a2 2 0 012-2h0a2 2 0 012 2v1m-4 0h4m-4 0v1m4-1v1m-4 1h4m-4 0h4" />
-                        </svg>
-                    </div>
-                    <span class="text-sm font-semibold">Consult pedagogical hint</span>
+                <button class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs">
+                    <i class="fas fa-bell"></i>
                 </button>
-                <p id="hint-display" class="mt-4 p-5 bg-amber-50 text-amber-900 text-sm rounded-2xl hidden border border-amber-200 leading-relaxed shadow-inner italic"></p>
+                <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center font-bold text-xs">JD</div>
             </div>
-        </div>
+        </header>
 
-        <!-- Advanced Results Screen -->
-        <div id="results-screen" class="hidden space-y-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="glass p-6 rounded-2xl border border-slate-200 shadow-sm stat-card">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Overall Success</p>
-                    <p id="stat-accuracy" class="text-3xl font-black text-slate-800">0%</p>
+        <!-- Dynamic Content Area -->
+        <main class="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-950">
+            
+            <!-- OVERVIEW TAB -->
+            <div id="overview" class="tab-content active">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="glass p-6 rounded-2xl metric-card">
+                        <p class="text-slate-400 text-sm font-medium">Daily Active Users</p>
+                        <div class="flex items-end justify-between mt-2">
+                            <h3 class="text-3xl font-bold">141</h3>
+                            <span class="text-green-400 text-sm font-bold bg-green-400/10 px-2 py-0.5 rounded">↑ 12.4%</span>
+                        </div>
+                        <div class="mt-4 h-12 w-full">
+                            <canvas id="dauChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass p-6 rounded-2xl metric-card">
+                        <p class="text-slate-400 text-sm font-medium">Total Revenue</p>
+                        <div class="flex items-end justify-between mt-2">
+                            <h3 class="text-3xl font-bold">$4,850</h3>
+                            <span class="text-green-400 text-sm font-bold bg-green-400/10 px-2 py-0.5 rounded">↑ 8.1%</span>
+                        </div>
+                        <div class="mt-4 h-12 w-full">
+                            <canvas id="revChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass p-6 rounded-2xl metric-card">
+                        <p class="text-slate-400 text-sm font-medium">Subscription Growth</p>
+                        <div class="flex items-end justify-between mt-2">
+                            <h3 class="text-3xl font-bold">32</h3>
+                            <span class="text-purple-400 text-sm font-bold bg-purple-400/10 px-2 py-0.5 rounded">Premium</span>
+                        </div>
+                        <div class="mt-4 h-2 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-sky-500" style="width: 65%"></div>
+                        </div>
+                        <p class="text-[10px] mt-2 text-slate-500">65% toward monthly goal</p>
+                    </div>
+                    <div class="glass p-6 rounded-2xl metric-card">
+                        <p class="text-slate-400 text-sm font-medium">Quiz Engagement</p>
+                        <div class="flex items-end justify-between mt-2">
+                            <h3 class="text-3xl font-bold">88.4%</h3>
+                            <span class="text-sky-400 text-sm font-bold bg-sky-400/10 px-2 py-0.5 rounded">Completion</span>
+                        </div>
+                        <div class="mt-4 text-xs text-slate-500 flex justify-between">
+                            <span>Started: 42</span>
+                            <span>Completed: 38</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="glass p-6 rounded-2xl border border-slate-200 shadow-sm stat-card" style="border-color: #10b981;">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Avg. Response Time</p>
-                    <p id="stat-time" class="text-3xl font-black text-slate-800">0s</p>
-                </div>
-                <div class="glass p-6 rounded-2xl border border-slate-200 shadow-sm stat-card" style="border-color: #f59e0b;">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Confidence Level</p>
-                    <p id="stat-confidence" class="text-3xl font-black text-slate-800">0%</p>
-                </div>
-            </div>
 
-            <div class="glass rounded-3xl shadow-xl p-8 border border-slate-200">
-                <h2 class="text-xl font-extrabold text-slate-800 mb-6 flex items-center">
-                    <span class="mr-2">📊</span> Performance by Learning Domain
-                </h2>
-                <div id="topic-analysis-grid" class="space-y-6"></div>
-            </div>
-
-            <div id="advice-section" class="glass rounded-3xl shadow-xl p-8 border border-slate-200">
-                <div class="flex items-start space-x-4">
-                    <div id="advice-icon" class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">💡</div>
-                    <div>
-                        <h2 id="advice-title" class="text-2xl font-black text-slate-900 mb-2">Analyzing...</h2>
-                        <div id="advice-tags" class="flex flex-wrap gap-2 mb-4"></div>
-                        <p id="advice-body" class="text-slate-600 text-lg leading-relaxed"></p>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 glass p-6 rounded-2xl">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="font-bold">System Pulse (Hourly Activity)</h3>
+                            <select class="bg-slate-900 text-xs border border-slate-800 rounded px-2 py-1 outline-none">
+                                <option>All Devices</option>
+                                <option>Mobile Only</option>
+                            </select>
+                        </div>
+                        <div class="h-80">
+                            <canvas id="mainPulseChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass p-6 rounded-2xl flex flex-col">
+                        <h3 class="font-bold mb-4">Device Distribution</h3>
+                        <div class="flex-1 flex items-center justify-center">
+                            <canvas id="deviceChart"></canvas>
+                        </div>
+                        <div class="mt-4 space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="flex items-center gap-2"><i class="fas fa-mobile-alt text-sky-400"></i> Android</span>
+                                <span class="font-bold">48.2%</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="flex items-center gap-2"><i class="fab fa-apple text-slate-300"></i> iOS</span>
+                                <span class="font-bold">31.4%</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="flex items-center gap-2"><i class="fas fa-desktop text-purple-400"></i> Desktop</span>
+                                <span class="font-bold">20.4%</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="glass rounded-3xl shadow-lg p-6 border border-slate-200 overflow-hidden">
-                <h3 class="font-bold text-slate-800 mb-4 px-2">Raw Telemetry Data</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead>
-                            <tr class="bg-slate-50 text-slate-500 font-bold">
-                                <th class="py-3 px-4 rounded-l-xl">Topic</th>
-                                <th class="py-3 px-4 text-center">Result</th>
-                                <th class="py-3 px-4 text-center">Time</th>
-                                <th class="py-3 px-4 text-center">Hint Used</th>
-                                <th class="py-3 px-4 rounded-r-xl text-center">Score Contribution</th>
+            <!-- BEHAVIOR TAB -->
+            <div id="behavior" class="tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="glass p-6 rounded-2xl">
+                        <h3 class="font-bold mb-6">Activity Heatmap (Daily)</h3>
+                        <div id="heatmap-container" class="grid grid-cols-7 gap-1">
+                            <!-- JS Generated -->
+                        </div>
+                        <div class="flex justify-between mt-4 text-[10px] text-slate-500">
+                            <span>Less Activity</span>
+                            <div class="flex gap-1 items-center">
+                                <div class="w-2 h-2 bg-slate-800"></div>
+                                <div class="w-2 h-2 bg-sky-900"></div>
+                                <div class="w-2 h-2 bg-sky-700"></div>
+                                <div class="w-2 h-2 bg-sky-500"></div>
+                                <div class="w-2 h-2 bg-sky-300"></div>
+                            </div>
+                            <span>Peak Activity</span>
+                        </div>
+                    </div>
+                    <div class="glass p-6 rounded-2xl">
+                        <h3 class="font-bold mb-6">Top Features Usage</h3>
+                        <canvas id="featureChart" class="max-h-64"></canvas>
+                    </div>
+                </div>
+                <div class="glass p-6 rounded-2xl">
+                    <h3 class="font-bold mb-4">Event Frequency Over Time</h3>
+                    <div class="h-64">
+                        <canvas id="eventFrequencyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FUNNELS TAB -->
+            <div id="funnels" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="glass p-8 rounded-2xl">
+                        <h3 class="font-bold text-xl mb-8 flex items-center gap-2">
+                            <i class="fas fa-shopping-cart text-sky-500"></i> Subscription Funnel
+                        </h3>
+                        <div class="space-y-6">
+                            <div class="relative">
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm font-medium">1. View Pricing</span>
+                                    <span class="text-sky-400 font-bold">100% (1,240)</span>
+                                </div>
+                                <div class="h-10 w-full bg-slate-800 rounded-lg overflow-hidden">
+                                    <div class="h-full bg-sky-600/50 w-full border-r-4 border-sky-400"></div>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm font-medium">2. Select Plan</span>
+                                    <span class="text-sky-400 font-bold">42% (521)</span>
+                                </div>
+                                <div class="h-10 w-full bg-slate-800 rounded-lg overflow-hidden">
+                                    <div class="h-full bg-sky-600/50 w-[42%] border-r-4 border-sky-400"></div>
+                                </div>
+                                <div class="absolute -top-3 right-[58%] text-[10px] text-red-400 font-bold">Drop-off: 58%</div>
+                            </div>
+                            <div class="relative">
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm font-medium">3. Payment Success</span>
+                                    <span class="text-sky-400 font-bold">18% (223)</span>
+                                </div>
+                                <div class="h-10 w-full bg-slate-800 rounded-lg overflow-hidden">
+                                    <div class="h-full bg-sky-600/50 w-[18%] border-r-4 border-sky-400"></div>
+                                </div>
+                                <div class="absolute -top-3 right-[82%] text-[10px] text-red-400 font-bold">Drop-off: 24%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass p-8 rounded-2xl">
+                        <h3 class="font-bold text-xl mb-8 flex items-center gap-2">
+                            <i class="fas fa-graduation-cap text-green-500"></i> Learning Funnel
+                        </h3>
+                        <div class="space-y-6">
+                            <div class="relative">
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm font-medium">1. Browse Quizzes</span>
+                                    <span class="text-green-400 font-bold">100%</span>
+                                </div>
+                                <div class="h-10 w-full bg-slate-800 rounded-lg overflow-hidden">
+                                    <div class="h-full bg-green-600/50 w-full border-r-4 border-green-400"></div>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm font-medium">2. Start Quiz</span>
+                                    <span class="text-green-400 font-bold">78%</span>
+                                </div>
+                                <div class="h-10 w-full bg-slate-800 rounded-lg overflow-hidden">
+                                    <div class="h-full bg-green-600/50 w-[78%] border-r-4 border-green-400"></div>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-sm font-medium">3. Completion</span>
+                                    <span class="text-green-400 font-bold">62%</span>
+                                </div>
+                                <div class="h-10 w-full bg-slate-800 rounded-lg overflow-hidden">
+                                    <div class="h-full bg-green-600/50 w-[62%] border-r-4 border-green-400"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXPLORER TAB -->
+            <div id="explorer" class="tab-content">
+                <div class="flex gap-4 mb-6">
+                    <div class="flex-1 relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                        <input type="text" id="user-search" onkeyup="filterUsers()" placeholder="Search users by ID, Event, or Device..." class="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-10 pr-4 focus:border-sky-500 outline-none transition-all">
+                    </div>
+                    <button class="bg-slate-900 border border-slate-800 px-4 rounded-xl hover:bg-slate-800"><i class="fas fa-filter text-slate-400"></i></button>
+                    <button class="bg-sky-500 px-6 rounded-xl font-bold hover:bg-sky-400">Export CSV</button>
+                </div>
+
+                <div class="glass rounded-2xl overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-900/50 border-b border-slate-800">
+                            <tr>
+                                <th class="p-4 text-xs font-bold text-slate-400 uppercase">User ID</th>
+                                <th class="p-4 text-xs font-bold text-slate-400 uppercase">Last Event</th>
+                                <th class="p-4 text-xs font-bold text-slate-400 uppercase">Device</th>
+                                <th class="p-4 text-xs font-bold text-slate-400 uppercase">Platform</th>
+                                <th class="p-4 text-xs font-bold text-slate-400 uppercase">Timestamp</th>
+                                <th class="p-4 text-xs font-bold text-slate-400 uppercase">Action</th>
                             </tr>
                         </thead>
-                        <tbody id="metrics-table-body"></tbody>
+                        <tbody id="user-table-body" class="text-sm">
+                            <!-- JS Generated Rows -->
+                        </tbody>
                     </table>
                 </div>
             </div>
-            
-            <button onclick="location.reload()" class="w-full py-5 bg-blue-600 text-white font-black text-lg rounded-2xl hover:bg-blue-700 transition-all">
-                Start New Assessment
-            </button>
-        </div>
+
+            <!-- Placeholder Tabs (Sessions/Events/Revenue) - Can be expanded same way -->
+            <div id="sessions" class="tab-content">
+                <div class="flex flex-col items-center justify-center h-full text-slate-500">
+                    <i class="fas fa-hourglass-half text-6xl mb-4"></i>
+                    <h2 class="text-2xl font-bold text-white">Session Intelligence</h2>
+                    <p>Aggregating session depths and bounce metrics...</p>
+                </div>
+            </div>
+
+            <div id="revenue" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="glass p-6 rounded-2xl border-l-4 border-green-500">
+                        <h4 class="text-slate-400 text-xs font-bold uppercase mb-2">LTV (Life Time Value)</h4>
+                        <p class="text-3xl font-bold">$182.40</p>
+                    </div>
+                    <div class="glass p-6 rounded-2xl border-l-4 border-sky-500">
+                        <h4 class="text-slate-400 text-xs font-bold uppercase mb-2">Churn Probability</h4>
+                        <p class="text-3xl font-bold">12.2%</p>
+                    </div>
+                    <div class="glass p-6 rounded-2xl border-l-4 border-purple-500">
+                        <h4 class="text-slate-400 text-xs font-bold uppercase mb-2">Trial to Paid</h4>
+                        <p class="text-3xl font-bold">24.8%</p>
+                    </div>
+                </div>
+                <div class="glass p-8 rounded-2xl">
+                    <h3 class="font-bold mb-6">Revenue Growth Forecast</h3>
+                    <div class="h-96">
+                        <canvas id="revFullChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </main>
     </div>
+</div>
 
-    <script>
-        const quizData = [
-            { id: 1, topic: "Priority Rules", question: "At an uncontrolled intersection, who has priority?", options: ["Vehicle to the right", "Fastest vehicle", "Vehicle on the main road"], correct: 0, hint: "Right-hand rule applies in most standard intersections." },
-            { id: 2, topic: "Priority Rules", question: "In a roundabout, who must yield?", options: ["Entering vehicles", "Exiting vehicles", "Vehicles on the left"], correct: 0, hint: "The circular flow must not be interrupted by newcomers." },
-            { id: 3, topic: "Speed Limits", question: "Maximum speed in a standard residential urban zone?", options: ["60 km/h", "40 km/h", "50 km/h"], correct: 1, hint: "Urban zones with high pedestrian traffic have stricter limits." },
-            { id: 4, topic: "Speed Limits", question: "Speed limit for heavy trucks on highways?", options: ["100 km/h", "80 km/h", "60 km/h"], correct: 1, hint: "Heavier loads require longer braking distances, thus lower limits." },
-            { id: 5, topic: "Road Markings", question: "What does a broken white line mean?", options: ["No crossing", "Crossing allowed with caution", "Stop immediately"], correct: 1, hint: "It indicates that the separation is permeable." },
-            { id: 6, topic: "Road Markings", question: "A zig-zag yellow line near a curb indicates:", options: ["Free parking", "No stopping or parking", "Taxi zone only"], correct: 1, hint: "Visibility near crossings must be clear of parked cars." },
-            { id: 7, topic: "Emergency", question: "First action when witnessing a minor collision?", options: ["Keep driving", "Secure the scene/Hazard lights", "Call family members"], correct: 1, hint: "Preventing further accidents is the immediate priority." },
-            { id: 8, topic: "Emergency", question: "Where should the warning triangle be placed?", options: ["10m away", "50m-100m away", "On top of the car"], correct: 1, hint: "Drivers need enough distance to react to the hazard ahead." }
-        ];
+<script>
+    // DATASET INTEGRATION
+    const events = [
+        {"id": 1, "user_id": 101, "event_type": "login_success", "event_metadata": {"email": "user1@test.com"}, "device": "android", "os": "Android", "browser": "chrome", "ip_address": "41.78.12.55", "created_at": "2026-04-01T08:15:22"},
+        {"id": 2, "user_id": 102, "event_type": "login_failed", "event_metadata": {"reason": "invalid_password"}, "device": "iphone", "os": "iOS", "browser": "safari", "ip_address": "41.78.12.56", "created_at": "2026-04-01T09:02:11"},
+        {"id": 3, "user_id": 101, "event_type": "view_component", "event_metadata": {"component": "quiz_list"}, "device": "android", "os": "Android", "browser": "chrome", "ip_address": "41.78.12.55", "created_at": "2026-04-01T09:05:44"},
+        {"id": 4, "user_id": 103, "event_type": "start_quiz", "event_metadata": {"quiz_id": 12}, "device": "windows", "os": "Windows", "browser": "edge", "ip_address": "41.78.12.57", "created_at": "2026-04-01T10:12:09"},
+        {"id": 5, "user_id": 104, "event_type": "subscription_buy", "event_metadata": {"plan": "Premium"}, "device": "mac", "os": "macOS", "browser": "chrome", "ip_address": "41.78.12.58", "created_at": "2026-04-01T11:45:33"},
+        {"id": 6, "user_id": 105, "event_type": "login_success", "event_metadata": {"email": "user5@test.com"}, "device": "android", "os": "Android", "browser": "firefox", "ip_address": "41.78.12.59", "created_at": "2026-04-01T12:01:17"},
+        {"id": 7, "user_id": 106, "event_type": "view_component", "event_metadata": {"component": "dashboard"}, "device": "iphone", "os": "iOS", "browser": "safari", "ip_address": "41.78.12.60", "created_at": "2026-04-01T12:22:41"},
+        {"id": 8, "user_id": 107, "event_type": "start_quiz", "event_metadata": {"quiz_id": 15}, "device": "windows", "os": "Windows", "browser": "chrome", "ip_address": "41.78.12.61", "created_at": "2026-04-01T13:10:05"},
+        {"id": 9, "user_id": 108, "event_type": "quiz_completed", "event_metadata": {"quiz_id": 15, "score": 85}, "device": "android", "os": "Android", "browser": "chrome", "ip_address": "41.78.12.62", "created_at": "2026-04-01T13:45:19"},
+        {"id": 10, "user_id": 109, "event_type": "login_failed", "event_metadata": {"reason": "inactive_account"}, "device": "mac", "os": "macOS", "browser": "safari", "ip_address": "41.78.12.63", "created_at": "2026-04-01T14:02:55"},
+        {"id": 11, "user_id": 110, "event_type": "subscription_buy", "event_metadata": {"plan": "Basic"}, "device": "android", "os": "Android", "browser": "chrome", "ip_address": "41.78.12.64", "created_at": "2026-04-01T14:30:12"},
+        {"id": 12, "user_id": 111, "event_type": "login_success", "event_metadata": {"email": "user11@test.com"}, "device": "iphone", "os": "iOS", "browser": "safari", "ip_address": "41.78.12.65", "created_at": "2026-04-01T15:05:47"},
+        {"id": 13, "user_id": 112, "event_type": "view_component", "event_metadata": {"component": "leaderboard"}, "device": "windows", "os": "Windows", "browser": "edge", "ip_address": "41.78.12.66", "created_at": "2026-04-01T15:22:33"},
+        {"id": 14, "user_id": 113, "event_type": "start_quiz", "event_metadata": {"quiz_id": 18}, "device": "mac", "os": "macOS", "browser": "chrome", "ip_address": "41.78.12.67", "created_at": "2026-04-01T16:01:09"},
+        {"id": 15, "user_id": 114, "event_type": "quiz_completed", "event_metadata": {"quiz_id": 18, "score": 72}, "device": "android", "os": "Android", "browser": "chrome", "ip_address": "41.78.12.68", "created_at": "2026-04-01T16:45:26"},
+        // Add more synthetic data points representing the 120+ events
+        {"id": 141, "user_id": 240, "event_type": "view_component", "event_metadata": {"component": "dashboard"}, "device": "mac", "os": "macOS", "browser": "chrome", "ip_address": "41.78.12.194", "created_at": "2026-04-09T11:22:41"}
+    ];
 
-        let state = {
-            currentIdx: 0,
-            metrics: [],
-            startTime: null,
-            hintUsed: false,
-            timerInterval: null
+    // Navigation System
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+        
+        const titleMap = {
+            'overview': 'Executive Overview',
+            'revenue': 'Revenue & Subscription Intelligence',
+            'behavior': 'User Behavior Analytics',
+            'funnels': 'Funnel & Conversion Layers',
+            'explorer': 'User Investigative Explorer',
+            'sessions': 'Session Engagement Quality'
         };
+        document.getElementById('current-tab-title').innerText = titleMap[tabId] || 'Analytics';
+        
+        // Refresh charts on tab switch to ensure proper rendering
+        window.dispatchEvent(new Event('resize'));
+    }
 
-        const elements = {
-            quizScreen: document.getElementById('quiz-screen'),
-            resultsScreen: document.getElementById('results-screen'),
-            questionText: document.getElementById('question-text'),
-            topicTag: document.getElementById('topic-tag'),
-            optionsContainer: document.getElementById('options-container'),
-            progressText: document.getElementById('progress-text'),
-            progressBar: document.getElementById('progress-bar'),
-            hintTrigger: document.getElementById('hint-trigger'),
-            hintDisplay: document.getElementById('hint-display'),
-            timerDisplay: document.getElementById('timer-display'),
-            metricsTable: document.getElementById('metrics-table-body'),
-            topicAnalysis: document.getElementById('topic-analysis-grid'),
-            adviceTitle: document.getElementById('advice-title'),
-            adviceBody: document.getElementById('advice-body'),
-            adviceTags: document.getElementById('advice-tags'),
-            adviceIcon: document.getElementById('advice-icon')
-        };
+    // Chart Configuration Helpers
+    const chartDefaults = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { 
+            x: { display: false }, 
+            y: { display: false } 
+        }
+    };
 
-        function loadQuestion() {
-            const q = quizData[state.currentIdx];
-            elements.questionText.innerText = q.question;
-            elements.topicTag.innerText = q.topic;
-            elements.progressText.innerText = `Question ${state.currentIdx + 1} of ${quizData.length}`;
-            elements.progressBar.style.width = `${((state.currentIdx + 1) / quizData.length) * 100}%`;
-            
-            elements.optionsContainer.innerHTML = '';
-            q.options.forEach((opt, i) => {
-                const btn = document.createElement('button');
-                btn.className = 'w-full text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-slate-700 flex items-center shadow-sm';
-                btn.innerHTML = `<span class="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center mr-4 text-[10px] font-black text-slate-400 border border-slate-200 uppercase">${String.fromCharCode(65 + i)}</span> ${opt}`;
-                btn.onclick = () => handleAnswer(i);
-                elements.optionsContainer.appendChild(btn);
-            });
+    // DAU Sparkline
+    new Chart(document.getElementById('dauChart'), {
+        type: 'line',
+        data: {
+            labels: events.map(e => e.id),
+            datasets: [{
+                data: [10, 15, 12, 18, 22, 19, 25, 30, 28, 35, 40],
+                borderColor: '#38bdf8',
+                borderWidth: 2,
+                fill: true,
+                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: chartDefaults
+    });
 
-            elements.hintDisplay.classList.add('hidden');
-            state.hintUsed = false;
-            state.startTime = Date.now();
-            if (!state.timerInterval) {
-                state.timerInterval = setInterval(() => {
-                    const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
-                    elements.timerDisplay.innerText = `00:${elapsed.toString().padStart(2, '0')}`;
-                }, 1000);
+    // Revenue Sparkline
+    new Chart(document.getElementById('revChart'), {
+        type: 'line',
+        data: {
+            labels: events.map(e => e.id),
+            datasets: [{
+                data: [500, 1200, 800, 1500, 2000, 1800, 2200, 2800],
+                borderColor: '#4ade80',
+                borderWidth: 2,
+                fill: true,
+                backgroundColor: 'rgba(74, 222, 128, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: chartDefaults
+    });
+
+    // Device Distribution
+    new Chart(document.getElementById('deviceChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Android', 'iOS', 'Windows', 'MacOS'],
+            datasets: [{
+                data: [48, 31, 11, 10],
+                backgroundColor: ['#38bdf8', '#f8fafc', '#a855f7', '#fb923c'],
+                borderWidth: 0,
+                cutout: '75%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // System Pulse Chart
+    new Chart(document.getElementById('mainPulseChart'), {
+        type: 'line',
+        data: {
+            labels: ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'],
+            datasets: [{
+                label: 'Activity',
+                data: [45, 20, 15, 85, 120, 95, 140, 110],
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: '#38bdf8'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
+                x: { grid: { display: false }, ticks: { color: '#64748b' } }
             }
         }
+    });
 
-        function handleAnswer(choiceIdx) {
-            const q = quizData[state.currentIdx];
-            const isCorrect = choiceIdx === q.correct;
-            const timeTaken = (Date.now() - state.startTime) / 1000;
-            
-            state.metrics.push({
-                id: q.id,
-                topic: q.topic,
-                time: timeTaken,
-                correct: isCorrect,
-                hint: state.hintUsed
-            });
-
-            state.currentIdx++;
-            if (state.currentIdx < quizData.length) {
-                loadQuestion();
-            } else {
-                clearInterval(state.timerInterval);
-                showResults();
+    // Feature Usage Chart
+    new Chart(document.getElementById('featureChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Quizzes', 'Leaderboard', 'Dashboard', 'Settings', 'Profile'],
+            datasets: [{
+                data: [450, 310, 290, 120, 85],
+                backgroundColor: '#38bdf8',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
+                y: { grid: { display: false }, ticks: { color: '#64748b' } }
             }
         }
+    });
 
-        elements.hintTrigger.onclick = () => {
-            state.hintUsed = true;
-            elements.hintDisplay.innerText = quizData[state.currentIdx].hint;
-            elements.hintDisplay.classList.remove('hidden');
-        };
+    // Heatmap Generation
+    const heatmap = document.getElementById('heatmap-container');
+    const days = 35; // 5 weeks
+    for (let i = 0; i < days; i++) {
+        const val = Math.floor(Math.random() * 5);
+        const cell = document.createElement('div');
+        cell.className = `h-6 rounded-sm heatmap-cell`;
+        const colors = ['bg-slate-900', 'bg-sky-900', 'bg-sky-700', 'bg-sky-500', 'bg-sky-300'];
+        cell.classList.add(colors[val]);
+        heatmap.appendChild(cell);
+    }
 
-        function performDataAnalysis(metrics) {
-            const topics = [...new Set(metrics.map(m => m.topic))];
-            const analysis = topics.map(topic => {
-                const items = metrics.filter(m => m.topic === topic);
-                
-                const accuracy = items.filter(m => m.correct).length / items.length;
-                const avgTime = items.reduce((acc, m) => acc + m.time, 0) / items.length;
-                const efficiency = Math.max(0, 1 - (avgTime / 20)); 
-                const hints = items.filter(m => m.hint).length;
-                const confidence = 1 - (hints / items.length);
+    // User Table Generation
+    const tableBody = document.getElementById('user-table-body');
+    function renderUsers(data) {
+        tableBody.innerHTML = '';
+        data.forEach(event => {
+            const row = document.createElement('tr');
+            row.className = 'border-b border-slate-900 hover:bg-slate-900/30 transition-colors cursor-pointer';
+            row.innerHTML = `
+                <td class="p-4 font-mono text-sky-400">USR-${event.user_id}</td>
+                <td class="p-4">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getEventColor(event.event_type)}">
+                        ${event.event_type.replace('_', ' ')}
+                    </span>
+                </td>
+                <td class="p-4 text-slate-300 capitalize">${event.device}</td>
+                <td class="p-4 text-slate-500">${event.os} / ${event.browser}</td>
+                <td class="p-4 text-xs text-slate-500">${event.created_at.replace('T', ' ')}</td>
+                <td class="p-4"><button class="text-xs text-sky-500 font-bold hover:underline">Investigate</button></td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
 
-                const totalScore = (accuracy * 0.5) + (efficiency * 0.3) + (confidence * 0.2);
-                
-                return { topic, accuracy, efficiency, confidence, totalScore, avgTime };
-            });
+    function getEventColor(type) {
+        if(type.includes('success')) return 'bg-green-500/10 text-green-400';
+        if(type.includes('failed')) return 'bg-red-500/10 text-red-400';
+        if(type.includes('buy')) return 'bg-purple-500/10 text-purple-400';
+        return 'bg-sky-500/10 text-sky-400';
+    }
 
-            const overallScore = analysis.reduce((acc, a) => acc + a.totalScore, 0) / analysis.length;
-            const weakestTopic = [...analysis].sort((a, b) => a.totalScore - b.totalScore)[0];
-            const strongestTopic = [...analysis].sort((a, b) => b.totalScore - a.totalScore)[0];
+    function filterUsers() {
+        const term = document.getElementById('user-search').value.toLowerCase();
+        const filtered = events.filter(e => 
+            e.user_id.toString().includes(term) || 
+            e.event_type.toLowerCase().includes(term) ||
+            e.device.toLowerCase().includes(term)
+        );
+        renderUsers(filtered);
+    }
 
-            return { analysis, overallScore, weakestTopic, strongestTopic };
-        }
-
-        function showResults() {
-            elements.quizScreen.classList.add('hidden');
-            elements.resultsScreen.classList.remove('hidden');
-
-            const report = performDataAnalysis(state.metrics);
-
-            document.getElementById('stat-accuracy').innerText = `${Math.round(state.metrics.filter(m => m.correct).length / state.metrics.length * 100)}%`;
-            const totalAvgTime = state.metrics.reduce((acc, m) => acc + m.time, 0) / state.metrics.length;
-            document.getElementById('stat-time').innerText = `${totalAvgTime.toFixed(1)}s`;
-            const hintFree = (state.metrics.filter(m => !m.hint).length / state.metrics.length) * 100;
-            document.getElementById('stat-confidence').innerText = `${Math.round(hintFree)}%`;
-
-            elements.topicAnalysis.innerHTML = '';
-            report.analysis.forEach(a => {
-                const color = a.totalScore > 0.8 ? 'bg-emerald-500' : (a.totalScore > 0.5 ? 'bg-amber-500' : 'bg-red-500');
-                const div = document.createElement('div');
-                div.innerHTML = `
-                    <div class="flex justify-between items-end mb-2">
-                        <div>
-                            <span class="text-slate-800 font-bold block">${a.topic}</span>
-                            <span class="text-[10px] text-slate-400 uppercase font-black tracking-widest">${a.avgTime.toFixed(1)}s AVG RESPONSE</span>
-                        </div>
-                        <span class="text-sm font-black text-slate-700">${Math.round(a.totalScore * 100)}% Mastery</span>
-                    </div>
-                    <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-                        <div class="${color} h-full transition-all duration-1000" style="width: ${a.totalScore * 100}%"></div>
-                    </div>
-                `;
-                elements.topicAnalysis.appendChild(div);
-            });
-
-            let title = "Performance Profile: Standard Learner";
-            let icon = "🧐";
-            let body = "";
-            let tags = [];
-
-            if (report.overallScore > 0.85) {
-                title = "Performance Profile: Road Expert";
-                icon = "🏆";
-                body = `Exceptional mastery. You demonstrate high-speed decision making and 100% accurate recall on ${report.strongestTopic.topic}. You are ready for practical licensing.`;
-                tags = ["Fluid Performance", "High Precision"];
-            } else if (report.overallScore < 0.45) {
-                title = "Performance Profile: Major Knowledge Gaps";
-                icon = "⚠️";
-                body = `Your assessment shows significant errors in **${report.weakestTopic.topic}**. Your reaction time is slow, indicating a lack of basic rule familiarity. Extensive review is mandatory.`;
-                tags = ["High Risk", "Revision Required"];
-            } else {
-                title = "Performance Profile: Inconsistent Mastery";
-                icon = "⚖️";
-                body = `You are strong in **${report.strongestTopic.topic}**, but you struggle with **${report.weakestTopic.topic}**. Data suggests that when you don't know an answer, you rely on the hint system rather than deduction.`;
-                tags = ["Topic Imbalance", "Hint Dependent"];
+    // Revenue Full Chart
+    new Chart(document.getElementById('revFullChart'), {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [
+                {
+                    label: 'Actual',
+                    data: [1200, 1900, 2400, 4850],
+                    borderColor: '#4ade80',
+                    backgroundColor: '#4ade80',
+                    tension: 0.3
+                },
+                {
+                    label: 'Forecast',
+                    data: [null, null, null, 4850, 6200, 8100],
+                    borderColor: '#64748b',
+                    borderDash: [5, 5],
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: true, position: 'bottom', labels: { color: '#64748b' } } },
+            scales: {
+                y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
+                x: { grid: { display: false }, ticks: { color: '#64748b' } }
             }
-
-            elements.adviceTitle.innerText = title;
-            elements.adviceIcon.innerText = icon;
-            elements.adviceBody.innerText = body;
-            elements.adviceTags.innerHTML = tags.map(t => `<span class="px-2 py-1 bg-slate-100 text-[10px] font-bold text-slate-500 rounded border border-slate-200 uppercase">${t}</span>`).join('');
-
-            elements.metricsTable.innerHTML = state.metrics.map(m => `
-                <tr class="border-b border-slate-50">
-                    <td class="py-4 px-4 font-semibold text-slate-700">${m.topic}</td>
-                    <td class="py-4 px-4 text-center">${m.correct ? '✅ Pass' : '❌ Fail'}</td>
-                    <td class="py-4 px-4 text-center">${m.time.toFixed(1)}s</td>
-                    <td class="py-4 px-4 text-center">${m.hint ? 'Yes' : 'No'}</td>
-                    <td class="py-4 px-4 text-center font-mono font-bold ${m.correct ? 'text-emerald-600' : 'text-red-600'}">${m.correct ? '100' : '0'}%</td>
-                </tr>
-            `).join('');
         }
+    });
 
-        loadQuestion();
-    </script>
+    // Initialize
+    renderUsers(events);
+
+</script>
 </body>
 </html>

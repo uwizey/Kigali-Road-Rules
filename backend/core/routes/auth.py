@@ -1,4 +1,5 @@
 import logging
+
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import SQLAlchemyError
@@ -6,7 +7,7 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from core.models import db, User
 from core import jwt, jwt_blacklist
 from datetime import timedelta,datetime
-from core.utils.decorators import role_required
+from core.utils.decorators import role_required, track_event,rate_limit
 
 
 auth_bp = Blueprint("auth", __name__)
@@ -23,31 +24,74 @@ def handle_invalid_token(reason):
 
 
 @auth_bp.route("/register", methods=["POST"])
+@track_event("register_attempt")   # 👈 added decorator
 def register():
     try:
         payload = request.get_json(force=True, silent=True)
         if not payload:
-            return jsonify({"status": False, "message": "Invalid or missing JSON payload"}), 400
+            return {
+                "status": False,
+                "message": "Invalid or missing JSON payload",
+                "_event_type": "register_failed",
+                "_event_metadata": {"reason": "invalid_payload"}
+            }, 400
+
         email = payload.get("email", "").strip().lower()
         password = payload.get("password")
+
         if not email or not password:
-            return jsonify({"status": False, "message": "Email and password are required"}), 400
+            return {
+                "status": False,
+                "message": "Email and password are required",
+                "_event_type": "register_failed",
+                "_event_metadata": {"reason": "missing_fields"}
+            }, 400
+
         if User.query.filter_by(email=email).first():
-            return jsonify({"status": False, "message": "A user with this email already exists"}), 409
-        db.session.add(User(email=email, password=generate_password_hash(password), role="client"))
+            return {
+                "status": False,
+                "message": "A user with this email already exists",
+                "_event_type": "register_failed",
+                "_event_metadata": {"reason": "duplicate_email", "email": email}
+            }, 409
+
+        # Create new user
+        db.session.add(User(
+            email=email,
+            password=generate_password_hash(password),
+            role="client"
+        ))
         db.session.commit()
-        return jsonify({"status": True, "message": "Registration successful"}), 201
-    
+
+        return {
+            "status": True,
+            "message": "Registration successful",
+            "_event_type": "register_success",
+            "_event_metadata": {"email": email}
+        }, 201
+
     except SQLAlchemyError as e:
         db.session.rollback()
         logging.error(f"Database error: {str(e)}")
-        return jsonify({"status": False, "message": "Database error occurred"}), 500
+        return {
+            "status": False,
+            "message": "Database error occurred",
+            "_event_type": "register_error",
+            "_event_metadata": {"error": str(e)}
+        }, 500
+
     except Exception as e:
         logging.error(f"Unexpected error: {str(e)}")
-        return jsonify({"status": False, "message": "Unexpected error occurred"}), 500
+        return {
+            "status": False,
+            "message": "Unexpected error occurred",
+            "_event_type": "register_error",
+            "_event_metadata": {"error": str(e)}
+        }, 500
 
 
 @auth_bp.route("/login", methods=["POST"])
+@track_event("login_attempt")  # default event type
 def login():
     try:
         payload = request.get_json(force=True, silent=True)
@@ -101,16 +145,31 @@ def login():
         return jsonify({"status": False, "message": "Unexpected error occurred"}), 500
 
 
+
 @auth_bp.route("/logout", methods=["GET"])
 @jwt_required()
+@track_event("logout_attempt")  # <-- added here
 def logout():
     try:
         jti = get_jwt()["jti"]
         jwt_blacklist.add(jti)
-        return jsonify({"status": True, "message": "Successfully logged out"}), 200
+
+        # You can also pass extra metadata back to the decorator if needed
+        return {
+            "status": True,
+            "message": "Successfully logged out",
+            "_event_type": "logout_success",  # overrides default event type
+            "_event_metadata": {"logout": "success"},
+        }, 200
+
     except Exception as e:
         logging.error(f"Logout error: {str(e)}")
-        return jsonify({"status": False, "message": "Logout failed"}), 500
+        return {
+            "status": False,
+            "message": "Logout failed",
+            "_event_type": "logout_failed",  # log failure event
+            "_event_metadata": {"error": str(e)},
+        }, 500
 
 
 @auth_bp.route("/user/profile", methods=["GET"])
@@ -215,7 +274,6 @@ def update_password():
         return jsonify({"status": False, "message": "Server error"}), 500
 
 
-
 @auth_bp.route("/users", methods=["GET"])
 @role_required(["admin"])
 def get_all_users():
@@ -279,7 +337,7 @@ def update_user(user_id):
     except Exception as e:
         logging.error(f"Error updating user: {str(e)}")
         return jsonify({"status": False, "message": "Error updating user"}), 500
-    
+
 
 @auth_bp.route("/user/email", methods=["GET"])
 @jwt_required()

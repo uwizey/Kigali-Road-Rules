@@ -5,18 +5,24 @@ from collections import defaultdict, deque
 from datetime import datetime
 from flask import Blueprint, request, jsonify,g
 from core.models import db, Quiz, QuizQuestion, Question, Topic, Subscription
-from core.utils.decorators import role_required,subscription_required,rate_limit
+from core.utils.decorators import role_required,subscription_required,rate_limit,track_event
 from flask_jwt_extended import get_jwt_identity
 
 quizzes_bp = Blueprint("quizzes", __name__)
 
 @subscription_required("quizzes")
+@track_event("quiz_generation_attempt")
 def _generate_random_quiz(quiz_size):
     
     TARGET_SIZE = quiz_size
     top_topics = Topic.query.filter_by(parent_topic=None).all()
     if not top_topics:
-        return jsonify({"status": False, "message": "No topics found"}), 404
+        return {
+                "status": False,
+                "message": "No topics found",
+                "_event_type": "quiz_generation_failed",
+                "_event_metadata": {"reason": "no_topics"}
+            }, 404
 
     topic_data = {}
     for topic in top_topics:
@@ -121,7 +127,15 @@ def _generate_random_quiz(quiz_size):
     
     
     
-    return jsonify({"status": True, "questions": ordered}), 200
+    return {
+            "status": True,
+            "questions": ordered,
+            "_event_type": "quiz_generation_success",
+            "_event_metadata": {
+                "quiz_size": TARGET_SIZE,
+                "selected_count": len(ordered)
+            }
+        }, 200
 
 @quizzes_bp.route("/quiz", methods=["POST"])
 @role_required("admin")
@@ -177,7 +191,8 @@ def get_all_quizzes():
 @quizzes_bp.route("/quiz/<int:quiz_id>", methods=["GET"])
 @role_required(["admin", "client"])
 @subscription_required("template_exams")
-@rate_limit(capacity=5, refill_rate=1) 
+@rate_limit(capacity=5, refill_rate=1)
+@track_event("template_exams")   # 👈 added decorator
 def get_quiz(quiz_id):
     try:
         quiz = Quiz.query.get(quiz_id)
@@ -188,17 +203,33 @@ def get_quiz(quiz_id):
         db.session.commit()
 
         print(f"After decrement: {sub.remaining_template_exams}")
-        
+
         if not quiz:
-            return jsonify({"status": False, "message": "Quiz not found"}), 404
-        return jsonify({
-            "quiz_id": quiz.quiz_id, "title": quiz.title,
+            return {
+                "status": False,
+                "message": "Quiz not found",
+                "_event_type": "quiz_failed",
+                "_event_metadata": {"quiz_id": quiz_id}
+            }, 404
+
+        return {
+            "status": True,
+            "quiz_id": quiz.quiz_id,
+            "title": quiz.title,
             "description": quiz.description,
-            "questions": [qq.question_id for qq in quiz.questions]
-        }), 200
+            "questions": [qq.question_id for qq in quiz.questions],
+            "_event_type": "quiz_provided",
+            "_event_metadata": {"quiz_id": quiz.quiz_id, "title": quiz.title}
+        }, 200
+
     except Exception as e:
         logging.error(f"Error retrieving quiz: {str(e)}")
-        return jsonify({"status": False, "message": "Error retrieving quiz"}), 500
+        return {
+            "status": False,
+            "message": "Error retrieving quiz",
+            "_event_type": "quiz_error",
+            "_event_metadata": {"quiz_id": quiz_id, "error": str(e)}
+        }, 500
 
 
 @quizzes_bp.route("/quiz-admin/<int:quiz_id>", methods=["GET"])
@@ -308,32 +339,59 @@ def _handle_exercise_quiz():
 
 
 @subscription_required("topic_quizzes")
+@track_event("topic_quiz_attempt")   # 👈 added decorator
 def _handle_topic_quiz(topic_name, target_size):
-    
-    topic = Topic.query.filter_by(name=topic_name).first()
-    if not topic:
-        return jsonify({"status": False, "message": "Topic not found"}), 404
+    try:
+        topic = Topic.query.filter_by(name=topic_name).first()
+        if not topic:
+            return {
+                "status": False,
+                "message": "Topic not found",
+                "_event_type": "topic_quiz_failed",
+                "_event_metadata": {"topic": topic_name, "reason": "not_found"}
+            }, 404
 
-    def collect_recursive(t):
-        qs = [q.question_id for q in t.questions]
-        for sub in t.subtopics:
-            qs.extend(collect_recursive(sub))
-        return qs
+        def collect_recursive(t):
+            qs = [q.question_id for q in t.questions]
+            for sub in t.subtopics:
+                qs.extend(collect_recursive(sub))
+            return qs
 
-    all_qs = collect_recursive(topic)
-    if not all_qs:
-        return jsonify({"status": False, "message": "No questions found"}), 404
+        all_qs = collect_recursive(topic)
+        if not all_qs:
+            return {
+                "status": False,
+                "message": "No questions found",
+                "_event_type": "topic_quiz_failed",
+                "_event_metadata": {"topic": topic_name, "reason": "no_questions"}
+            }, 404
 
-    questions = random.sample(all_qs, min(len(all_qs), target_size))
-    sub = g.subscription
-    sub.remaining_topic_quizzes -= 1
-    db.session.commit()
-    return jsonify({
-        "status": True,
-        "questions": questions,
-        "count": len(questions),
-        "topic": topic_name
-    }), 200
+        questions = random.sample(all_qs, min(len(all_qs), target_size))
+        sub = g.subscription
+        sub.remaining_topic_quizzes -= 1
+        db.session.commit()
+
+        return {
+            "status": True,
+            "questions": questions,
+            "count": len(questions),
+            "topic": topic_name,
+            "_event_type": "topic_quiz_success",
+            "_event_metadata": {
+                "topic": topic_name,
+                "target_size": target_size,
+                "selected_count": len(questions)
+            }
+        }, 200
+
+    except Exception as e:
+        logging.error(f"Error handling topic quiz: {str(e)}")
+        return {
+            "status": False,
+            "message": "Error handling topic quiz",
+            "_event_type": "topic_quiz_error",
+            "_event_metadata": {"topic": topic_name, "error": str(e)}
+        }, 500
 
 @quizzes_bp.route("/quiz/random", methods=["GET"])
 @role_required("client")

@@ -1,308 +1,707 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kigali Road Rules - Learning Analytics Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .glass { background: rgba(255, 255, 255, 1); }
-        .stat-card { border-left: 4px solid #3b82f6; }
-        .user-card { transition: all 0.2s ease; cursor: pointer; }
-        .user-card:hover { transform: translateY(-2px); }
-        .user-card.active { border-color: #3b82f6; background-color: #eff6ff; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics Engine — Enterprise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#f5f4f0;--bg2:#eeecea;--surface:#ffffff;--surface2:#f9f8f6;
+  --border:#e4e2dd;--border2:#d0cec8;
+  --text:#1a1917;--text2:#5c5a55;--text3:#9b9890;
+  --accent:#2f54eb;--accent-bg:#eef1fd;
+  --green:#16a34a;--green-bg:#f0fdf4;
+  --amber:#d97706;--amber-bg:#fffbeb;
+  --red:#dc2626;--red-bg:#fef2f2;
+  --teal:#0891b2;--teal-bg:#ecfeff;
+  --violet:#7c3aed;--violet-bg:#f5f3ff;
+  --orange:#ea580c;--orange-bg:#fff7ed;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 4px 12px rgba(0,0,0,.07),0 1px 3px rgba(0,0,0,.05);
+  --shadow-md:0 8px 24px rgba(0,0,0,.09),0 2px 6px rgba(0,0,0,.05);
+  --radius:14px;--radius-sm:8px;--radius-xs:6px;
+  --font-display:'Instrument Serif',serif;
+  --font-body:'Figtree',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --sidebar:240px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+a{text-decoration:none;color:inherit}button{cursor:pointer;font-family:var(--font-body)}
+.shell{display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:30}
+.sidebar-logo{padding:18px 18px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-mark{width:32px;height:32px;background:var(--text);border-radius:9px;display:flex;align-items:center;justify-content:center;color:white;font-size:13px;flex-shrink:0}
+.logo-name{font-family:var(--font-display);font-size:16px;color:var(--text)}
+.logo-ver{font-size:9px;color:var(--text3);font-family:var(--font-mono)}
+.nav-group{padding:12px 10px 2px}
+.nav-group-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);padding:0 8px;margin-bottom:3px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:var(--radius-sm);color:var(--text2);font-size:12px;font-weight:500;transition:all .13s;margin-bottom:1px;cursor:pointer}
+.nav-item i{width:15px;text-align:center;font-size:12px;flex-shrink:0}
+.nav-item:hover{background:var(--bg2);color:var(--text)}
+.nav-item.active{background:var(--text);color:white}
+.nav-item.active i{color:rgba(255,255,255,.6)}
+.nav-badge{margin-left:auto;font-size:9px;font-family:var(--font-mono);padding:1px 6px;border-radius:99px;background:var(--bg2);color:var(--text3)}
+.nav-item.active .nav-badge{background:rgba(255,255,255,.15);color:rgba(255,255,255,.65)}
+.sidebar-footer{margin-top:auto;padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 2px var(--green-bg);animation:livep 2s infinite}
+@keyframes livep{0%,100%{opacity:1}50%{opacity:.35}}
+.live-text{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+
+/* MAIN */
+.main{margin-left:var(--sidebar);flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:11px 26px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.topbar-crumb{font-family:var(--font-display);font-size:18px;color:var(--text);margin-right:auto}
+.topbar-crumb span{color:var(--text3);font-style:italic;font-size:14px}
+.fpill{display:flex;align-items:center;gap:5px;padding:5px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:99px;font-size:11px;color:var(--text2);transition:all .13s}
+.fpill i{font-size:10px;color:var(--text3)}
+.fpill select{background:none;border:none;color:inherit;font-family:var(--font-body);font-size:11px;font-weight:500;cursor:pointer;outline:none}
+.fpill select option{background:white;color:var(--text)}
+.btn-p{display:flex;align-items:center;gap:6px;padding:6px 14px;background:var(--text);color:white;border:none;border-radius:99px;font-size:11px;font-weight:600;transition:background .13s}
+.btn-p:hover{background:#333}
+
+.content{padding:26px;display:flex;flex-direction:column;gap:24px}
+.page{display:none}.page.active{display:flex;flex-direction:column;gap:22px}
+
+/* SECTION */
+.sec-hd{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.sec-title{font-family:var(--font-display);font-size:20px;color:var(--text)}
+.sec-sub{font-size:12px;color:var(--text3)}
+
+/* METRIC CARDS */
+.mg{display:grid;grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));gap:12px}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow-sm);transition:box-shadow .18s,transform .18s;cursor:pointer;position:relative;overflow:hidden;animation:fadeUp .4s ease both}
+.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--mca,var(--accent));opacity:.75}
+.mc:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.mc .mi{width:32px;height:32px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:13px;margin-bottom:10px}
+.mc .ml{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:5px}
+.mc .mv{font-family:var(--font-display);font-size:26px;color:var(--text);line-height:1;margin-bottom:5px}
+.mc .mt{font-size:11px;font-weight:500;display:flex;align-items:center;gap:4px}
+.mc .sw{height:38px;margin-top:9px}
+.up{color:var(--green)}.dn{color:var(--red)}.neu{color:var(--text3)}
+.mc:nth-child(1){animation-delay:.05s}.mc:nth-child(2){animation-delay:.10s}.mc:nth-child(3){animation-delay:.15s}.mc:nth-child(4){animation-delay:.20s}.mc:nth-child(5){animation-delay:.25s}.mc:nth-child(6){animation-delay:.30s}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow-sm);animation:fadeUp .38s ease both}
+.card-hd{display:flex;align-items:center;gap:9px;margin-bottom:16px}
+.card-icon{width:28px;height:28px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.card-title{font-family:var(--font-display);font-size:14px;color:var(--text)}
+.card-badge{font-size:9px;font-family:var(--font-mono);padding:2px 7px;border-radius:99px;background:var(--bg2);color:var(--text3);margin-left:auto}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.g4{display:grid;grid-template-columns:3fr 2fr;gap:16px}
+.grev{display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px}
+.col{display:flex;flex-direction:column;gap:16px}
+
+/* TABLES */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:8px 12px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2)}
+.tbl tr:last-child td{border-bottom:none}.tbl tr:hover td{background:var(--surface2)}
+.mono{font-family:var(--font-mono);font-size:11px}.bold{font-weight:600;color:var(--text)}
+
+/* CHIPS */
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600}
+.cg{background:var(--green-bg);color:var(--green)}.cr{background:var(--red-bg);color:var(--red)}
+.ca{background:var(--amber-bg);color:var(--amber)}.cb{background:var(--accent-bg);color:var(--accent)}
+.cv{background:var(--violet-bg);color:var(--violet)}.ct{background:var(--teal-bg);color:var(--teal)}
+.cz{background:var(--bg2);color:var(--text3)}
+
+/* KPI STRIP */
+.kpi-strip{display:flex;gap:1px;background:var(--border);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.kpi{flex:1;background:var(--surface);padding:14px 18px}
+.kpi .kl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:4px}
+.kpi .kv{font-family:var(--font-display);font-size:22px;color:var(--text);line-height:1;margin-bottom:3px}
+.kpi .kt{font-size:11px;font-weight:500;display:flex;align-items:center;gap:3px}
+
+/* FUNNEL */
+.funnel-wrap{display:flex;flex-direction:column;gap:8px}
+.f-step{}
+.f-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:12px}
+.f-name{font-weight:500;color:var(--text);display:flex;align-items:center;gap:6px}
+.f-name i{font-size:11px;color:var(--text3)}
+.f-stats{display:flex;gap:12px;font-family:var(--font-mono);font-size:11px;color:var(--text3)}
+.f-bar-bg{height:9px;background:var(--bg2);border-radius:99px;overflow:hidden}
+.f-bar{height:100%;border-radius:99px;transition:width .7s cubic-bezier(.16,1,.3,1)}
+.f-drop{font-size:10px;color:var(--red);display:flex;align-items:center;gap:3px;margin-top:3px}
+
+/* HEATMAP */
+.hm-wrap{overflow-x:auto}
+.hm-tbl{border-collapse:collapse;min-width:100%}
+.hm-tbl th{font-size:9px;font-family:var(--font-mono);color:var(--text3);text-align:center;padding:2px 1px;font-weight:400;min-width:26px}
+.hm-day{font-size:9px;font-weight:600;color:var(--text3);text-align:right;padding-right:8px;font-family:var(--font-mono);white-space:nowrap}
+.hm-cell{width:22px;height:22px;border-radius:4px;display:block;margin:1px auto;cursor:pointer;transition:transform .1s,box-shadow .1s}
+.hm-cell:hover{transform:scale(1.4);box-shadow:var(--shadow);z-index:5;position:relative}
+
+/* FEATURE BARS */
+.feat-list{display:flex;flex-direction:column;gap:10px}
+.feat-row{display:flex;align-items:center;gap:10px}
+.feat-rank{font-size:10px;font-weight:700;font-family:var(--font-mono);color:var(--text3);width:16px;text-align:right;flex-shrink:0}
+.feat-name{font-size:12px;font-weight:500;color:var(--text);min-width:138px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.feat-bg{flex:1;height:6px;background:var(--bg2);border-radius:99px;overflow:hidden}
+.feat-fill{height:100%;border-radius:99px;transition:width .7s cubic-bezier(.16,1,.3,1)}
+.feat-cnt{font-size:10px;font-family:var(--font-mono);color:var(--text3);min-width:50px;text-align:right}
+.feat-tr{font-size:10px;font-weight:600;min-width:34px;text-align:right}
+
+/* DONUT */
+.donut-wrap{display:flex;align-items:center;gap:18px}
+.donut-leg{display:flex;flex-direction:column;gap:7px;flex:1}
+.leg-row{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2)}
+.leg-sq{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.leg-pct{margin-left:auto;font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--text)}
+
+/* COHORT */
+.coh-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.coh-tbl th{padding:8px 12px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)}
+.coh-tbl th:not(:first-child):not(:nth-child(2)){text-align:center}
+.coh-tbl td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text2)}
+.coh-tbl td:not(:first-child):not(:nth-child(2)){text-align:center}
+.coh-tbl tr:last-child td{border-bottom:none}
+.rc{display:inline-flex;align-items:center;justify-content:center;padding:3px 11px;border-radius:var(--radius-xs);font-weight:600;font-size:11px;min-width:50px;font-family:var(--font-mono)}
+.rcg{background:var(--green-bg);color:var(--green)}.rca{background:var(--amber-bg);color:var(--amber)}.rcr{background:var(--red-bg);color:var(--red)}
+
+/* SESSION */
+.sess-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.sess-m{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px}
+.sm-l{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-weight:600;margin-bottom:4px}
+.sm-v{font-family:var(--font-display);font-size:22px;color:var(--text);line-height:1}
+.sm-s{font-size:11px;color:var(--text3);margin-top:3px}
+.hist-bar-row{display:flex;align-items:flex-end;gap:4px;height:80px;margin-bottom:6px}
+.hist-bar{flex:1;border-radius:3px 3px 0 0;transition:background .15s;cursor:pointer;min-width:0}
+.hist-bar:hover{filter:brightness(.85)}
+.hist-labels{display:flex;gap:4px}
+.hist-lbl{flex:1;font-size:9px;font-family:var(--font-mono);color:var(--text3);text-align:center;min-width:0}
+
+/* TIMELINE */
+.tl-search{display:flex;gap:8px;margin-bottom:18px}
+.tl-iw{flex:1;display:flex;align-items:center;gap:9px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);transition:all .13s}
+.tl-iw:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(47,84,235,.08);background:white}
+.tl-iw i{color:var(--text3);font-size:12px}
+.tl-iw input{flex:1;background:none;border:none;outline:none;font-family:var(--font-body);font-size:13px;color:var(--text)}
+.tl-iw input::placeholder{color:var(--text3)}
+.tl-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--text);color:white;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600}
+.tl-btn:hover{background:#333}
+.tl-list{display:flex;flex-direction:column}
+.tl-row{display:flex;gap:13px;padding-bottom:18px}
+.tl-row:last-child{padding-bottom:0}
+.tl-left{display:flex;flex-direction:column;align-items:center}
+.tl-dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.tl-line{flex:1;width:1px;background:var(--border);margin-top:3px;min-height:12px}
+.tl-body{flex:1;padding-top:4px}
+.tl-ts{font-size:9px;font-family:var(--font-mono);color:var(--text3);margin-bottom:2px}
+.tl-desc{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.tl-meta{font-size:11px;color:var(--text3)}
+.tl-chips{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+.tl-chip{font-size:9px;font-family:var(--font-mono);padding:2px 7px;border-radius:99px;background:var(--bg2);color:var(--text3);display:flex;align-items:center;gap:3px}
+.tl-chip i{font-size:8px}
+
+/* ALERT */
+.alert-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--alc,var(--border));border-radius:var(--radius);padding:14px 18px;box-shadow:var(--shadow-sm);display:flex;align-items:flex-start;gap:12px;animation:fadeUp .38s ease both}
+.alert-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.al-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.al-sub{font-size:11px;color:var(--text3)}
+.al-time{font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-top:4px}
+.insight-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.insight-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm)}
+.ic-icon{font-size:20px;margin-bottom:8px}
+.ic-text{font-size:13px;font-weight:500;color:var(--text);line-height:1.4}
+.ic-sub{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* PROFILE */
+.user-layout{display:grid;grid-template-columns:250px 1fr;gap:16px}
+.profile-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-sm)}
+.p-avatar{width:50px;height:50px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:10px;border:2px solid var(--border)}
+.p-name{font-family:var(--font-display);font-size:17px;color:var(--text);margin-bottom:1px}
+.p-email{font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:12px}
+.p-rows{display:flex;flex-direction:column;gap:9px}
+.p-row{display:flex;align-items:flex-start;gap:9px}
+.p-row i{font-size:11px;color:var(--text3);margin-top:1px;width:13px;flex-shrink:0}
+.p-row .prl{font-size:10px;color:var(--text3)}
+.p-row .prv{font-size:12px;color:var(--text);font-weight:500}
+.ab-wrap{margin-top:14px}
+.ab-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:5px}
+.ab-bg{height:5px;background:var(--bg2);border-radius:99px;overflow:hidden}
+.ab-fill{height:100%;background:var(--green);border-radius:99px}
+.ab-level{font-size:11px;font-weight:700;color:var(--green);margin-top:4px}
+
+/* GEO */
+.geo-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.geo-row:last-child{border-bottom:none}
+.geo-flag{font-size:18px;width:26px;text-align:center}
+.geo-name{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.geo-bg{width:90px;height:5px;background:var(--bg2);border-radius:99px;overflow:hidden}
+.geo-bar{height:100%;background:var(--accent);border-radius:99px}
+.geo-val{font-size:11px;font-family:var(--font-mono);color:var(--text3);min-width:42px;text-align:right}
+
+/* TABS */
+.tab-row{display:flex;gap:4px;margin-bottom:14px}
+.tab-btn{padding:5px 12px;border-radius:var(--radius-xs);font-size:11px;font-weight:600;cursor:pointer;border:1px solid transparent;color:var(--text3);background:none;transition:all .13s}
+.tab-btn.active{background:var(--text);color:white}
+.tab-btn:hover:not(.active){background:var(--bg2);color:var(--text)}
+
+@media(max-width:1100px){.mg{--cols:3!important}.grev{grid-template-columns:1fr 1fr}.sess-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}.mg{--cols:2!important}.g2,.g3,.g4,.grev{grid-template-columns:1fr}.content{padding:14px}.user-layout{grid-template-columns:1fr}.insight-grid{grid-template-columns:1fr}}
+</style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+<body>
+<div class="shell">
 
-    <div id="app" class="w-full max-w-5xl">
-        <div class="mb-8 text-center">
-            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Enterprise Learning Analytics</h1>
-            <p class="text-slate-600 mt-2">Aggregated Multi-User Dataset & Deep Pedagogical Analysis</p>
-        </div>
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark"><i class="fa-solid fa-chart-mixed"></i></div>
+    <div><div class="logo-name">Analytics</div><div class="logo-ver">enterprise v3.0</div></div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Command</div>
+    <div class="nav-item active" onclick="nav(this,'overview')"><i class="fa-solid fa-gauge-high"></i> Overview <span class="nav-badge">home</span></div>
+    <div class="nav-item" onclick="nav(this,'alerts')"><i class="fa-solid fa-bell"></i> Alerts <span class="nav-badge" style="background:#fef2f2;color:#dc2626">3</span></div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Revenue</div>
+    <div class="nav-item" onclick="nav(this,'revenue')"><i class="fa-solid fa-chart-line"></i> Revenue Overview</div>
+    <div class="nav-item" onclick="nav(this,'subscriptions')"><i class="fa-solid fa-credit-card"></i> Subscriptions</div>
+    <div class="nav-item" onclick="nav(this,'churn')"><i class="fa-solid fa-person-running"></i> Churn Analysis</div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Engagement</div>
+    <div class="nav-item" onclick="nav(this,'funnels')"><i class="fa-solid fa-filter"></i> Funnels</div>
+    <div class="nav-item" onclick="nav(this,'sessions')"><i class="fa-solid fa-stopwatch"></i> Sessions</div>
+    <div class="nav-item" onclick="nav(this,'heatmaps')"><i class="fa-solid fa-table-cells"></i> Heatmaps</div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Behavior</div>
+    <div class="nav-item" onclick="nav(this,'events')"><i class="fa-solid fa-bolt"></i> Events Explorer</div>
+    <div class="nav-item" onclick="nav(this,'features')"><i class="fa-solid fa-ranking-star"></i> Feature Usage</div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Intelligence</div>
+    <div class="nav-item" onclick="nav(this,'geo')"><i class="fa-solid fa-earth-africa"></i> Geography</div>
+    <div class="nav-item" onclick="nav(this,'retention')"><i class="fa-solid fa-arrow-rotate-left"></i> Retention</div>
+    <div class="nav-item" onclick="nav(this,'explorer')"><i class="fa-solid fa-magnifying-glass-chart"></i> User Explorer</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="live-dot"></div>
+    <div class="live-text">live · updated now</div>
+  </div>
+</nav>
 
-        <!-- User Selection Sidebar/Grid -->
-        <div class="mb-10">
-            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Select User Profile (Dataset: 20 Users | 240 Sessions)</h3>
-            <div id="user-selector" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                <!-- User pills injected here -->
-            </div>
-        </div>
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-crumb" id="topbar-crumb">Overview <span>/ Home</span></div>
+    <div class="fpill"><i class="fa-regular fa-calendar"></i><select><option>Last 30 days</option><option>Today</option><option>Last 7 days</option><option>Last 90 days</option></select></div>
+    <div class="fpill"><i class="fa-solid fa-bolt"></i><select><option>All events</option><option>view_component</option><option>start_quiz</option></select></div>
+    <div class="fpill"><i class="fa-solid fa-mobile-screen"></i><select><option>All devices</option><option>Android</option><option>iPhone</option><option>Desktop</option></select></div>
+    <div class="fpill"><i class="fa-solid fa-user-tag"></i><select><option>All roles</option><option>Client</option><option>Admin</option></select></div>
+    <div class="fpill"><i class="fa-solid fa-circle-half-stroke"></i><select><option>Active & inactive</option><option>Active only</option><option>Inactive only</option></select></div>
+    <button class="btn-p"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+  </div>
 
-        <!-- Analysis View -->
-        <div id="results-screen" class="space-y-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="glass p-6 rounded-2xl border border-slate-200 shadow-sm stat-card">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Aggregate Accuracy</p>
-                    <p id="stat-accuracy" class="text-3xl font-black text-slate-800">0%</p>
-                </div>
-                <div class="glass p-6 rounded-2xl border border-slate-200 shadow-sm stat-card" style="border-color: #10b981;">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Response Latency</p>
-                    <p id="stat-time" class="text-3xl font-black text-slate-800">0s</p>
-                </div>
-                <div class="glass p-6 rounded-2xl border border-slate-200 shadow-sm stat-card" style="border-color: #f59e0b;">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Independent Confidence</p>
-                    <p id="stat-confidence" class="text-3xl font-black text-slate-800">0%</p>
-                </div>
-            </div>
+  <div class="content">
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Topic Performance Analysis -->
-                <div class="glass rounded-3xl shadow-xl p-8 border border-slate-200">
-                    <h2 class="text-xl font-extrabold text-slate-800 mb-6 flex items-center">
-                        <span class="mr-2">📊</span> Domain Proficiency Map
-                    </h2>
-                    <div id="topic-analysis-grid" class="space-y-6"></div>
-                </div>
-
-                <!-- Advice Section -->
-                <div id="advice-section" class="glass rounded-3xl shadow-xl p-8 border border-slate-200 bg-white">
-                    <div class="flex items-start space-x-4">
-                        <div id="advice-icon" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 bg-slate-50">💡</div>
-                        <div>
-                            <h2 id="advice-title" class="text-2xl font-black text-slate-900 mb-2">Analyzing...</h2>
-                            <div id="advice-tags" class="flex flex-wrap gap-2 mb-4"></div>
-                            <p id="advice-body" class="text-slate-600 text-lg leading-relaxed"></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Detail Metrics Table -->
-            <div class="glass rounded-3xl shadow-lg p-6 border border-slate-200 overflow-hidden">
-                <h3 class="font-bold text-slate-800 mb-4 px-2">Longitudinal Session Data (Last 12 Quizzes)</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead>
-                            <tr class="bg-slate-50 text-slate-500 font-bold">
-                                <th class="py-3 px-4 rounded-l-xl">Topic</th>
-                                <th class="py-3 px-4 text-center">Outcome</th>
-                                <th class="py-3 px-4 text-center">Reaction Time</th>
-                                <th class="py-3 px-4 text-center">Hint Dependency</th>
-                                <th class="py-3 px-4 rounded-r-xl text-center">Weighted Efficiency</th>
-                            </tr>
-                        </thead>
-                        <tbody id="metrics-table-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+  <!-- PAGE: OVERVIEW -->
+  <div class="page active" id="page-overview">
+    <div>
+      <div class="sec-hd"><div class="sec-title">Executive Overview</div><div class="sec-sub">CEO-level platform health at a glance</div></div>
+      <div class="mg" style="--cols:4">
+        <div class="mc" style="--mca:#2f54eb"><div class="mi" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-dollar-sign"></i></div><div class="ml">Revenue this month</div><div class="mv">$24,810</div><div class="mt up"><i class="fa-solid fa-arrow-trend-up"></i> +14.2% vs last month</div><div class="sw"><canvas id="sp-rev" height="38"></canvas></div></div>
+        <div class="mc" style="--mca:#0891b2"><div class="mi" style="background:#ecfeff;color:#0891b2"><i class="fa-solid fa-users"></i></div><div class="ml">Daily active users</div><div class="mv">2,847</div><div class="mt up"><i class="fa-solid fa-arrow-trend-up"></i> +8.3% vs yesterday</div><div class="sw"><canvas id="sp-dau" height="38"></canvas></div></div>
+        <div class="mc" style="--mca:#16a34a"><div class="mi" style="background:#f0fdf4;color:#16a34a"><i class="fa-solid fa-rotate"></i></div><div class="ml">Retention rate</div><div class="mv" style="color:#16a34a">38%</div><div class="mt neu"><i class="fa-solid fa-circle-info"></i> D-30 cohort avg</div><div class="sw"><canvas id="sp-ret" height="38"></canvas></div></div>
+        <div class="mc" style="--mca:#dc2626"><div class="mi" style="background:#fef2f2;color:#dc2626"><i class="fa-solid fa-person-running"></i></div><div class="ml">Churn rate</div><div class="mv" style="color:#dc2626">4.2%</div><div class="mt dn"><i class="fa-solid fa-arrow-trend-up"></i> +0.8% vs last month</div><div class="sw"><canvas id="sp-churn" height="38"></canvas></div></div>
+      </div>
     </div>
+    <div class="mg" style="--cols:4">
+      <div class="mc" style="--mca:#7c3aed"><div class="mi" style="background:#f5f3ff;color:#7c3aed"><i class="fa-solid fa-calendar-days"></i></div><div class="ml">Monthly active users</div><div class="mv">18,420</div><div class="mt up"><i class="fa-solid fa-arrow-trend-up"></i> +5.1%</div><div class="sw"><canvas id="sp-mau" height="38"></canvas></div></div>
+      <div class="mc" style="--mca:#d97706"><div class="mi" style="background:#fffbeb;color:#d97706"><i class="fa-solid fa-credit-card"></i></div><div class="ml">Active subscriptions</div><div class="mv">3,241</div><div class="mt neu"><i class="fa-solid fa-circle-check" style="color:#16a34a"></i> 312 expired</div></div>
+      <div class="mc" style="--mca:#ea580c"><div class="mi" style="background:#fff7ed;color:#ea580c"><i class="fa-solid fa-clock"></i></div><div class="ml">Peak hour today</div><div class="mv" style="font-size:19px;padding-top:3px">18:00–19:00</div><div class="mt neu"><i class="fa-solid fa-fire-flame-curved" style="color:#ea580c"></i> 1,204 events</div></div>
+      <div class="mc" style="--mca:#0891b2"><div class="mi" style="background:#ecfeff;color:#0891b2"><i class="fa-solid fa-star"></i></div><div class="ml">Top feature</div><div class="mv" style="font-size:16px;line-height:1.3;padding-top:3px">view_component</div><div class="mt up"><i class="fa-solid fa-bolt"></i> 12,400 events today</div></div>
+    </div>
+    <div class="g2">
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-chart-line"></i></div><div class="card-title">Daily events — last 30 days</div><div class="card-badge">events</div></div><div style="position:relative;height:200px"><canvas id="ov-daily"></canvas></div></div>
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#f0fdf4;color:#16a34a"><i class="fa-solid fa-gem"></i></div><div class="card-title">Top 3 plans by revenue</div></div>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px">
+          <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span style="font-weight:600">Pro Monthly</span><span style="color:var(--green);font-family:var(--font-mono)">$14,200</span></div><div class="feat-bg"><div class="feat-fill" style="width:100%;background:#2f54eb"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span style="font-weight:600">Pro Annual</span><span style="color:var(--green);font-family:var(--font-mono)">$7,800</span></div><div class="feat-bg"><div class="feat-fill" style="width:55%;background:#0891b2"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span style="font-weight:600">Starter</span><span style="color:var(--amber);font-family:var(--font-mono)">$2,810</span></div><div class="feat-bg"><div class="feat-fill" style="width:20%;background:#d97706"></div></div></div>
+          <div style="height:1px;background:var(--border);margin:4px 0"></div>
+          <div style="font-size:11px;color:var(--text3)">Total MRR: <span style="color:var(--text);font-weight:600;font-family:var(--font-mono)">$24,810</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <script>
-        const topics = ["Priority Rules", "Speed Limits", "Road Markings", "Emergency"];
-        
-        const generateLargeDataset = () => {
-            const dataset = {};
-            const userProfiles = [
-                { name: "Jean Pierre", style: "Expert", speed: 5, accuracy: 0.95, hints: 0.05 },
-                { name: "Marie Louise", style: "Careful", speed: 12, accuracy: 0.88, hints: 0.1 },
-                { name: "Alphonse", style: "Struggler", speed: 18, accuracy: 0.4, hints: 0.6 },
-                { name: "Divine", style: "FastButWrong", speed: 4, accuracy: 0.5, hints: 0.1 },
-                { name: "Eric K.", style: "HintReliant", speed: 10, accuracy: 0.9, hints: 0.8 },
-                { name: "Sonia", style: "Expert", speed: 6, accuracy: 0.92, hints: 0.02 },
-                { name: "Gaspard", style: "Improving", speed: 14, accuracy: 0.75, hints: 0.3 },
-                { name: "Uwase", style: "Careful", speed: 13, accuracy: 0.85, hints: 0.15 },
-                { name: "Fabrice", style: "Struggler", speed: 20, accuracy: 0.35, hints: 0.7 },
-                { name: "Annette", style: "Average", speed: 11, accuracy: 0.7, hints: 0.2 },
-                { name: "Claude", style: "Average", speed: 10, accuracy: 0.65, hints: 0.25 },
-                { name: "Innocent", style: "FastButWrong", speed: 3, accuracy: 0.45, hints: 0.05 },
-                { name: "Beata", style: "Careful", speed: 15, accuracy: 0.9, hints: 0.1 },
-                { name: "Aimable", style: "Improving", speed: 9, accuracy: 0.8, hints: 0.2 },
-                { name: "Pacifique", style: "Expert", speed: 5, accuracy: 0.98, hints: 0.01 },
-                { name: "Vestine", style: "HintReliant", speed: 8, accuracy: 0.85, hints: 0.9 },
-                { name: "Theophile", style: "Average", speed: 12, accuracy: 0.6, hints: 0.3 },
-                { name: "Grace", style: "Expert", speed: 6, accuracy: 0.94, hints: 0.05 },
-                { name: "Olivier", style: "Struggler", speed: 22, accuracy: 0.3, hints: 0.8 },
-                { name: "Solange", style: "Average", speed: 11, accuracy: 0.72, hints: 0.18 }
-            ];
+  <!-- PAGE: ALERTS -->
+  <div class="page" id="page-alerts">
+    <div class="sec-hd"><div class="sec-title">Alerts & Intelligence</div><div class="sec-sub">Proactive platform insights</div></div>
+    <div class="insight-grid">
+      <div class="insight-card"><div class="ic-icon">📈</div><div class="ic-text">Retention increased by 12% this week</div><div class="ic-sub">D-7 cohort avg: 28% → 31%</div></div>
+      <div class="insight-card"><div class="ic-icon">⚠️</div><div class="ic-text">Quiz completion rate dropped 8%</div><div class="ic-sub">From 74% to 68% over last 7 days</div></div>
+      <div class="insight-card"><div class="ic-icon">📱</div><div class="ic-text">Android users have 20% higher churn</div><div class="ic-sub">Android 6.1% vs iOS 5.1%</div></div>
+      <div class="insight-card"><div class="ic-icon">🔥</div><div class="ic-text">view_component up 32% this week</div><div class="ic-sub">New high: 12,400 events today</div></div>
+      <div class="insight-card"><div class="ic-icon">💡</div><div class="ic-text">export_pdf barely used — 180 events</div><div class="ic-sub">Consider removing or redesigning</div></div>
+      <div class="insight-card"><div class="ic-icon">🌍</div><div class="ic-text">Nigeria is your #1 market</div><div class="ic-sub">38% of all active users this month</div></div>
+    </div>
+    <div class="g2">
+      <div>
+        <div style="font-family:var(--font-display);font-size:16px;margin-bottom:10px;color:var(--text)">Active alerts</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="alert-card" style="--alc:#dc2626"><div class="alert-icon" style="background:#fef2f2;color:#dc2626"><i class="fa-solid fa-triangle-exclamation"></i></div><div><div class="al-title">Revenue drop detected</div><div class="al-sub">Daily revenue fell 18% below 7-day average. Today: $680 vs avg $830</div><div class="al-time">Today · 14:32</div></div></div>
+          <div class="alert-card" style="--alc:#d97706"><div class="alert-icon" style="background:#fffbeb;color:#d97706"><i class="fa-solid fa-shield-halved"></i></div><div><div class="al-title">Failed logins spike</div><div class="al-sub">47 failed attempts in the last hour — 3× above normal</div><div class="al-time">Today · 16:15</div></div></div>
+          <div class="alert-card" style="--alc:#2f54eb"><div class="alert-icon" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-bell"></i></div><div><div class="al-title">Subscription churn spike</div><div class="al-sub">12 cancellations today — highest in 30 days</div><div class="al-time">Today · 11:08</div></div></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-clock-rotate-left"></i></div><div class="card-title">Alert history</div></div>
+        <table class="tbl"><thead><tr><th>Alert</th><th>Severity</th><th>When</th></tr></thead><tbody>
+          <tr><td class="bold">DAU drop</td><td><span class="chip cr">critical</span></td><td class="mono">2d ago</td></tr>
+          <tr><td class="bold">Feature collapse</td><td><span class="chip ca">warning</span></td><td class="mono">3d ago</td></tr>
+          <tr><td class="bold">Revenue spike</td><td><span class="chip cg">info</span></td><td class="mono">5d ago</td></tr>
+          <tr><td class="bold">Login failures</td><td><span class="chip ca">warning</span></td><td class="mono">6d ago</td></tr>
+          <tr><td class="bold">Churn spike</td><td><span class="chip cr">critical</span></td><td class="mono">8d ago</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  </div>
 
-            userProfiles.forEach((profile, index) => {
-                const userMetrics = [];
-                for (let i = 0; i < 12; i++) {
-                    const topic = topics[Math.floor(Math.random() * topics.length)];
-                    let accMod = profile.accuracy;
-                    if (topic === "Priority Rules" && profile.style !== "Expert") accMod *= 0.8; 
-                    
-                    userMetrics.push({
-                        id: i,
-                        topic: topic,
-                        time: profile.speed + (Math.random() * 4),
-                        correct: Math.random() < accMod,
-                        hint: Math.random() < profile.hints
-                    });
-                }
-                dataset[index] = { name: profile.name, metrics: userMetrics, style: profile.style };
-            });
-            return dataset;
-        };
+  <!-- PAGE: REVENUE -->
+  <div class="page" id="page-revenue">
+    <div class="sec-hd"><div class="sec-title">Revenue Overview</div><div class="sec-sub">Financial performance & business intelligence</div></div>
+    <div class="kpi-strip">
+      <div class="kpi"><div class="kl">Revenue today</div><div class="kv">$842</div><div class="kt up"><i class="fa-solid fa-arrow-trend-up"></i> +4.1%</div></div>
+      <div class="kpi"><div class="kl">This month</div><div class="kv">$24,810</div><div class="kt up"><i class="fa-solid fa-arrow-trend-up"></i> +14.2%</div></div>
+      <div class="kpi"><div class="kl">Total (all time)</div><div class="kv">$198,440</div><div class="kt neu"><i class="fa-solid fa-calendar"></i> all time</div></div>
+      <div class="kpi"><div class="kl">ARPU</div><div class="kv">$7.66</div><div class="kt up"><i class="fa-solid fa-arrow-trend-up"></i> +2.3%</div></div>
+      <div class="kpi"><div class="kl">Avg LTV</div><div class="kv">$48.20</div><div class="kt neu"><i class="fa-solid fa-circle-info"></i> per user</div></div>
+    </div>
+    <div class="card"><div class="card-hd"><div class="card-icon" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-chart-line"></i></div><div class="card-title">Daily revenue — last 30 days</div><div class="card-badge">USD</div></div><div style="position:relative;height:220px"><canvas id="rev-chart"></canvas></div></div>
+    <div class="grev">
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#f0fdf4;color:#16a34a"><i class="fa-solid fa-table-list"></i></div><div class="card-title">Recent transactions</div></div><table class="tbl"><thead><tr><th>User</th><th>Plan</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th></tr></thead><tbody id="txn-tbody"></tbody></table></div>
+      <div class="col">
+        <div class="card"><div class="card-hd"><div class="card-icon" style="background:#fffbeb;color:#d97706"><i class="fa-solid fa-chart-pie"></i></div><div class="card-title">Revenue by plan</div></div><div class="donut-wrap"><div style="position:relative;width:100px;height:100px;flex-shrink:0"><canvas id="rev-donut"></canvas></div><div class="donut-leg" id="rev-donut-leg"></div></div></div>
+        <div class="card"><div class="card-hd"><div class="card-icon" style="background:#f5f3ff;color:#7c3aed"><i class="fa-solid fa-credit-card"></i></div><div class="card-title">Payment methods</div></div><div id="pay-bars"></div></div>
+      </div>
+    </div>
+  </div>
 
-        const globalDataset = generateLargeDataset();
-        let currentUserId = 0;
+  <!-- PAGE: SUBSCRIPTIONS -->
+  <div class="page" id="page-subscriptions">
+    <div class="sec-hd"><div class="sec-title">Subscription Performance</div><div class="sec-sub">Plans, conversions & renewals</div></div>
+    <div class="mg" style="--cols:3">
+      <div class="mc" style="--mca:#16a34a"><div class="mi" style="background:#f0fdf4;color:#16a34a"><i class="fa-solid fa-circle-check"></i></div><div class="ml">Active subscriptions</div><div class="mv">3,241</div><div class="mt up"><i class="fa-solid fa-arrow-trend-up"></i> +87 this week</div></div>
+      <div class="mc" style="--mca:#d97706"><div class="mi" style="background:#fffbeb;color:#d97706"><i class="fa-solid fa-clock-rotate-left"></i></div><div class="ml">Renewal rate</div><div class="mv">71%</div><div class="mt neu"><i class="fa-solid fa-circle-info"></i> 30-day window</div></div>
+      <div class="mc" style="--mca:#dc2626"><div class="mi" style="background:#fef2f2;color:#dc2626"><i class="fa-solid fa-circle-xmark"></i></div><div class="ml">Cancellations (month)</div><div class="mv">138</div><div class="mt dn"><i class="fa-solid fa-arrow-trend-up"></i> +12 vs last month</div></div>
+    </div>
+    <div class="g2">
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-chart-bar"></i></div><div class="card-title">Subscriptions per plan</div></div><div style="position:relative;height:200px"><canvas id="subs-plan"></canvas></div></div>
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#f5f3ff;color:#7c3aed"><i class="fa-solid fa-filter"></i></div><div class="card-title">Subscription lifecycle funnel</div></div><div class="funnel-wrap" id="subs-funnel"></div></div>
+    </div>
+    <div class="card"><div class="card-hd"><div class="card-icon" style="background:#f0fdf4;color:#16a34a"><i class="fa-solid fa-table"></i></div><div class="card-title">Plan performance breakdown</div></div>
+      <table class="tbl"><thead><tr><th>Plan</th><th>Subscribers</th><th>MRR</th><th>Conversion</th><th>Renewal</th><th>Churn</th><th>Status</th></tr></thead><tbody>
+        <tr><td class="bold">Pro Monthly</td><td class="mono">1,842</td><td class="mono" style="color:var(--green)">$14,200</td><td><span class="chip cg">24%</span></td><td><span class="chip cg">78%</span></td><td><span class="chip cr">3.8%</span></td><td><span class="chip cg">healthy</span></td></tr>
+        <tr><td class="bold">Pro Annual</td><td class="mono">910</td><td class="mono" style="color:var(--green)">$7,800</td><td><span class="chip cg">18%</span></td><td><span class="chip cg">91%</span></td><td><span class="chip cg">1.2%</span></td><td><span class="chip cg">healthy</span></td></tr>
+        <tr><td class="bold">Starter</td><td class="mono">489</td><td class="mono" style="color:var(--amber)">$2,810</td><td><span class="chip ca">11%</span></td><td><span class="chip ca">54%</span></td><td><span class="chip cr">8.4%</span></td><td><span class="chip ca">watch</span></td></tr>
+      </tbody></table>
+    </div>
+  </div>
 
-        const elements = {
-            userSelector: document.getElementById('user-selector'),
-            metricsTable: document.getElementById('metrics-table-body'),
-            topicAnalysis: document.getElementById('topic-analysis-grid'),
-            adviceTitle: document.getElementById('advice-title'),
-            adviceBody: document.getElementById('advice-body'),
-            adviceTags: document.getElementById('advice-tags'),
-            adviceIcon: document.getElementById('advice-icon'),
-            statAccuracy: document.getElementById('stat-accuracy'),
-            statTime: document.getElementById('stat-time'),
-            statConfidence: document.getElementById('stat-confidence')
-        };
+  <!-- PAGE: CHURN -->
+  <div class="page" id="page-churn">
+    <div class="sec-hd"><div class="sec-title">Churn Analysis</div><div class="sec-sub">Why users leave and how to stop it</div></div>
+    <div class="mg" style="--cols:4">
+      <div class="mc" style="--mca:#dc2626"><div class="mi" style="background:#fef2f2;color:#dc2626"><i class="fa-solid fa-person-walking-arrow-right"></i></div><div class="ml">Churn rate</div><div class="mv" style="color:#dc2626">4.2%</div><div class="mt dn"><i class="fa-solid fa-arrow-trend-up"></i> +0.8% vs last month</div></div>
+      <div class="mc" style="--mca:#d97706"><div class="mi" style="background:#fffbeb;color:#d97706"><i class="fa-solid fa-dollar-sign"></i></div><div class="ml">Revenue lost (month)</div><div class="mv">$1,840</div><div class="mt dn">from 138 cancellations</div></div>
+      <div class="mc" style="--mca:#7c3aed"><div class="mi" style="background:#f5f3ff;color:#7c3aed"><i class="fa-solid fa-mobile-screen"></i></div><div class="ml">Highest churn device</div><div class="mv" style="font-size:18px;padding-top:4px">Android</div><div class="mt dn">6.1% churn rate</div></div>
+      <div class="mc" style="--mca:#ea580c"><div class="mi" style="background:#fff7ed;color:#ea580c"><i class="fa-solid fa-crown"></i></div><div class="ml">Highest churn plan</div><div class="mv" style="font-size:18px;padding-top:4px">Starter</div><div class="mt dn">8.4% churn rate</div></div>
+    </div>
+    <div class="g2">
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#fef2f2;color:#dc2626"><i class="fa-solid fa-chart-line"></i></div><div class="card-title">Daily churn — last 30 days</div></div><div style="position:relative;height:200px"><canvas id="churn-daily"></canvas></div></div>
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#fff7ed;color:#ea580c"><i class="fa-solid fa-chart-bar"></i></div><div class="card-title">Churn by plan & device</div></div><div style="position:relative;height:200px"><canvas id="churn-plan"></canvas></div></div>
+    </div>
+  </div>
 
-        function initUserSelector() {
-            Object.keys(globalDataset).forEach(id => {
-                const btn = document.createElement('div');
-                btn.className = `user-card p-3 rounded-xl border-2 border-slate-100 bg-white shadow-sm text-center ${id == currentUserId ? 'active' : ''}`;
-                btn.innerHTML = `
-                    <div class="text-[10px] font-black uppercase text-slate-400 mb-1">User ${parseInt(id)+1}</div>
-                    <div class="font-bold text-slate-800 text-sm truncate">${globalDataset[id].name}</div>
-                `;
-                btn.onclick = () => selectUser(id);
-                elements.userSelector.appendChild(btn);
-            });
-        }
+  <!-- PAGE: FUNNELS -->
+  <div class="page" id="page-funnels">
+    <div class="sec-hd"><div class="sec-title">Funnel & Conversion Analytics</div><div class="sec-sub">Where users drop off in their journey</div></div>
+    <div class="g2">
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-user-plus"></i></div><div class="card-title">Signup funnel</div></div><div class="funnel-wrap" id="signup-funnel"></div></div>
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#f0fdf4;color:#16a34a"><i class="fa-solid fa-credit-card"></i></div><div class="card-title">Subscription funnel</div></div><div class="funnel-wrap" id="sub-funnel"></div></div>
+    </div>
+    <div class="card"><div class="card-hd"><div class="card-icon" style="background:#fffbeb;color:#d97706"><i class="fa-solid fa-wand-magic-sparkles"></i></div><div class="card-title">Custom funnel — Quiz journey</div><div class="card-badge">content engagement</div></div><div class="funnel-wrap" id="quiz-funnel"></div></div>
+  </div>
 
-        function selectUser(id) {
-            currentUserId = id;
-            Array.from(elements.userSelector.children).forEach((card, idx) => {
-                card.classList.toggle('active', idx == id);
-            });
-            renderAnalysis(globalDataset[id].metrics);
-        }
+  <!-- PAGE: SESSIONS -->
+  <div class="page" id="page-sessions">
+    <div class="sec-hd"><div class="sec-title">Session Analytics</div><div class="sec-sub">Engagement quality and depth</div></div>
+    <div class="sess-grid">
+      <div class="sess-m"><div class="sm-l">Avg session duration</div><div class="sm-v">14m 22s</div><div class="sm-s">+2m vs last week</div></div>
+      <div class="sess-m"><div class="sm-l">Events per session</div><div class="sm-v">8.4</div><div class="sm-s">actions per visit</div></div>
+      <div class="sess-m"><div class="sm-l">Sessions per user</div><div class="sm-v">3.2</div><div class="sm-s">avg over 30 days</div></div>
+      <div class="sess-m"><div class="sm-l">Bounce rate</div><div class="sm-v" style="color:#dc2626">18%</div><div class="sm-s">1-event sessions</div></div>
+    </div>
+    <div class="g2">
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-chart-bar"></i></div><div class="card-title">Session duration histogram</div></div><div id="sess-hist"></div><div class="hist-labels" id="sess-hist-lbl"></div></div>
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#f5f3ff;color:#7c3aed"><i class="fa-solid fa-layer-group"></i></div><div class="card-title">Session depth (events/session)</div></div><div style="position:relative;height:200px"><canvas id="sess-depth"></canvas></div></div>
+    </div>
+    <div class="card"><div class="card-hd"><div class="card-icon" style="background:#f0fdf4;color:#16a34a"><i class="fa-solid fa-chart-line"></i></div><div class="card-title">Session timeline — last 30 days</div></div><div style="position:relative;height:180px"><canvas id="sess-timeline"></canvas></div></div>
+  </div>
 
-        function performDataAnalysis(metrics) {
-            const analysis = topics.map(topic => {
-                const items = metrics.filter(m => m.topic === topic);
-                if (items.length === 0) return { topic, accuracy: 0, efficiency: 0, confidence: 0, totalScore: 0, avgTime: 0, empty: true };
-                
-                const accuracy = items.filter(m => m.correct).length / items.length;
-                const avgTime = items.reduce((acc, m) => acc + m.time, 0) / items.length;
-                const efficiency = Math.max(0, 1 - (avgTime / 20)); 
-                const hints = items.filter(m => m.hint).length;
-                const confidence = 1 - (hints / items.length);
-                const totalScore = (accuracy * 0.5) + (efficiency * 0.3) + (confidence * 0.2);
-                
-                return { topic, accuracy, efficiency, confidence, totalScore, avgTime, count: items.length };
-            }).filter(a => !a.empty);
+  <!-- PAGE: HEATMAPS -->
+  <div class="page" id="page-heatmaps">
+    <div class="sec-hd"><div class="sec-title">Activity Heatmaps</div><div class="sec-sub">When and where activity concentrates</div></div>
+    <div class="card"><div class="card-hd"><div class="card-icon" style="background:#fff7ed;color:#ea580c"><i class="fa-solid fa-table-cells"></i></div><div class="card-title">Hourly activity — 7 × 24</div><div class="card-badge">last 7 days</div></div><div class="hm-wrap" id="hm-hourly"></div></div>
+    <div class="g2">
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-table-cells-large"></i></div><div class="card-title">Daily activity — last 35 days</div></div><div id="hm-daily"></div></div>
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#f5f3ff;color:#7c3aed"><i class="fa-solid fa-mobile-screen"></i></div><div class="card-title">Activity by device × hour</div></div><div style="position:relative;height:220px"><canvas id="hm-device"></canvas></div></div>
+    </div>
+  </div>
 
-            const overallScore = analysis.reduce((acc, a) => acc + a.totalScore, 0) / analysis.length;
-            const weakestTopic = [...analysis].sort((a, b) => a.totalScore - b.totalScore)[0];
-            const strongestTopic = [...analysis].sort((a, b) => b.totalScore - a.totalScore)[0];
+  <!-- PAGE: EVENTS -->
+  <div class="page" id="page-events">
+    <div class="sec-hd"><div class="sec-title">Events Explorer</div><div class="sec-sub">Searchable raw event log</div></div>
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-icon" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-magnifying-glass"></i></div>
+        <div class="card-title">Event log</div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <div class="fpill"><i class="fa-solid fa-bolt"></i><select><option>All events</option><option>view_component</option><option>start_quiz</option><option>login_success</option></select></div>
+          <div class="fpill"><i class="fa-solid fa-mobile-screen"></i><select><option>All devices</option><option>Android</option><option>iPhone</option></select></div>
+        </div>
+      </div>
+      <table class="tbl"><thead><tr><th>Event</th><th>User</th><th>Device</th><th>Browser</th><th>Metadata</th><th>Timestamp</th></tr></thead><tbody id="ev-tbody"></tbody></table>
+    </div>
+  </div>
 
-            return { analysis, overallScore, weakestTopic, strongestTopic };
-        }
+  <!-- PAGE: FEATURES -->
+  <div class="page" id="page-features">
+    <div class="sec-hd"><div class="sec-title">Feature Usage</div><div class="sec-sub">What users do and what they ignore</div></div>
+    <div class="g2">
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#f5f3ff;color:#7c3aed"><i class="fa-solid fa-ranking-star"></i></div><div class="card-title">Event rankings</div></div>
+        <div class="tab-row"><button class="tab-btn active" onclick="featTab(this,'top')"><i class="fa-solid fa-arrow-up"></i> Top events</button><button class="tab-btn" onclick="featTab(this,'low')"><i class="fa-solid fa-arrow-down"></i> Least used</button></div>
+        <div id="feat-content"></div>
+      </div>
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-chart-line"></i></div><div class="card-title">Feature growth over time</div></div><div style="position:relative;height:240px"><canvas id="feat-growth"></canvas></div></div>
+    </div>
+  </div>
 
-        function renderAnalysis(metrics) {
-            const report = performDataAnalysis(metrics);
-            const totalCorrect = metrics.filter(m => m.correct).length;
-            const totalAvgTime = metrics.reduce((acc, m) => acc + m.time, 0) / metrics.length;
-            const hintCount = metrics.filter(m => m.hint).length;
-            const accuracy = totalCorrect / metrics.length;
-            const hintRate = hintCount / metrics.length;
+  <!-- PAGE: GEO -->
+  <div class="page" id="page-geo">
+    <div class="sec-hd"><div class="sec-title">Geographic Analytics</div><div class="sec-sub">Where your users and revenue come from</div></div>
+    <div class="mg" style="--cols:3">
+      <div class="mc" style="--mca:#16a34a"><div class="mi" style="background:#f0fdf4;color:#16a34a"><i class="fa-solid fa-earth-africa"></i></div><div class="ml">Active countries</div><div class="mv">42</div><div class="mt neu">active markets</div></div>
+      <div class="mc" style="--mca:#2f54eb"><div class="mi" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-users"></i></div><div class="ml">Top country users</div><div class="mv">7,214</div><div class="mt neu">Nigeria · 38% of MAU</div></div>
+      <div class="mc" style="--mca:#d97706"><div class="mi" style="background:#fffbeb;color:#d97706"><i class="fa-solid fa-dollar-sign"></i></div><div class="ml">Top country revenue</div><div class="mv">$9,840</div><div class="mt neu">Nigeria · top market</div></div>
+    </div>
+    <div class="g2">
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-ranking-star"></i></div><div class="card-title">Top countries by users</div></div><div id="geo-list"></div></div>
+      <div class="card"><div class="card-hd"><div class="card-icon" style="background:#f0fdf4;color:#16a34a"><i class="fa-solid fa-dollar-sign"></i></div><div class="card-title">Revenue by country</div></div><div style="position:relative;height:240px"><canvas id="geo-rev"></canvas></div></div>
+    </div>
+  </div>
 
-            elements.statAccuracy.innerText = `${Math.round(accuracy * 100)}%`;
-            elements.statTime.innerText = `${totalAvgTime.toFixed(1)}s`;
-            elements.statConfidence.innerText = `${Math.round((1 - hintRate) * 100)}%`;
+  <!-- PAGE: RETENTION -->
+  <div class="page" id="page-retention">
+    <div class="sec-hd"><div class="sec-title">Retention Analytics</div><div class="sec-sub">How many users come back</div></div>
+    <div class="card"><div class="card-hd"><div class="card-icon" style="background:#ecfeff;color:#0891b2"><i class="fa-solid fa-arrow-rotate-left"></i></div><div class="card-title">Weekly cohort retention</div><div class="card-badge">D1 · D7 · D30</div></div>
+      <table class="coh-tbl"><thead><tr><th>Cohort</th><th>Users</th><th>Day 1</th><th>Day 7</th><th>Day 30</th></tr></thead><tbody id="coh-body"></tbody></table>
+    </div>
+    <div class="card"><div class="card-hd"><div class="card-icon" style="background:#eef1fd;color:#2f54eb"><i class="fa-solid fa-chart-line"></i></div><div class="card-title">Retention trend over time</div></div><div style="position:relative;height:200px"><canvas id="ret-trend"></canvas></div></div>
+  </div>
 
-            elements.topicAnalysis.innerHTML = '';
-            report.analysis.forEach(a => {
-                const color = a.totalScore > 0.8 ? 'bg-emerald-500' : (a.totalScore > 0.5 ? 'bg-amber-500' : 'bg-red-500');
-                const div = document.createElement('div');
-                div.innerHTML = `
-                    <div class="flex justify-between items-end mb-2">
-                        <div>
-                            <span class="text-slate-800 font-bold block">${a.topic}</span>
-                            <span class="text-[10px] text-slate-400 uppercase font-black tracking-widest">${a.avgTime.toFixed(1)}s AVG LATENCY</span>
-                        </div>
-                        <span class="text-sm font-black text-slate-700">${Math.round(a.totalScore * 100)}% Mastery</span>
-                    </div>
-                    <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-                        <div class="${color} h-full transition-all duration-700" style="width: ${a.totalScore * 100}%"></div>
-                    </div>
-                `;
-                elements.topicAnalysis.appendChild(div);
-            });
+  <!-- PAGE: EXPLORER -->
+  <div class="page" id="page-explorer">
+    <div class="sec-hd"><div class="sec-title">User Explorer</div><div class="sec-sub">Investigate individual behavior</div></div>
+    <div class="user-layout">
+      <div class="profile-panel">
+        <div class="p-avatar"><i class="fa-solid fa-user" style="color:var(--text3)"></i></div>
+        <div class="p-name">Sarah Okonkwo</div>
+        <div class="p-email">sarah.ok@example.com</div>
+        <div style="display:flex;gap:5px;margin-bottom:14px"><span class="chip cg"><i class="fa-solid fa-circle" style="font-size:7px"></i> Active</span><span class="chip cb"><i class="fa-solid fa-user"></i> Client</span></div>
+        <div class="p-rows">
+          <div class="p-row"><i class="fa-regular fa-calendar-plus"></i><div><div class="prl">Joined</div><div class="prv">12 Jan 2024</div></div></div>
+          <div class="p-row"><i class="fa-regular fa-clock"></i><div><div class="prl">Last login</div><div class="prv">Today · 18:42</div></div></div>
+          <div class="p-row"><i class="fa-solid fa-mobile-screen"></i><div><div class="prl">Device</div><div class="prv">Android · Chrome 120</div></div></div>
+          <div class="p-row"><i class="fa-solid fa-location-dot"></i><div><div class="prl">Location</div><div class="prv">Lagos, Nigeria</div></div></div>
+          <div class="p-row"><i class="fa-solid fa-credit-card"></i><div><div class="prl">Plan</div><div class="prv">Pro Monthly · active</div></div></div>
+          <div class="p-row"><i class="fa-solid fa-dollar-sign"></i><div><div class="prl">Total revenue</div><div class="prv" style="color:var(--green)">$38.00</div></div></div>
+          <div class="p-row"><i class="fa-solid fa-fire"></i><div><div class="prl">Sessions (30d)</div><div class="prv">47 sessions</div></div></div>
+        </div>
+        <div class="ab-wrap"><div class="ab-label">Activity level</div><div class="ab-bg"><div class="ab-fill" style="width:82%"></div></div><div class="ab-level"><i class="fa-solid fa-bolt"></i> High · 82nd percentile</div></div>
+      </div>
+      <div class="card">
+        <div class="tl-search"><div class="tl-iw"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="tl-input" placeholder="Search by email, user ID, or name..."></div><button class="tl-btn" onclick="loadTL()"><i class="fa-solid fa-arrow-right"></i> Search</button></div>
+        <div class="tl-list" id="tl-list"></div>
+      </div>
+    </div>
+  </div>
 
-            // --- IMPROVED MULTI-DIMENSIONAL ADVICE ENGINE ---
-            const profiles = [];
-            
-            // 1. Accuracy Profile
-            if (accuracy > 0.9) profiles.push({ type: 'ACC', val: 2, label: 'High Precision' });
-            else if (accuracy < 0.5) profiles.push({ type: 'ACC', val: 0, label: 'Low Precision' });
-            else profiles.push({ type: 'ACC', val: 1, label: 'Moderate Precision' });
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
 
-            // 2. Latency Profile
-            if (totalAvgTime < 8) profiles.push({ type: 'SPD', val: 2, label: 'Fast Processing' });
-            else if (totalAvgTime > 15) profiles.push({ type: 'SPD', val: 0, label: 'High Latency' });
-            else profiles.push({ type: 'SPD', val: 1, label: 'Moderate Speed' });
+<script>
+// ── Navigation ──
+const pageLabels={overview:'Overview / Home',alerts:'Alerts / Intelligence',revenue:'Revenue / Overview',subscriptions:'Subscriptions / Performance',churn:'Revenue / Churn Analysis',funnels:'Funnels / Conversion',sessions:'Sessions / Analytics',heatmaps:'Heatmaps / Activity',events:'Behavior / Events Explorer',features:'Behavior / Feature Usage',geo:'Intelligence / Geography',retention:'Intelligence / Retention',explorer:'Users / Explorer'};
+function nav(el,pid){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el&&el.classList)el.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const pg=document.getElementById('page-'+pid);
+  if(pg)pg.classList.add('active');
+  const lbl=(pageLabels[pid]||pid).split('/');
+  document.getElementById('topbar-crumb').innerHTML=lbl[0]+(lbl[1]?` <span>/${lbl[1]}</span>`:'');
+  window.scrollTo(0,0);
+}
 
-            // 3. Independence Profile
-            if (hintRate < 0.1) profiles.push({ type: 'IND', val: 2, label: 'Independent' });
-            else if (hintRate > 0.5) profiles.push({ type: 'IND', val: 0, label: 'Scaffold Dependent' });
-            else profiles.push({ type: 'IND', val: 1, label: 'Semi-Independent' });
+// ── Helpers ──
+const $=id=>document.getElementById(id);
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const days30=Array.from({length:30},(_,i)=>{const d=new Date();d.setDate(d.getDate()-29+i);return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})});
 
-            // Combine into a Matrix Result
-            const acc = profiles.find(p => p.type === 'ACC').val;
-            const spd = profiles.find(p => p.type === 'SPD').val;
-            const ind = profiles.find(p => p.type === 'IND').val;
+function sparkline(id,data,color,fill){
+  const c=$(id);if(!c)return;
+  new Chart(c,{type:'line',data:{labels:data.map((_,i)=>i),datasets:[{data,borderColor:color,backgroundColor:fill||'transparent',borderWidth:1.5,pointRadius:0,fill:!!fill,tension:.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}},animation:false}});
+}
 
-            let title, icon, body, tags = profiles.map(p => p.label);
+const CD={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1917',titleColor:'#9b9890',bodyColor:'#e8e9ef',padding:10}},scales:{x:{ticks:{color:'#9b9890',font:{size:10,family:"'JetBrains Mono',monospace"},maxTicksLimit:8,autoSkip:true},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{color:'#9b9890',font:{size:10,family:"'JetBrains Mono',monospace"}},grid:{color:'rgba(0,0,0,.04)'}}}};
+function lchart(id,labels,datasets,yf){const o=JSON.parse(JSON.stringify(CD));if(yf)o.scales.y.ticks.callback=yf;new Chart($(id),{type:'line',data:{labels,datasets},options:o});}
+function bchart(id,labels,datasets,yf,h){const o=JSON.parse(JSON.stringify(CD));if(yf)o.scales[h?'x':'y'].ticks.callback=yf;if(h)o.indexAxis='y';new Chart($(id),{type:'bar',data:{labels,datasets},options:o});}
+function donut(cid,lid,labels,data,colors){
+  new Chart($(cid),{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1917',bodyColor:'#e8e9ef',callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed}%`}}}}});
+  const l=$(lid);if(!l)return;
+  labels.forEach((lbl,i)=>{l.innerHTML+=`<div class="leg-row"><span class="leg-sq" style="background:${colors[i]}"></span><span>${lbl}</span><span class="leg-pct">${data[i]}%</span></div>`;});
+}
+function funnel(cid,steps){
+  const c=$(cid);if(!c)return;
+  const max=steps[0].n;
+  steps.forEach((s,i)=>{
+    const pct=Math.round(s.n/max*100);
+    const drop=i>0?Math.round((1-s.n/steps[i-1].n)*100):null;
+    c.innerHTML+=`<div class="f-step"><div class="f-label"><span class="f-name"><i class="fa-solid ${s.icon}"></i> ${s.name}</span><span class="f-stats"><span>${s.n.toLocaleString()}</span><span>${pct}%</span></span></div><div class="f-bar-bg"><div class="f-bar" style="width:${pct}%;background:${s.color}"></div></div>${drop!==null?`<div class="f-drop"><i class="fa-solid fa-arrow-down"></i> ${drop}% drop-off</div>`:''}</div>`;
+  });
+}
+function heatmap(cid,rgb){
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const hours=Array.from({length:24},(_,i)=>(i<10?'0':'')+i);
+  const data=days.map((_,d)=>hours.map((_,h)=>{const b=(d<5?1:.4)*Math.max(0,Math.sin((h-8)*Math.PI/13))*.85+.08;return Math.max(0,Math.min(1,b+Math.random()*.2-.1));}));
+  const c=$(cid);if(!c)return;
+  const tbl=document.createElement('table');tbl.className='hm-tbl';
+  const thead=document.createElement('thead');const hr=document.createElement('tr');hr.innerHTML='<th></th>';
+  hours.forEach(h=>{hr.innerHTML+=`<th>${h%4===0?h:''}</th>`;});thead.appendChild(hr);tbl.appendChild(thead);
+  const tbody=document.createElement('tbody');
+  days.forEach((day,d)=>{
+    const tr=document.createElement('tr');tr.innerHTML=`<td class="hm-day">${day}</td>`;
+    hours.forEach((_,h)=>{const v=data[d][h];const td=document.createElement('td');td.innerHTML=`<span class="hm-cell" style="background:rgba(${rgb.join(',')},${(.07+v*.93).toFixed(2)})" title="${day} ${hours[h]}:00"></span>`;tr.appendChild(td);});
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);c.appendChild(tbl);
+}
 
-            // Matrix Logic: (Accuracy, Speed, Independence)
-            if (acc === 2 && spd === 2 && ind === 2) {
-                title = "Total Road Competency";
-                icon = "🏆";
-                body = `${globalDataset[currentUserId].name} exhibits the 'Automaticity' phase of learning. Rules are internalized and applied instantly without external aid. Recommendation: Simulation of extreme weather or high-stress environments.`;
-            } else if (acc === 2 && spd === 0) {
-                title = "Reliable but Hesitant";
-                icon = "🐢";
-                body = `Knowledge is present, but processing is inefficient. While accurate on ${report.strongestTopic.topic}, the high response time (${totalAvgTime.toFixed(1)}s) suggests a lack of confidence that could cause traffic flow issues.`;
-            } else if (acc === 0 && spd === 2) {
-                title = "Impulsive Fault Pattern";
-                icon = "🛑";
-                body = `Classic Speed-Accuracy tradeoff. The user is prioritizing rapid response over correct identification. Significant intervention needed in **${report.weakestTopic.topic}** to force a 'Stop-Think' habit.`;
-            } else if (acc === 2 && ind === 0) {
-                title = "Illusory Mastery";
-                icon = "🧗";
-                body = `Accuracy is high, but the Independence metric is critical (Hint Rate: ${Math.round(hintRate*100)}%). The user cannot recall rules without prompts. We recommend a "Hard Mode" lock on hints for ${globalDataset[currentUserId].name}.`;
-            } else if (acc === 0 && spd === 0) {
-                title = "Fundamental Re-Learning Required";
-                icon = "⚠️";
-                body = `The learner is struggling across all vectors: accuracy, speed, and confidence. This indicates a failure in basic concept acquisition. Advise structured classroom theory before further testing.`;
-            } else {
-                title = "Iterative Growth Profile";
-                icon = "📈";
-                body = `The learner shows balanced but incomplete mastery. Strength in **${report.strongestTopic.topic}** is balanced by a need for faster processing in **${report.weakestTopic.topic}**. Steady progression is visible.`;
-            }
+// ── OVERVIEW ──
+sparkline('sp-rev',[18,19,21,20,22,23,22,24,23,25,24,26,24,24.8],'#2f54eb','rgba(47,84,235,.07)');
+sparkline('sp-dau',[2100,2250,2180,2400,2380,2500,2620,2580,2700,2650,2720,2800,2760,2847],'#0891b2','rgba(8,145,178,.07)');
+sparkline('sp-ret',[30,32,35,31,34,36,33,36,35,38,37,39,38,38],'#16a34a','rgba(22,163,74,.07)');
+sparkline('sp-churn',[3.2,3.4,3.1,3.6,3.8,3.5,3.9,4.0,3.8,4.1,4.2,4.0,4.3,4.2],'#dc2626','rgba(220,38,38,.07)');
+sparkline('sp-mau',[14200,14800,15100,15600,16000,16400,16900,17200,17500,17800,18000,18200,18350,18420],'#7c3aed','rgba(124,58,237,.07)');
+const ev30=[3200,3400,3100,3600,4100,4500,4300,3900,4200,4600,5100,5400,5200,4900,5300,5800,6100,5900,5600,5200,5700,6200,6800,6500,6100,5800,5400,5100,5500,5900];
+lchart('ov-daily',days30,[{label:'Events',data:ev30,borderColor:'#2f54eb',backgroundColor:'rgba(47,84,235,.06)',borderWidth:2,pointRadius:0,fill:true,tension:.4}],v=>(v/1000).toFixed(1)+'k');
 
-            elements.adviceTitle.innerText = title;
-            elements.adviceIcon.innerText = icon;
-            elements.adviceBody.innerText = body;
-            elements.adviceTags.innerHTML = tags.map(t => `<span class="px-2 py-1 bg-blue-50 text-[10px] font-bold text-blue-600 rounded border border-blue-100 uppercase">${t}</span>`).join('');
+// ── REVENUE ──
+const revD=[720,780,810,690,740,820,880,760,830,900,840,910,870,920,880,950,840,890,810,860,930,980,900,950,860,820,870,910,880,842];
+lchart('rev-chart',days30,[{label:'Revenue',data:revD,borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.07)',borderWidth:2,pointRadius:0,fill:true,tension:.4}],v=>'$'+v);
+donut('rev-donut','rev-donut-leg',['Pro Monthly','Pro Annual','Starter'],[57,31,12],['#2f54eb','#0891b2','#d97706']);
+const pb=$('pay-bars');if(pb)[['Card',78,'#2f54eb'],['Mobile Money',14,'#0891b2'],['Bank Transfer',6,'#d97706'],['PayPal',2,'#dc2626']].forEach(([n,p,c])=>{pb.innerHTML+=`<div class="feat-row" style="margin-bottom:8px"><span class="feat-name">${n}</span><div class="feat-bg"><div class="feat-fill" style="width:${p}%;background:${c}"></div></div><span class="feat-cnt">${p}%</span></div>`;});
+const tt=$('txn-tbody');if(tt)[{u:'sarah.ok@ex.com',p:'Pro Monthly',a:'$9.99',m:'Card',s:'success',d:'Today 14:22'},{u:'kwame.a@ex.com',p:'Pro Annual',a:'$79.99',m:'Mobile Money',s:'success',d:'Today 12:10'},{u:'fatima.m@ex.com',p:'Starter',a:'$4.99',m:'Card',s:'success',d:'Today 11:45'},{u:'emeka.o@ex.com',p:'Pro Monthly',a:'$9.99',m:'Card',s:'failed',d:'Today 10:30'},{u:'aisha.b@ex.com',p:'Pro Monthly',a:'$9.99',m:'Bank',s:'pending',d:'Yesterday'}].forEach(t=>{const sc=t.s==='success'?'cg':t.s==='failed'?'cr':'ca';tt.innerHTML+=`<tr><td class="mono">${t.u}</td><td class="bold">${t.p}</td><td class="mono" style="color:var(--green)">${t.a}</td><td>${t.m}</td><td><span class="chip ${sc}">${t.s}</span></td><td class="mono">${t.d}</td></tr>`;});
 
-            elements.metricsTable.innerHTML = metrics.map(m => `
-                <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                    <td class="py-4 px-4 font-semibold text-slate-700">${m.topic}</td>
-                    <td class="py-4 px-4 text-center">
-                        <span class="px-2 py-1 rounded text-[10px] font-bold uppercase ${m.correct ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">
-                            ${m.correct ? 'Success' : 'Failure'}
-                        </span>
-                    </td>
-                    <td class="py-4 px-4 text-center text-slate-500">${m.time.toFixed(1)}s</td>
-                    <td class="py-4 px-4 text-center">${m.hint ? '🚨 Used' : '✅ None'}</td>
-                    <td class="py-4 px-4 text-center font-mono font-bold text-blue-600">${Math.round((m.correct ? 100 : 0) * (Math.max(0, 1 - (m.time/30))))}%</td>
-                </tr>
-            `).join('');
-        }
+// ── SUBSCRIPTIONS ──
+bchart('subs-plan',['Pro Monthly','Pro Annual','Starter'],[{label:'Subscribers',data:[1842,910,489],backgroundColor:['#2f54eb','#0891b2','#d97706'],borderRadius:6,borderSkipped:false}]);
+funnel('subs-funnel',[{name:'View plans',n:8400,icon:'fa-eye',color:'#2f54eb'},{name:'Select plan',n:5100,icon:'fa-hand-pointer',color:'#0891b2'},{name:'Checkout started',n:3800,icon:'fa-cart-shopping',color:'#7c3aed'},{name:'Payment success',n:3241,icon:'fa-circle-check',color:'#16a34a'},{name:'Renewal (30d)',n:2301,icon:'fa-rotate',color:'#d97706'}]);
 
-        initUserSelector();
-        selectUser(0);
-    </script>
+// ── CHURN ──
+const chD=[3.8,4.0,3.9,4.1,3.7,4.2,4.4,4.1,4.3,4.5,4.2,4.6,4.3,4.8,4.4,4.2,4.5,4.3,4.6,4.8,4.4,4.1,4.3,4.5,4.2,4.0,4.3,4.5,4.3,4.2];
+lchart('churn-daily',days30,[{label:'Churn %',data:chD,borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.06)',borderWidth:2,pointRadius:0,fill:true,tension:.4}],v=>v.toFixed(1)+'%');
+bchart('churn-plan',['Pro Monthly','Pro Annual','Starter','Android','iPhone','Desktop'],[{label:'Churn %',data:[3.8,1.2,8.4,6.1,5.1,3.2],backgroundColor:['#2f54eb','#0891b2','#dc2626','#d97706','#ea580c','#7c3aed'],borderRadius:5,borderSkipped:false}],v=>v.toFixed(1)+'%');
+
+// ── FUNNELS ──
+funnel('signup-funnel',[{name:'Visit site',n:24000,icon:'fa-globe',color:'#2f54eb'},{name:'Create account',n:9200,icon:'fa-user-plus',color:'#0891b2'},{name:'Verify email',n:7800,icon:'fa-envelope-circle-check',color:'#7c3aed'},{name:'First login',n:6900,icon:'fa-right-to-bracket',color:'#16a34a'},{name:'Start first quiz',n:4200,icon:'fa-circle-question',color:'#d97706'}]);
+funnel('sub-funnel',[{name:'View plans',n:8400,icon:'fa-eye',color:'#2f54eb'},{name:'Select plan',n:5100,icon:'fa-hand-pointer',color:'#0891b2'},{name:'Checkout started',n:3800,icon:'fa-cart-shopping',color:'#7c3aed'},{name:'Payment success',n:3241,icon:'fa-circle-check',color:'#16a34a'},{name:'Renewal',n:2301,icon:'fa-rotate',color:'#d97706'}]);
+funnel('quiz-funnel',[{name:'Open component',n:12400,icon:'fa-book-open',color:'#2f54eb'},{name:'Start quiz',n:8900,icon:'fa-circle-question',color:'#0891b2'},{name:'Finish quiz',n:6100,icon:'fa-flag-checkered',color:'#7c3aed'},{name:'View explanation',n:4800,icon:'fa-lightbulb',color:'#16a34a'},{name:'Return within 3 days',n:2900,icon:'fa-rotate',color:'#d97706'}]);
+
+// ── SESSIONS ──
+const sB=['<1m','1-3m','3-5m','5-10m','10-20m','20-30m','30m+'],sV=[420,680,890,1240,1820,960,380];
+const sh=$('sess-hist'),sl=$('sess-hist-lbl');
+if(sh){const mx=Math.max(...sV);sh.innerHTML=`<div class="hist-bar-row">${sV.map((v,i)=>`<div class="hist-bar" style="height:${Math.round(v/mx*100)}%;background:${i===4?'#2f54eb':'#c7d4fc'}" title="${sB[i]}: ${v}"></div>`).join('')}</div>`;sl.innerHTML=sB.map(l=>`<div class="hist-lbl">${l}</div>`).join('');}
+bchart('sess-depth',['1','2-3','4-5','6-8','9-12','13-20','20+'],[{label:'Sessions',data:[380,520,780,1240,980,620,340],backgroundColor:'#2f54eb',borderRadius:5,borderSkipped:false}]);
+lchart('sess-timeline',days30,[{label:'Avg min',data:Array.from({length:30},()=>parseFloat((10+Math.random()*8).toFixed(1))),borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.06)',borderWidth:2,pointRadius:0,fill:true,tension:.4}]);
+
+// ── HEATMAPS ──
+heatmap('hm-hourly',[47,84,235]);
+(function(){
+  const w=$('hm-daily');if(!w)return;
+  const g=document.createElement('div');g.style.cssText='display:grid;grid-template-columns:repeat(7,1fr);gap:3px';
+  ['M','T','W','T','F','S','S'].forEach(d=>{const el=document.createElement('div');el.style.cssText='font-size:9px;font-family:var(--font-mono);color:var(--text3);text-align:center;padding:2px 0';el.textContent=d;g.appendChild(el);});
+  for(let i=0;i<35;i++){const v=Math.random();const el=document.createElement('div');el.style.cssText=`height:22px;border-radius:4px;background:rgba(47,84,235,${(.06+v*.94).toFixed(2)});cursor:pointer;transition:transform .1s`;el.title=`Activity: ${Math.round(v*100)}%`;el.addEventListener('mouseover',()=>el.style.transform='scale(1.15)');el.addEventListener('mouseleave',()=>el.style.transform='');g.appendChild(el);}
+  w.appendChild(g);
+})();
+bchart('hm-device',['00','03','06','09','12','15','18','21'],[{label:'Android',data:[120,60,80,340,520,680,840,420],backgroundColor:'#2f54eb',borderRadius:3,stack:'a'},{label:'iPhone',data:[40,20,30,140,220,280,340,180],backgroundColor:'#0891b2',borderRadius:3,stack:'a'},{label:'Desktop',data:[20,10,15,60,80,120,140,80],backgroundColor:'#d97706',borderRadius:3,stack:'a'}]);
+
+// ── EVENTS EXPLORER ──
+const evT=['view_component','start_quiz','login_success','search','open_section','submit_quiz','view_explanation'];
+const devs=['Android','iPhone','Windows','Mac'],brs=['Chrome','Safari','Firefox','Edge'];
+const usrs=['sarah.ok@ex.com','kwame.a@ex.com','emeka.o@ex.com','fatima.m@ex.com','aisha.b@ex.com'];
+const evColors={view_component:'cv',start_quiz:'ca',login_success:'cg',search:'ct',open_section:'cb',submit_quiz:'cg',view_explanation:'ct'};
+const etb=$('ev-tbody');if(etb)for(let i=0;i<20;i++){const ev=evT[rnd(0,evT.length-1)];etb.innerHTML+=`<tr><td><span class="chip ${evColors[ev]||'cz'}">${ev}</span></td><td class="mono">${usrs[rnd(0,4)]}</td><td><span class="chip cz">${devs[rnd(0,3)]}</span></td><td><span class="chip cz">${brs[rnd(0,3)]}</span></td><td class="mono" style="font-size:10px">session_id=${rnd(1000,9999)}</td><td class="mono">${rnd(1,240)}m ago</td></tr>`;}
+
+// ── FEATURES ──
+const topF=[{name:'view_component',n:12400,trend:'+12%',color:'#2f54eb'},{name:'start_quiz',n:8900,trend:'+8%',color:'#0891b2'},{name:'login_success',n:6200,trend:'+2%',color:'#16a34a'},{name:'search',n:2100,trend:'-3%',color:'#d97706'},{name:'open_section',n:1800,trend:'+5%',color:'#7c3aed'}];
+const lowF=[{name:'share_result',n:420,last:'3d ago'},{name:'edit_profile',n:310,last:'1d ago'},{name:'export_pdf',n:180,last:'5d ago'},{name:'delete_account',n:45,last:'12d ago'},{name:'feedback_submit',n:28,last:'8d ago'}];
+const mxF=12400;
+function renderTop(){const c=$('feat-content');if(!c)return;c.innerHTML='<div class="feat-list">'+topF.map((f,i)=>{const pct=Math.round(f.n/mxF*100);const tc=f.trend.startsWith('+')?'var(--green)':'var(--red)';return `<div class="feat-row"><span class="feat-rank">${i+1}</span><span class="feat-name">${f.name}</span><div class="feat-bg"><div class="feat-fill" style="width:${pct}%;background:${f.color}"></div></div><span class="feat-cnt">${f.n.toLocaleString()}</span><span class="feat-tr" style="color:${tc}">${f.trend}</span></div>`;}).join('')+'</div>';}
+function renderLow(){const c=$('feat-content');if(!c)return;c.innerHTML=`<table class="tbl"><thead><tr><th>Feature</th><th>Events</th><th>Last used</th></tr></thead><tbody>${lowF.map(f=>`<tr><td class="bold">${f.name}</td><td class="mono">${f.n}</td><td class="mono">${f.last}</td></tr>`).join('')}</tbody></table>`;}
+renderTop();
+function featTab(btn,tab){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');tab==='top'?renderTop():renderLow();}
+lchart('feat-growth',days30,[{label:'view_component',data:Array.from({length:30},(_,i)=>380+i*8+rnd(-20,20)),borderColor:'#2f54eb',borderWidth:2,pointRadius:0,fill:false,tension:.4},{label:'start_quiz',data:Array.from({length:30},(_,i)=>280+i*4+rnd(-15,15)),borderColor:'#0891b2',borderWidth:2,pointRadius:0,fill:false,tension:.4},{label:'search',data:Array.from({length:30},(_,i)=>60+i+rnd(-10,10)),borderColor:'#d97706',borderWidth:2,pointRadius:0,fill:false,tension:.4}]);
+
+// ── GEOGRAPHY ──
+const geoD=[{flag:'🇳🇬',n:'Nigeria',u:7214,p:100,r:'$9,840'},{flag:'🇬🇭',n:'Ghana',u:2840,p:39,r:'$3,200'},{flag:'🇰🇪',n:'Kenya',u:2100,p:29,r:'$2,810'},{flag:'🇿🇦',n:'South Africa',u:1820,p:25,r:'$2,440'},{flag:'🇺🇬',n:'Uganda',u:1240,p:17,r:'$1,620'},{flag:'🇹🇿',n:'Tanzania',u:980,p:14,r:'$1,100'},{flag:'🇬🇧',n:'UK',u:740,p:10,r:'$1,840'}];
+const gl=$('geo-list');if(gl)geoD.forEach(g=>{gl.innerHTML+=`<div class="geo-row"><span class="geo-flag">${g.flag}</span><span class="geo-name">${g.n}</span><div class="geo-bg"><div class="geo-bar" style="width:${g.p}%"></div></div><span class="geo-val">${g.u.toLocaleString()}</span><span class="geo-val" style="color:var(--green)">${g.r}</span></div>`;});
+bchart('geo-rev',geoD.map(g=>g.n).reverse(),[{label:'Revenue',data:geoD.map(g=>parseFloat(g.r.replace(/[$,]/g,''))).reverse(),backgroundColor:'#2f54eb',borderRadius:5,borderSkipped:false}],v=>'$'+v.toLocaleString(),true);
+
+// ── RETENTION ──
+const cohs=[{n:'Week 1',u:380,d1:42,d7:28,d30:12},{n:'Week 2',u:412,d1:38,d7:25,d30:10},{n:'Week 3',u:356,d1:45,d7:31,d30:14},{n:'Week 4',u:394,d1:41,d7:27,d30:11},{n:'Week 5',u:441,d1:35,d7:22,d30:9},{n:'Week 6',u:328,d1:47,d7:33,d30:15}];
+const rcl=v=>v>=40?'rcg':v>=20?'rca':'rcr';
+const cb=$('coh-body');if(cb)cohs.forEach(c=>{const chip=v=>`<td><span class="rc ${rcl(v)}">${v}%</span></td>`;cb.innerHTML+=`<tr><td class="bold">${c.n}</td><td class="mono">${c.u}</td>${chip(c.d1)}${chip(c.d7)}${chip(c.d30)}</tr>`;});
+lchart('ret-trend',days30,[{label:'D-30 Retention',data:Array.from({length:30},(_,i)=>30+i*.3+rnd(-3,3)),borderColor:'#0891b2',backgroundColor:'rgba(8,145,178,.07)',borderWidth:2,pointRadius:0,fill:true,tension:.4}],v=>v.toFixed(1)+'%');
+
+// ── USER EXPLORER ──
+const tlEv=[
+  {icon:'fa-right-to-bracket',bg:'#eef1fd',ic:'#2f54eb',ts:'Today · 18:42:01',desc:'Login successful',meta:'Session started',chips:[{i:'fa-mobile-screen',t:'Android'},{i:'fa-chrome',t:'Chrome 120'},{i:'fa-location-dot',t:'Lagos'}]},
+  {icon:'fa-eye',bg:'#f5f3ff',ic:'#7c3aed',ts:'Today · 18:43:15',desc:'Viewed component',meta:'Intro to React · Section 2',chips:[{i:'fa-clock',t:'2m 14s'}]},
+  {icon:'fa-circle-question',bg:'#fffbeb',ic:'#d97706',ts:'Today · 18:51:09',desc:'Started quiz',meta:'JavaScript Basics · 10 questions',chips:[{i:'fa-star',t:'Medium'}]},
+  {icon:'fa-check-circle',bg:'#f0fdf4',ic:'#16a34a',ts:'Today · 18:58:44',desc:'Quiz completed',meta:'Score: 82% · 8/10 correct',chips:[{i:'fa-trophy',t:'82%'},{i:'fa-clock',t:'7m 35s'}]},
+  {icon:'fa-eye',bg:'#f5f3ff',ic:'#7c3aed',ts:'Today · 19:12:20',desc:'Viewed component',meta:'Async/Await · Section 4',chips:[{i:'fa-clock',t:'3m 41s'}]},
+  {icon:'fa-credit-card',bg:'#f0fdf4',ic:'#16a34a',ts:'Today · 19:22:00',desc:'Subscription renewed',meta:'Pro Monthly · $9.99',chips:[{i:'fa-circle-check',t:'paid'}]},
+  {icon:'fa-right-from-bracket',bg:'#fef2f2',ic:'#dc2626',ts:'Today · 19:30:00',desc:'Session ended',meta:'Duration: 48min · 3 sections · 1 quiz',chips:[{i:'fa-timer',t:'48m'}]},
+];
+function loadTL(){
+  const list=$('tl-list');if(!list)return;
+  list.innerHTML='';
+  tlEv.forEach((e,i)=>{
+    const isLast=i===tlEv.length-1;
+    const chips=e.chips.map(c=>`<div class="tl-chip"><i class="fa-solid ${c.i}"></i>${c.t}</div>`).join('');
+    list.innerHTML+=`<div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:${e.bg};color:${e.ic}"><i class="fa-solid ${e.icon}"></i></div>${!isLast?'<div class="tl-line"></div>':''}</div><div class="tl-body"><div class="tl-ts">${e.ts}</div><div class="tl-desc">${e.desc}</div><div class="tl-meta">${e.meta}</div><div class="tl-chips">${chips}</div></div></div>`;
+  });
+}
+loadTL();
+$('tl-input').addEventListener('keydown',e=>{if(e.key==='Enter')loadTL();});
+</script>
 </body>
 </html>
