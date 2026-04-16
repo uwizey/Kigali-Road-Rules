@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/user-dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>User Dashboard - Kigali RoadRules</title>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="logo" id="logoBtn">
+            <img src="../assets/logo.png" alt="logo" onerror="this.style.display='none'">
+        </div>
+
+        <div class="site-name">
+            Kigali <br><span>RoadRules</span>
+        </div>
+
+        <nav class="links">
+            <a href="modeselection.html#about">Who are we</a>
+            <a href="modeselection.html#contact">Contact Us</a>
+            <a href="../index.html" id="btn-logout">Log Out</a>
+            <span class="user-email" id="userEmail"></span>
+        </nav>
+        
+        <div class="mobile-menu-toggle" id="mobileMenuToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </header>
+
+    <!-- MODE SELECTOR BAR -->
+    <div class="dash-topbar">
+        <button class="menu-btn" id="menuBtn">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h3 class="dash-title" id="dashTitle">Dashboard - Content Mode</h3>
+        
+        <div class="mode-selector-container">
+            <button class="mode-btn active" id="contentModeBtn">
+                <i class="fas fa-book-open"></i>
+                <span>Content Mode</span>
+            </button>
+            <button class="mode-btn" id="qaModeBtn">
+                <i class="fas fa-question-circle"></i>
+                <span>Q&A Mode</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN LAYOUT -->
+    <div class="dash-layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <!-- CONTENT MODE SIDEBAR -->
+            <div id="contentSidebar" class="sidebar-content active">
+                <div class="sidebar-header">
+                    <i class="fas fa-book"></i>
+                    <h3>Learning Content</h3>
+                </div>
+                <nav id="topicsNav"></nav>
+            </div>
+
+            <!-- Q&A MODE SIDEBAR -->
+            <div id="qaSidebar" class="sidebar-content">
+                <div class="sidebar-header">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h3>Practice Quizzes</h3>
+                </div>
+                <nav id="quizTopicsNav"></nav>
+
+                <div class="quiz-stats">
+                    <h4>Your Stats</h4>
+                    <div class="stat-row">
+                        <span>Tests Taken:</span>
+                        <strong id="statTestsTaken">24</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>Average Score:</span>
+                        <strong id="statAvgScore">85%</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>Best Score:</span>
+                        <strong id="statBestScore">95%</strong>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- OVERLAY -->
+        <div class="overlay" id="overlay"></div>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="dash-content" id="mainContent">
+            <!-- CONTENT MODE VIEW -->
+            <div id="contentModeView" class="mode-view active">
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-icon">
+                        <i class="fas fa-book-reader"></i>
+                    </div>
+                    <h1>Welcome to Kigali RoadRules</h1>
+                    <p>Select a topic from the sidebar to begin learning about road safety and traffic rules.</p>
+                    <div class="quick-stats">
+                        <div class="quick-stat-card">
+                            <i class="fas fa-bookmark"></i>
+                            <div>
+                                <h3>12</h3>
+                                <p>Bookmarks</p>
+                            </div>
+                        </div>
+                        <div class="quick-stat-card">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <h3>4.5h</h3>
+                                <p>Study Time</p>
+                            </div>
+                        </div>
+                        <div class="quick-stat-card">
+                            <i class="fas fa-check-circle"></i>
+                            <div>
+                                <h3>8/12</h3>
+                                <p>Completed</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTENT DISPLAY AREA -->
+                <div id="contentDisplay" class="content-display" style="display: none;">
+                    <div class="content-header">
+                        <button class="back-btn" id="backBtn">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <h2 id="contentTitle">Loading...</h2>
+                        <div class="content-actions">
+                            <button class="action-btn" id="bookmarkBtn">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                            <button class="action-btn" id="printBtn">
+                                <i class="fas fa-print"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="contentContainer" class="content-container"></div>
+
+                    <!-- EXERCISE SECTION -->
+                    <div id="exerciseSection" class="exercise-section" style="display: none;">
+                        <div class="exercise-header">
+                            <i class="fas fa-dumbbell"></i>
+                            <h3>Practice Exercise</h3>
+                        </div>
+                        <div id="exerciseQuestions"></div>
+                        <button class="submit-exercise-btn" id="submitExerciseBtn">
+                            <i class="fas fa-check"></i> Submit Exercise
+                        </button>
+                        <div id="exerciseResults" class="exercise-results" style="display: none;"></div>
+                    </div>
+
+                    <!-- TOPIC NAVIGATION -->
+                    <div class="topic-navigation">
+                        <button class="topic-nav-btn" id="prevTopicBtn" style="display: none;">
+                            <i class="fas fa-arrow-left"></i> Previous Topic
+                        </button>
+                        <button class="topic-nav-btn" id="nextTopicBtn" style="display: none;">
+                            Next Topic <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Q&A MODE VIEW -->
+            <div id="qaModeView" class="mode-view">
+
+                <!-- EXAM SELECTION SCREEN -->
+                <div id="examSelectionScreen" style="display: none;">
+                    <div class="exam-selection-header">
+                        <button class="back-btn" id="backToQuizTopicsBtn">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <div class="exam-selection-title">
+                            <i class="fas fa-certificate"></i>
+                            <div>
+                                <h1>Latest Police Exams</h1>
+                                <p>Choose an exam session to practice</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="exam-grid" id="examGrid"></div>
+                </div>
+
+                <!-- QUIZ START SCREEN -->
+                <div id="quizStartScreen" class="quiz-start-screen">
+                    <div class="quiz-start-icon">
+                        <i class="fas fa-clipboard-question"></i>
+                    </div>
+                    <h1>Practice Quiz</h1>
+                    <p>Test your knowledge with practice questions.</p>
+                    <p class="quiz-instructions">Select a topic from the sidebar to begin your quiz.</p>
+                </div>
+
+                <!-- QUIZ INTERFACE -->
+                <div id="quizInterface" class="quiz-interface" style="display: none;">
+                    <!-- Question Navigation Grid -->
+                    <div class="question-nav-grid" id="questionNavGrid"></div>
+
+                    <!-- Quiz Progress Bar -->
+                    <div class="quiz-progress-bar">
+                        <div class="progress-info">
+                            <span>Question <span id="currentQuestion">1</span> of <span id="totalQuestions">10</span></span>
+                            <span id="quizCountdownWrap" class="quiz-timer">
+                                <i class="fas fa-clock"></i>
+                                <span id="quizTimer">00:00</span>
+                            </span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 10%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Question Card -->
+                    <div class="question-card">
+                        <div class="question-header">
+                            <span class="question-topic-badge" id="questionTopic">Traffic Signs</span>
+                        </div>
+                        
+                        <div class="question-content">
+                            <h2 class="question-text" id="questionText">What does a red octagonal sign indicate?</h2>
+                            <div class="question-image-container" id="questionImageContainer" style="display: none;">
+                                <img id="questionImage" src="" alt="Question Image">
+                            </div>
+                        </div>
+
+                        <!-- Answer Options -->
+                        <div class="answer-options" id="answerOptions"></div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="quiz-nav-buttons">
+                            <button class="quiz-btn secondary" id="prevBtn" disabled>
+                                <i class="fas fa-arrow-left"></i> Previous
+                            </button>
+                            <button class="quiz-btn primary" id="nextBtn" disabled>
+                                Next <i class="fas fa-arrow-right"></i>
+                            </button>
+                            <button class="quiz-btn success" id="submitBtn" style="display: none;">
+                                <i class="fas fa-check"></i> Submit Quiz
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ RESULTS SCREEN -->
+                <div id="quizResults" class="quiz-results" style="display: none;">
+                    <div class="results-header">
+                        <div class="results-icon" id="resultsIcon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <h1>Quiz Complete!</h1>
+                        <p class="results-message" id="resultsMessage">Great job!</p>
+                    </div>
+
+                    <div class="results-score">
+                        <div class="score-circle">
+                            <svg width="200" height="200">
+                                <circle cx="100" cy="100" r="90" fill="none" stroke="#e5e7eb" stroke-width="12"/>
+                                <circle id="scoreCircle" cx="100" cy="100" r="90" fill="none" stroke="#0097b2" stroke-width="12" 
+                                        stroke-dasharray="565.48" stroke-dashoffset="141.37" transform="rotate(-90 100 100)"/>
+                            </svg>
+                            <div class="score-text">
+                                <h2 id="scorePercentage">80%</h2>
+                                <p id="scoreRatio">8/10</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="results-breakdown">
+                        <div class="breakdown-item correct">
+                            <i class="fas fa-check-circle"></i>
+                            <div>
+                                <h3 id="correctCount">8</h3>
+                                <p>Correct</p>
+                            </div>
+                        </div>
+                        <div class="breakdown-item incorrect">
+                            <i class="fas fa-times-circle"></i>
+                            <div>
+                                <h3 id="incorrectCount">2</h3>
+                                <p>Incorrect</p>
+                            </div>
+                        </div>
+                        <div class="breakdown-item time">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <h3 id="totalTime">5:42</h3>
+                                <p>Time Taken</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="results-actions">
+                        <button class="quiz-btn secondary" id="reviewAnswersBtn">
+                            <i class="fas fa-eye"></i> Review Answers
+                        </button>
+                        <button class="quiz-btn primary" id="retakeQuizBtn">
+                            <i class="fas fa-redo"></i> Retake Quiz
+                        </button>
+                        <button class="quiz-btn" id="backToTopicsBtn">
+                            <i class="fas fa-home"></i> Back to Topics
+                        </button>
+                        <button class="quiz-btn" id="viewReportBtn">
+                            <i class="fas fa-clipboard-list"></i> View Full Report
+                        </button>
+                    </div>
+                </div>
+
+                <!-- QUIZ REPORT SCREEN -->
+                <div id="quizReportScreen" style="display: none;">
+                    <!-- Populated by JS buildQuizReport() -->
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/user-dashboard.js" type="module"></script>
+</body>
+</html>
