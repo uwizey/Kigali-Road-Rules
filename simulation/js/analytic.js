@@ -1,6 +1,178 @@
 // ════════════════════════════════════════════════════════════════════════════
-import { FetchData } from "../js/api/crud.js";
+// import { FetchData } from "../js/api/crud.js";
 
+// ══════════════════════════════════════════════
+// 🧪 MOCK ANALYTICS API SIMULATION
+// 📍 Defined here to replace backend analytics endpoints
+// ══════════════════════════════════════════════
+
+// ── Simulated Delay ───────────────────────────
+const delay = (ms = 300) => new Promise(res => setTimeout(res, ms));
+
+// ── Helpers ───────────────────────────────────
+function randomBetween(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function generateDates(days = 7) {
+  const dates = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().split("T")[0]);
+  }
+  return dates;
+}
+
+// ── MOCK DATA GENERATORS ──────────────────────
+
+// 1. Retention Cohorts
+function generateRetention() {
+  return generateDates(6).map(date => ({
+    registration_date: date,
+    new_users: randomBetween(5, 20),
+    retention: {
+      day_1: Math.random() * 0.8,
+      day_7: Math.random() * 0.6,
+      day_14: Math.random() * 0.4,
+      day_30: Math.random() * 0.3,
+    }
+  }));
+}
+
+// 2. Engagement (time-series)
+function generateEngagement() {
+  return generateDates(7).map((date, i) => ({
+    user_id: i + 1,
+    registration_date: date,
+    total_events: randomBetween(1, 10),
+    depth_score: Math.random().toFixed(2),
+    distinct_event_types: randomBetween(1, 5)
+  }));
+}
+
+// 3. DAU
+function generateDAU() {
+  return generateDates(7).map(date => {
+    const newUsers = randomBetween(5, 30);
+    const active = newUsers + randomBetween(10, 50);
+
+    return {
+      date,
+      active_users: active,
+      new_users: newUsers
+    };
+  });
+}
+
+// 4. Device Distribution
+function generateDevices() {
+  return [
+    { device: "desktop", percentage: 45 },
+    { device: "mobile", percentage: 40 },
+    { device: "tablet", percentage: 10 },
+    { device: "unknown", percentage: 5 },
+  ];
+}
+
+// 5. Service Usage
+function generateServices() {
+  return [
+    { service: "quiz", percentage: 40, count: 120 },
+    { service: "exam", percentage: 30, count: 90 },
+    { service: "topic_quiz", percentage: 20, count: 60 },
+    { service: "practice", percentage: 10, count: 30 },
+  ];
+}
+
+// 6. Conversion Funnel
+function generateConversion() {
+  const login = randomBetween(50, 100);
+  const service = randomBetween(20, login);
+
+  return {
+    login_users: login,
+    service_users: service,
+    conversion_rate: (service / login) * 100
+  };
+}
+
+// ── FETCH SIMULATION ──────────────────────────
+async function FetchData(endpoint, auth = false) {
+  await delay();
+
+  try {
+    // RETENTION
+    if (endpoint === "/analytics/retention") {
+      return {
+        status: true,
+        data: {
+          period: {
+            start: generateDates(6)[0],
+            end: generateDates(6).slice(-1)[0]
+          },
+          cohorts: generateRetention()
+        }
+      };
+    }
+
+    // ENGAGEMENT
+    if (endpoint === "/analytics/engagement") {
+      return {
+        success: true,
+        status: true,
+        data: {
+          engagement: generateEngagement()
+        }
+      };
+    }
+
+    // DAU
+    if (endpoint === "/analytics/dau") {
+      return {
+        status: true,
+        data: {
+          dau: generateDAU()
+        }
+      };
+    }
+
+    // DEVICE DISTRIBUTION
+    if (endpoint === "/analytics/device-distribution") {
+      return {
+        status: true,
+        data: {
+          distribution: generateDevices()
+        }
+      };
+    }
+
+    // SERVICE USAGE
+    if (endpoint === "/analytics/service-usage") {
+      return {
+        status: true,
+        data: {
+          services: generateServices()
+        }
+      };
+    }
+
+    // CONVERSION RATE
+    if (endpoint === "/analytics/conversion-rate") {
+      return {
+        status: true,
+        data: {
+          conversion: generateConversion()
+        }
+      };
+    }
+
+    return { status: false };
+
+  } catch (err) {
+    return { status: false };
+  }
+}
 
 
 function getRetentionClass(value) {
