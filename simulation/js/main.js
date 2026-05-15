@@ -204,3 +204,22 @@ document.getElementById("auth-form").addEventListener("submit", async function (
     }
   }
 });
+
+const observer = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target); // animate once
+      }
+    });
+  },
+  { threshold: 0.12 }
+);
+
+/* observe every .fade-up element on the page */
+document.querySelectorAll('.fade-up').forEach((el) => {
+  observer.observe(el);
+});
+
+/* avatar scripts */

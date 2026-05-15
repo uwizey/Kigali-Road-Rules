@@ -4574,3 +4574,23 @@ function printContent() {
 function toggleMobileMenu() {
   document.querySelector(".links").classList.toggle("active");
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  const header = document.querySelector(".dash-topbar");
+  if (!header) { console.error("Header not found!"); return; }
+
+  let lastScrollY = window.scrollY;
+
+  window.addEventListener("scroll", () => {
+    const currentScrollY = window.scrollY;
+
+    if (currentScrollY > lastScrollY && currentScrollY > 80) {
+      header.classList.add("hide");
+    } else {
+      header.classList.remove("hide");
+    }
+
+    header.classList.toggle("scrolled", currentScrollY > 20);
+    lastScrollY = currentScrollY;
+  });
+});

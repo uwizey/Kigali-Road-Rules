@@ -4,7 +4,11 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>My Subscription Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
+<link rel="icon" href="../assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<!-- <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/> -->
 <style>
   :root {
     --cyan: #00c8d4;
@@ -19,7 +23,8 @@
   }
 
   body {
-    font-family: 'Syne', sans-serif;
+    /* font-family: 'Syne', sans-serif; */
+    font-family: 'Plus Jakarta Sans', sans-serif; 
     background: var(--bg);
     color: var(--text);
     padding: 40px 20px;
@@ -31,6 +36,25 @@
   h1 { font-weight: 800; font-size: 1.8rem; margin-bottom: 25px; }
   h1 span { color: var(--cyan); }
 
+    .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: 1.5px solid var(--border);
+    color: var(--text-muted);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .back-btn:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
   .section-title {
     font-size: 0.8rem;
     text-transform: uppercase;
@@ -61,7 +85,7 @@
 
   .quota-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .quota-item { background: #f1fbfc; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid var(--border); }
-  .quota-val { font-family: 'DM Mono', monospace; font-size: 1.1rem; font-weight: 600; color: var(--cyan-dark); }
+  .quota-val {font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.1rem; font-weight: 600; color: var(--cyan-dark); }
   .quota-lab { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
 
   .plans-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
@@ -90,7 +114,7 @@
   .history-panel { background: #fff; border-radius: 16px; border: 1px solid var(--border); padding: 20px; height: fit-content; }
   .history-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
   .history-item:last-child { border-bottom: none; }
-  .history-date { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text-muted); }
+  .history-date {  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; color: var(--text-muted); }
   .history-info { font-size: 0.8rem; font-weight: 600; margin-top: 4px; display: flex; justify-content: space-between; align-items: center; }
 
   .btn-cancel {
@@ -108,7 +132,12 @@
 </style>
 </head>
 <body>
-
+  <button onclick="history.back()" class="back-btn">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19 12H5M12 5l-7 7 7 7"/>
+  </svg>
+  Back
+</button>
   <h1>My <span>Subscriptions</span></h1>
 
   <div class="layout">

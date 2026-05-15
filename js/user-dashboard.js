@@ -1604,7 +1604,7 @@ function injectExamSelectionStyles() {
       margin-top: 6px;
       width: 100%;
       padding: 10px;
-      background: #0097b2;
+       
       color: #fff;
       border: none;
       border-radius: 10px;
@@ -2364,9 +2364,9 @@ function _renderComponentContent(components, container) {
 
   container.innerHTML = display
     .map((comp) => {
-      const titleHTML = comp.title
-        ? `<h3 class="heading">${comp.component_id}. ${comp.title}</h3>`
-        : "";
+       const titleHTML = comp.title
+  ? `<h3 class="heading" style="padding-top:40px; padding-bottom:24px;">${comp.component_id}. ${comp.title}</h3>`
+  : "";
       return `<div class="component-block" style="margin-bottom:40px;">
       ${titleHTML}
       ${_renderOneComponent(comp)}
@@ -2717,7 +2717,6 @@ function renderTimeline(steps) {
           <div class="timeline-number">${index + 1}</div>
           <div class="timeline-content">
             <h4>${step.title}</h4>
-            <p>${step.description}</p>
             ${step.image ? `<img src="${step.image}" alt="${step.title}">` : ""}
           </div>
         </div>
@@ -3370,7 +3369,7 @@ async function showExamSelectionScreen(quiz) {
     <div style="padding:24px; max-width:960px; margin:0 auto;">
       <div class="exam-selection-header">
         <button id="backToQuizTopicsBtn" class="exam-start-btn"
-          style="width:auto; padding:8px 16px; background:#6b7280;">
+          style="width:auto; padding:8px 16px;">
           <i class="fas fa-arrow-left"></i> Back
         </button>
         <div class="exam-selection-title">
@@ -4247,3 +4246,4 @@ function printContent() {
 function toggleMobileMenu() {
   document.querySelector(".links").classList.toggle("active");
 }
+

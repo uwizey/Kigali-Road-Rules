@@ -4,7 +4,12 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Account Settings</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="">
+<link rel="icon" href="../assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<!-- <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/> -->
 <style>
   :root {
     --cyan: #00c8d4;
@@ -25,7 +30,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     background: var(--off-white);
     color: var(--text);
     min-height: 100vh;
@@ -45,6 +50,26 @@
   }
 
   .page-header { margin-bottom: 4px; }
+  .back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-bottom:10px;
+}
+.back-btn:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
   .page-header h1 {
     font-size: clamp(1.3rem, 6vw, 1.7rem);
     font-weight: 800;
@@ -55,7 +80,8 @@
     font-size: clamp(0.72rem, 3vw, 0.8rem);
     color: var(--text-muted);
     margin-top: 5px;
-    font-family: 'DM Mono', monospace;
+    /* font-family: 'DM Mono', monospace; */
+    font-family: 'Plus Jakarta Sans', sans-serif;
   }
 
   /* ── Card ── */
@@ -82,7 +108,7 @@
   .card-icon {
     width: 34px; height: 34px;
     background: var(--cyan-light);
-    border-radius: 8px;
+    border-radius: 50%;
     flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
   }
@@ -91,7 +117,8 @@
   .card-subtitle {
     font-size: clamp(0.65rem, 2.5vw, 0.71rem);
     color: var(--text-muted);
-    font-family: 'DM Mono', monospace;
+    /* font-family: 'DM Mono', monospace; */
+    font-family: 'Plus Jakarta Sans', sans-serif;
     margin-top: 2px;
   }
 
@@ -116,7 +143,8 @@
   .input-wrap { position: relative; }
 
   input {
-    font-family: 'DM Mono', monospace;
+    /* font-family: 'DM Mono', monospace; */
+    font-family: 'Plus Jakarta Sans', sans-serif;
     /* 16px minimum prevents iOS auto-zoom on focus */
     font-size: 16px;
     width: 100%;
@@ -158,7 +186,8 @@
   /* ── Feedback ── */
   .field-msg {
     font-size: clamp(0.65rem, 2.5vw, 0.69rem);
-    font-family: 'DM Mono', monospace;
+    /* font-family: 'DM Mono', monospace; */
+    font-family: 'Plus Jakarta Sans', sans-serif;
     min-height: 15px;
   }
   .field-msg.err { color: var(--danger); }
@@ -177,7 +206,8 @@
 
   /* ── Button ── */
   .btn {
-    font-family: 'Syne', sans-serif;
+    /* font-family: 'Syne', sans-serif; */
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: clamp(0.76rem, 3vw, 0.82rem);
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -189,15 +219,16 @@
     transition: all 0.18s;
     width: 100%;
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    background: var(--cyan); color: var(--white);
+    background: var(--cyan-mid); color: var(--white);
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
-  .btn:hover:not(:disabled) {
+  .btn-cancel:hover { background: var(--danger); color: white; }
+  /* .btn:hover:not(:disabled) {
     background: var(--cyan-mid);
     transform: translateY(-1px);
     box-shadow: 0 4px 14px rgba(0,200,212,0.3);
-  }
+  } */
   .btn:active:not(:disabled) { transform: scale(0.98); }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
   .btn.loading { pointer-events: none; }
@@ -297,6 +328,12 @@
 <div class="page">
 
   <div class="page-header">
+    <button onclick="history.back()" class="back-btn">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 12H5M12 5l-7 7 7 7"/>
+    </svg>
+    Back
+   </button>
     <h1>Account <span>Settings</span></h1>
     <p>Update your credentials below</p>
   </div>
