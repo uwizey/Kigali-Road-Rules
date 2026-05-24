@@ -2380,19 +2380,27 @@ function setupEventListeners() {
 
   // Header: mobile menu toggle
   document
-    .getElementById("mobileMenuToggle")
+    .getElementById("menuBtn")
     .addEventListener("click", toggleMobileMenu);
 
   // Topbar: sidebar toggle
   document.getElementById("menuBtn").addEventListener("click", toggleSidebar);
 
-  // Topbar: mode buttons
-  document
-    .getElementById("contentModeBtn")
-    .addEventListener("click", () => switchMode("content"));
-  document
-    .getElementById("qaModeBtn")
-    .addEventListener("click", () => switchMode("qa"));
+  // Topbar: mode buttons (guard against missing elements)
+  const contentModeBtn = document.getElementById("contentModeBtn");
+  if (contentModeBtn) {
+    contentModeBtn.addEventListener("click", () => switchMode("content"));
+  } else {
+    console.error("Missing element: #contentModeBtn");
+  }
+
+  const qaModeBtn = document.getElementById("qaModeBtn");
+  if (qaModeBtn) {
+    qaModeBtn.addEventListener("click", () => switchMode("qa"));
+  } else {
+    console.error("Missing element: #qaModeBtn");
+  }
+
 
   // Overlay: close sidebar
   document.getElementById("overlay").addEventListener("click", closeSidebar);
@@ -3441,7 +3449,7 @@ function showTopicQuizOptions(topic) {
     <div id="topicQuizOptionsInner" style="padding:24px; max-width:960px; margin:0 auto;">
       <div class="exam-selection-header">
         <button id="backToQuizTopicsBtn" class="exam-start-btn"
-          style="width:auto; padding:8px 16px; background:#6b7280;">
+          style="width:auto; padding:8px 16px;  background:#0097b2 ;">
           <i class="fas fa-arrow-left"></i> Back
         </button>
         <div class="exam-selection-title">
@@ -3697,7 +3705,7 @@ async function showExamSelectionScreen(quiz) {
     <div style="padding:24px; max-width:960px; margin:0 auto;">
       <div class="exam-selection-header">
         <button id="backToQuizTopicsBtn" class="exam-start-btn"
-          style="width:auto; padding:8px 16px; background:#6b7280;">
+          style="width:auto; padding:8px 16px; border: 1px solid #0097b2 ;">
           <i class="fas fa-arrow-left"></i> Back
         </button>
         <div class="exam-selection-title">
@@ -4594,3 +4602,31 @@ document.addEventListener("DOMContentLoaded", () => {
     lastScrollY = currentScrollY;
   });
 });
+
+// ===========================================
+// Avatar and drop down in header scripts 
+// ============================================
+
+ const avatarBtn      = document.getElementById('avatarBtn');
+  const avatarDropdown = document.getElementById('avatarDropdown');
+
+        // Toggle on click
+        avatarBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = avatarDropdown.classList.toggle('open');
+        avatarBtn.setAttribute('aria-expanded', isOpen);
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', () => {
+        avatarDropdown.classList.remove('open');
+        avatarBtn.setAttribute('aria-expanded', false);
+        });
+
+        // Close when a dropdown link is clicked (smooth UX)
+        avatarDropdown.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            avatarDropdown.classList.remove('open');
+            avatarBtn.setAttribute('aria-expanded', false);
+        });
+        });
