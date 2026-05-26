@@ -4511,6 +4511,7 @@ function backToQuizSelection() {
 
 function switchMode(mode) {
   currentMode = mode;
+  console.log(`Switching to ${mode} mode`);
 
   document
     .querySelectorAll(".mode-btn")
