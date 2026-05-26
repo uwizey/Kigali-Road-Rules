@@ -410,30 +410,5 @@
     </div>
 
     <script src="../js/user-dashboard.js" type="module"></script>
-        <script>
-        const avatarBtn      = document.getElementById('avatarBtn');
-        const avatarDropdown = document.getElementById('avatarDropdown');
-
-        // Toggle on click
-        avatarBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isOpen = avatarDropdown.classList.toggle('open');
-        avatarBtn.setAttribute('aria-expanded', isOpen);
-        });
-
-        // Close when clicking outside
-        document.addEventListener('click', () => {
-        avatarDropdown.classList.remove('open');
-        avatarBtn.setAttribute('aria-expanded', false);
-        });
-
-        // Close when a dropdown link is clicked (smooth UX)
-        avatarDropdown.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-            avatarDropdown.classList.remove('open');
-            avatarBtn.setAttribute('aria-expanded', false);
-        });
-        });
-    </script>
 </body>
 </html>

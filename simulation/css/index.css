@@ -9,7 +9,7 @@
     --gray: #64748B;
     --gray-dark: #334155;
     --gray-light: #F1F5F9;
-    --white: #FFFFFF;
+    --white:  #f5feff;
     --border: #E2E8F0;
     --off-white: #f5feff;
     
@@ -50,18 +50,9 @@ body {
     z-index: 1000;
     border-bottom: 1px solid var(--border);
     transition: var(--speed);
-    background: rgb(240, 247, 255);
+    background: var(--bg-light);
 }
-
-.header.hide {
-    transform: translateY(-100%);
-}
-
-.header.scrolled {
-    background: rgba(240, 247, 255, 0.95);
-    backdrop-filter: blur(14px);
-    box-shadow: var(--shadow);
-}
+ 
 .logo-group {
   display: flex;
   align-items: center;

@@ -66,9 +66,12 @@ if (logoutbtn) {
 
 const useremail = document.getElementById("userEmail");
 if (useremail) {
+  (async () => {
   const response = await FetchData("/user/profile", true);
   console.log(response);
   useremail.textContent = response.success ? response.data.data.email : "Unknown User";
+  }
+)
 }
 
 // ─── Message box helpers ──────────────────────────────────────────────────────
@@ -84,6 +87,7 @@ function showMessage(text, type) {
 function hideMessage() {
   msgBox.style.display = "none";
 }
+ 
 
 // ─── Tab event listeners ──────────────────────────────────────────────────────
 
@@ -222,4 +226,4 @@ document.querySelectorAll('.fade-up').forEach((el) => {
   observer.observe(el);
 });
 
-/* avatar scripts */
+

@@ -1,174 +1,546 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Analytics Dashboard</title>
-    <link rel="stylesheet" href="analtytic.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Analytics Overview</title>
+<link rel="icon" href="../assets/logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<style>
+  /* ===== Design tokens (harmonised with My Subscriptions) ===== */
+  :root {
+    --primary: #0097b2;
+    --primary-dark: #007a91;
+    --primary-light: #4dd0e1;
+    --primary-soft: #b2ebf2;
+    --primary-softer: #e0f7fa;
+    --primary-fg: #ffffff;
+    --bg: #ffffff;
+    --off-white: #f6f9fa;
+    --bg-teal: #eaf5f7;
+    --foreground: #0f172a;
+    --muted: #6b7785;
+    --muted-bg: #eef1f4;
+    --border: #e3e8ec;
+    --card: #ffffff;
+    --success: #16a34a;
+    --warning: #b45309;
+    --danger: #dc2626;
+    --shadow-soft: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px -12px rgba(15,23,42,.08);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: var(--off-white);
+    color: var(--foreground);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    position: sticky; top: 0; z-index: 10;
+    height: 60px; background: var(--bg);
+    border-bottom: 1px solid rgba(0,151,178,.5);
+  }
+  .header-inner {
+    max-width: 1200px; margin: 0 auto; height: 100%;
+    padding: 0 24px; display: flex; align-items: center; gap: 16px;
+  }
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 500; color: var(--muted); transition: color .15s; border:none;
+  }
+  .back-btn:hover { color: var(--primary);  }
+
+  .brand { display: flex; align-items: center; gap: 10px; margin-left: 4px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-logo {
+    width: 32px; height: 32px; border-radius: 9px;
+    background: var(--primary); color: var(--primary-fg);
+    display: grid; place-items: center; font-size: 13px;
+  }
+  .brand-title { display: flex; flex-direction: column; line-height: 1.15; }
+  .brand-title strong { font-size: 13px; font-weight: 800; }
+  .brand-title small { font-size: 8.5px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; color: var(--primary); }
+  .avatar {
+    margin-left: auto; width: 32px; height: 32px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--bg);
+    display: grid; place-items: center; font-size: 12px; font-weight: 600; color: var(--muted);
+  }
+
+  /* ===== Layout ===== */
+  .main { max-width: 1200px; margin: 0 auto; padding: 28px 24px 48px; }
+  .page-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; margin-bottom: 24px; }
+  .tag {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--primary);
+    background: var(--bg-teal); padding: 4px 10px; border-radius: 999px;
+  }
+  .page-head h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+  .page-head p { margin: 0; color: var(--muted); font-size: 13px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+    padding: 18px;
+    display: flex; flex-direction: column;
+  }
+  .card-header { margin-bottom: 12px; }
+  .card-header h2 {
+    margin: 0; font-size: 14px; font-weight: 700; letter-spacing: -.005em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-header h2 i { color: var(--primary); font-size: 12px; }
+  .card-header p { margin: 3px 0 0; font-size: 11.5px; color: var(--muted); }
+
+  .col-12 { grid-column: span 12; }
+  .col-8  { grid-column: span 8; }
+  .col-6  { grid-column: span 6; }
+  .col-4  { grid-column: span 4; }
+  @media (max-width: 900px) {
+    .col-8, .col-6, .col-4 { grid-column: span 12; }
+  }
+
+  /* ===== Heatmap ===== */
+  .heatmap-table { width: 100%; border-collapse: separate; border-spacing: 4px; }
+  .heatmap-table th {
+    text-align: left; font-size: 10.5px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
+    padding: 6px 8px;
+  }
+  .heatmap-table td {
+    padding: 8px 10px; border-radius: var(--radius-sm); text-align: center;
+    font-size: 12px; font-weight: 600;
+  }
+  .cohort-label {
+    text-align: left !important; background: var(--bg-teal);
+    color: var(--foreground); font-weight: 700;
+  }
+  .users-cell { background: var(--muted-bg); color: var(--foreground); }
+  .ret-high { background: var(--primary); color: #fff; }
+  .ret-med  { background: var(--primary-light); color: #fff; }
+  .ret-low  { background: var(--primary-soft); color: var(--foreground); }
+  .ret-zero { background: var(--primary-softer); color: #b0bec5; }
+
+  /* ===== Stepped chart ===== */
+  .chart-box { height: 180px; margin-top: 4px; }
+  .chart-box svg { width: 100%; height: 100%; overflow: visible; }
+  .axis-style line { stroke: var(--border); stroke-width: 1; }
+  .axis-style text { fill: var(--muted); font-size: 9px; }
+  .axis-title { fill: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+
+  /* ===== DAU ===== */
+  .dau-box { height: 220px; }
+  .legend-row { display: flex; justify-content: center; gap: 16px; margin-top: 10px; }
+  .legend-item { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; font-weight: 500; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .dot.returning { background: var(--primary); }
+  .dot.new { background: var(--primary-soft); }
+
+  /* ===== Platform pill bar ===== */
+  .pill-bar {
+    display: flex; height: 10px; width: 100%;
+    background: var(--muted-bg); border-radius: 999px;
+    overflow: hidden; margin: 18px 0 14px;
+  }
+  .segment { height: 100%; transition: width 1s ease-in-out; }
+  .desktop { background: var(--primary); }
+  .mobile  { background: var(--primary-light); }
+  .tablet  { background: var(--primary-soft); }
+  .other   { background: var(--primary-softer); }
+  .platform-legend { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px; }
+  .platform-legend .legend-item { justify-content: flex-start; }
+  .platform-legend strong { margin-left: auto; color: var(--foreground); font-weight: 700; }
+  .d-color { background: var(--primary); }
+  .m-color { background: var(--primary-light); }
+  .t-color { background: var(--primary-soft); }
+  .o-color { background: var(--primary-softer); border: 1px solid var(--border); }
+
+  /* ===== Donut ===== */
+  .donut-content { display: flex; align-items: center; gap: 16px; padding: 6px 0; }
+  .donut-wrapper { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
+  .donut-wrapper svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .donut-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+  }
+  #totalHits { font-size: 20px; font-weight: 800; color: var(--primary); line-height: 1; }
+  .donut-center label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-top: 4px; }
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .donut-legend .legend-item { justify-content: flex-start; font-size: 11.5px; }
+  .donut-legend .legend-item strong { margin-left: auto; color: var(--foreground); }
+  .color-box { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* ===== Funnel ===== */
+  .funnel-steps { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
+  .step-info {
+    display: flex; justify-content: space-between;
+    font-size: 12px; font-weight: 600; margin-bottom: 6px;
+  }
+  .step-pct { color: var(--primary); font-weight: 800; }
+  .progress-track {
+    height: 22px; background: var(--bg-teal);
+    border-radius: var(--radius-sm); overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-light), var(--primary));
+    border-radius: var(--radius-sm);
+    transition: width 1.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* ===== Radar ===== */
+  .radar-container { display: flex; justify-content: center; padding: 8px; }
+  .radar-container svg { width: 200px; height: 200px; }
+  .radar-grid { stroke: var(--border); stroke-width: 1; fill: none; }
+  .radar-shape { fill-opacity: 0.22; stroke-width: 2; transition: all 0.4s ease; }
+  .radar-shape:hover { fill-opacity: 0.45; }
+  .radar-label { font-size: 8px; fill: var(--muted); font-weight: 700; }
+  .radar-legend { display: flex; justify-content: center; gap: 14px; margin-top: 4px; }
+  .radar-legend .dot { border-radius: 50%; }
+</style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <header>
-            <h1>Analytics Overview</h1>
-        </header>
 
-        <section class="dashboard-card heatmap-module">
-            <div class="card-header">
-                <h2>User Retention Heatmap</h2>
-                <p>Cohort analysis based on registration date From <span id="startDate"></span> to <span id="endDate"></span></p>
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <!-- <div class="brand-logo"><i class="fa-solid fa-chart-line"></i></div>
+      <div class="brand-title">
+        <strong>Analytics</strong>
+        <small>Overview</small>
+      </div> -->
+         <button class="back-btn" type="button" onclick="history.back()">
+            <i class="fa-solid fa-arrow-left"></i> Back to main board
+          </button>
+    </div>
+    <div class="avatar">AD</div>
+  </div>
+</header>
 
-            </div>
-            <div class="table-responsive">
-                <table id="retentionTable">
-                    <thead>
-                        <tr>
-                            <th>Cohort</th>
-                            <th>Users</th>
-                            <th>Day 1</th>
-                            <th>Day 7</th>
-                            <th>Day 14</th>
-                            <th>Day 30</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
-            </div>
-        </section>
+<main class="main">
+  <div class="page-head">
+    <span class="tag">Dashboard</span>
+    <h1>Analytics Overview</h1>
+    <p>Engagement, retention and platform breakdown at a glance.</p>
+  </div>
 
-         <section class="dashboard-card stepped-module">
-    <div class="card-header">
-        <h2>Cumulative Milestones</h2>
+  <div class="grid">
+
+    <!-- Heatmap -->
+    <section class="card col-8">
+      <div class="card-header">
+        <h2><i class="fa-solid fa-fire"></i> User Retention Heatmap</h2>
+        <p>Cohort analysis from <span id="startDate">Jan 01</span> to <span id="endDate">Jun 30</span></p>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="heatmap-table" id="retentionTable">
+          <thead>
+            <tr>
+              <th>Cohort</th><th>Users</th><th>Day 1</th><th>Day 7</th><th>Day 14</th><th>Day 30</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Donut -->
+    <section class="card col-4">
+      <div class="card-header">
+        <h2><i class="fa-solid fa-chart-pie"></i> Service Adoption</h2>
+        <p>Share of total interactions</p>
+      </div>
+      <div class="donut-content">
+        <div class="donut-wrapper">
+          <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" fill="transparent" stroke="var(--bg-teal)" stroke-width="10" />
+            <g id="donutSegments"></g>
+          </svg>
+          <div class="donut-center">
+            <span id="totalHits">0</span>
+            <label>Total Hits</label>
+          </div>
+        </div>
+        <div id="donutLegend" class="donut-legend"></div>
+      </div>
+    </section>
+
+    <!-- Stepped -->
+    <section class="card col-6">
+      <div class="card-header">
+        <h2><i class="fa-solid fa-stairs"></i> Cumulative Milestones</h2>
         <p>Vertical jumps indicate new user activity</p>
-    </div>
-    <div class="chart-container">
-        <svg id="steppedChart" viewBox="0 0 450 220">
-            <defs>
-                <linearGradient id="stepGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="var(--primary-cyan)" stop-opacity="0.4" />
-                    <stop offset="100%" stop-color="var(--primary-cyan)" stop-opacity="0" />
-                </linearGradient>
-            </defs>
-            
-            <g id="chartAxes" class="axis-style"></g>
-            
-            <path id="stepArea" fill="url(#stepGradient)" d=""></path>
-            <path id="stepLine" fill="none" stroke="var(--primary-cyan)" stroke-width="3" stroke-linejoin="round" d=""></path>
-            
-            <text x="225" y="215" text-anchor="middle" class="axis-title">Registration Timeline</text>
-            <text x="10" y="100" text-anchor="middle" transform="rotate(-90 10,100)" class="axis-title">Total Events</text>
+      </div>
+      <div class="chart-box">
+        <svg id="steppedChart" viewBox="0 0 450 200">
+          <defs>
+            <linearGradient id="stepGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.35" />
+              <stop offset="100%" stop-color="var(--primary)" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <g id="chartAxes" class="axis-style"></g>
+          <path id="stepArea" fill="url(#stepGradient)" d=""></path>
+          <path id="stepLine" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linejoin="round" d=""></path>
         </svg>
-    </div>
-</section>
-<section class="dashboard-card dau-module">
-    <div class="card-header">
-        <h2>Daily Active Users (DAU)</h2>
-        <p>New vs. Returning user distribution</p>
-    </div>
-    <div class="chart-container">
-        <svg id="dauChart" viewBox="0 0 500 250">
-            <g id="dauGrid"></g>
-            <g id="dauBars"></g>
-            <g id="dauLabels"></g>
+      </div>
+    </section>
+
+    <!-- DAU -->
+    <section class="card col-6">
+      <div class="card-header">
+        <h2><i class="fa-solid fa-chart-column"></i> Daily Active Users</h2>
+        <p>New vs. returning user distribution</p>
+      </div>
+      <div class="chart-box dau-box">
+        <svg id="dauChart" viewBox="0 0 500 220">
+          <g id="dauGrid"></g>
+          <g id="dauBars"></g>
+          <g id="dauLabels"></g>
         </svg>
-    </div>
-    <div class="dau-legend">
+      </div>
+      <div class="legend-row">
         <div class="legend-item"><span class="dot returning"></span> Returning</div>
         <div class="legend-item"><span class="dot new"></span> New Users</div>
-    </div>
-</section>
-<section class="dashboard-card platform-module">
-    <div class="card-header">
-        <h2>Platform Distribution</h2>
-        <p>Active sessions by device type</p>
-    </div>
-    <div class="platform-container">
-        <div class="pill-bar">
-            <div id="bar-desktop" class="segment desktop"></div>
-            <div id="bar-mobile" class="segment mobile"></div>
-            <div id="bar-tablet" class="segment tablet"></div>
-            <div id="bar-other" class="segment other"></div>
-        </div>
-    </div>
-    <div class="platform-legend">
+      </div>
+    </section>
+
+    <!-- Platform -->
+    <section class="card col-4">
+      <div class="card-header">
+        <h2><i class="fa-solid fa-display"></i> Platform Distribution</h2>
+        <p>Active sessions by device</p>
+      </div>
+      <div class="pill-bar">
+        <div id="bar-desktop" class="segment desktop"></div>
+        <div id="bar-mobile" class="segment mobile"></div>
+        <div id="bar-tablet" class="segment tablet"></div>
+        <div id="bar-other" class="segment other"></div>
+      </div>
+      <div class="platform-legend">
         <div class="legend-item"><span class="dot d-color"></span> Desktop <strong id="val-desktop">0%</strong></div>
         <div class="legend-item"><span class="dot m-color"></span> Mobile <strong id="val-mobile">0%</strong></div>
         <div class="legend-item"><span class="dot t-color"></span> Tablet <strong id="val-tablet">0%</strong></div>
         <div class="legend-item"><span class="dot o-color"></span> Other <strong id="val-other">0%</strong></div>
-    </div>
-</section>
-<section class="dashboard-card donut-module">
-    <div class="card-header">
-        <h2>Service Adoption</h2>
-        <p>Proportion of total interactions</p>
-    </div>
-    <div class="donut-content">
-        <div class="donut-wrapper">
-            <svg id="serviceDonut" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f0f7f8" stroke-width="8" />
-                <g id="donutSegments"></g>
-            </svg>
-            <div class="donut-center">
-                <span id="totalHits">0</span>
-                <label>Total Hits</label>
-            </div>
-        </div>
-        <div id="donutLegend" class="donut-legend">
-            </div>
-    </div>
-</section>
-<section class="dashboard-card funnel-module">
-    <div class="card-header">
-        <h2 class="neon-text">Learning Funnel</h2>
-    </div>
-    
-    <div class="funnel-steps">
-        <div class="step">
-            <div class="step-info">
-                <span>1. Logins</span>
-                <span class="step-pct" id="pct-login">100%</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill" id="fill-login" style="width: 100%;"></div>
-            </div>
-        </div>
+      </div>
+    </section>
 
+    <!-- Funnel -->
+    <section class="card col-4">
+      <div class="card-header">
+        <h2><i class="fa-solid fa-filter"></i> Learning Funnel</h2>
+        <p>Conversion across key steps</p>
+      </div>
+      <div class="funnel-steps">
         <div class="step">
-            <div class="step-info">
-                <span>2. Service Usage</span>
-                <span class="step-pct" id="pct-service">0%</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill" id="fill-service" style="width: 0%;"></div>
-            </div>
+          <div class="step-info"><span>1. Logins</span><span class="step-pct" id="pct-login">100%</span></div>
+          <div class="progress-track"><div class="progress-fill" id="fill-login" style="width:100%"></div></div>
         </div>
+        <div class="step">
+          <div class="step-info"><span>2. Service Usage</span><span class="step-pct" id="pct-service">0%</span></div>
+          <div class="progress-track"><div class="progress-fill" id="fill-service" style="width:0%"></div></div>
+        </div>
+        <div class="step">
+          <div class="step-info"><span>3. Conversion Rate</span><span class="step-pct" id="pct-rate">0%</span></div>
+          <div class="progress-track"><div class="progress-fill" id="fill-rate" style="width:0%"></div></div>
+        </div>
+      </div>
+    </section>
 
-        <div class="step">
-            <div class="step-info">
-                <span>3. Conversion Rate</span>
-                <span class="step-pct" id="pct-rate">0%</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill" id="fill-rate" style="width: 0%;"></div>
-            </div>
-        </div>
-    </div>
-</section>
-<section class="dashboard-card radar-module">
-    <div class="card-header">
-        <h2>User Engagement DNA</h2>
-        <p>Comparing Event Volume, Depth, and Type Variety</p>
-    </div>
-    <div class="radar-container">
+    <!-- Radar -->
+    <section class="card col-4">
+      <div class="card-header">
+        <h2><i class="fa-solid fa-bullseye"></i> User Engagement DNA</h2>
+        <p>Volume, depth and type variety</p>
+      </div>
+      <div class="radar-container">
         <svg id="engagementRadar" viewBox="0 0 200 200">
-            <g id="radarGrid"></g>
-            <g id="radarShapes"></g>
-            <g id="radarLabels"></g>
+          <g id="radarGrid"></g>
+          <g id="radarShapes"></g>
+          <g id="radarLabels"></g>
         </svg>
-    </div>
-    <div id="radarLegend" class="radar-legend"></div>
-</section>
-    </div>
-    <script type="module" src="../js/analytic.js"></script>
+      </div>
+      <div id="radarLegend" class="radar-legend"></div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+/* ===== Demo data ===== */
+const retention = [
+  { cohort: 'Jan 2026', users: 420, d1: 88, d7: 62, d14: 41, d30: 28 },
+  { cohort: 'Feb 2026', users: 380, d1: 84, d7: 58, d14: 38, d30: 22 },
+  { cohort: 'Mar 2026', users: 510, d1: 90, d7: 65, d14: 44, d30: 31 },
+  { cohort: 'Apr 2026', users: 470, d1: 86, d7: 60, d14: 36, d30: 19 },
+  { cohort: 'May 2026', users: 530, d1: 91, d7: 68, d14: 47, d30: 0 },
+];
+const platform = { desktop: 48, mobile: 34, tablet: 12, other: 6 };
+const services = [
+  { name: 'Quizzes', value: 1240, color: '#0097b2' },
+  { name: 'Exams',   value: 860,  color: '#4dd0e1' },
+  { name: 'Topics',  value: 540,  color: '#b2ebf2' },
+  { name: 'Reports', value: 320,  color: '#e0f7fa' },
+];
+const dau = [
+  { day:'Mon', r:120, n:30 },{ day:'Tue', r:145, n:42 },{ day:'Wed', r:160, n:38 },
+  { day:'Thu', r:138, n:50 },{ day:'Fri', r:175, n:55 },{ day:'Sat', r:110, n:28 },{ day:'Sun', r: 95, n:22 },
+];
+const stepped = [10, 22, 30, 48, 52, 70, 88, 96, 120, 140, 158, 175];
+const funnel = { logins: 100, service: 64, rate: 28 };
+const radar = {
+  axes: ['Volume','Depth','Variety','Recency','Frequency'],
+  series: [
+    { name: 'This week', color:'#0097b2', values:[0.85,0.72,0.66,0.9,0.78] },
+    { name: 'Last week', color:'#4dd0e1', values:[0.7,0.58,0.74,0.62,0.55] },
+  ]
+};
+
+/* ===== Heatmap ===== */
+function cls(v){ if(v===0) return 'ret-zero'; if(v<35) return 'ret-low'; if(v<60) return 'ret-med'; return 'ret-high'; }
+const tbody = document.querySelector('#retentionTable tbody');
+retention.forEach(r => {
+  tbody.insertAdjacentHTML('beforeend', `
+    <tr>
+      <td class="cohort-label">${r.cohort}</td>
+      <td class="users-cell">${r.users}</td>
+      <td class="${cls(r.d1)}">${r.d1?r.d1+'%':'—'}</td>
+      <td class="${cls(r.d7)}">${r.d7?r.d7+'%':'—'}</td>
+      <td class="${cls(r.d14)}">${r.d14?r.d14+'%':'—'}</td>
+      <td class="${cls(r.d30)}">${r.d30?r.d30+'%':'—'}</td>
+    </tr>`);
+});
+
+/* ===== Platform ===== */
+['desktop','mobile','tablet','other'].forEach(k => {
+  document.getElementById('bar-'+k).style.width = platform[k]+'%';
+  document.getElementById('val-'+k).textContent = platform[k]+'%';
+});
+
+/* ===== Donut ===== */
+const total = services.reduce((s,x)=>s+x.value,0);
+document.getElementById('totalHits').textContent = total.toLocaleString();
+const C = 2 * Math.PI * 40;
+let offset = 0;
+const segs = document.getElementById('donutSegments');
+const legend = document.getElementById('donutLegend');
+services.forEach(s => {
+  const frac = s.value/total;
+  const len = frac * C;
+  segs.insertAdjacentHTML('beforeend',
+    `<circle cx="50" cy="50" r="40" fill="transparent" stroke="${s.color}" stroke-width="10"
+       stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-offset}" transform="rotate(-90 50 50)"/>`);
+  offset += len;
+  legend.insertAdjacentHTML('beforeend',
+    `<div class="legend-item"><span class="color-box" style="background:${s.color}"></span>${s.name}<strong>${Math.round(frac*100)}%</strong></div>`);
+});
+
+/* ===== Stepped chart ===== */
+(function(){
+  const W=450,H=200,padL=32,padR=10,padT=10,padB=28;
+  const max = Math.max(...stepped);
+  const xs = (i)=> padL + i*((W-padL-padR)/(stepped.length-1));
+  const ys = (v)=> padT + (1 - v/max)*(H-padT-padB);
+  // axes
+  const ax = document.getElementById('chartAxes');
+  for(let i=0;i<=4;i++){
+    const y = padT + i*((H-padT-padB)/4);
+    ax.insertAdjacentHTML('beforeend', `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}"/><text x="${padL-6}" y="${y+3}" text-anchor="end">${Math.round(max*(1-i/4))}</text>`);
+  }
+  let d = `M ${xs(0)} ${ys(stepped[0])}`;
+  for(let i=1;i<stepped.length;i++){
+    d += ` L ${xs(i)} ${ys(stepped[i-1])} L ${xs(i)} ${ys(stepped[i])}`;
+  }
+  document.getElementById('stepLine').setAttribute('d', d);
+  document.getElementById('stepArea').setAttribute('d', d + ` L ${xs(stepped.length-1)} ${H-padB} L ${xs(0)} ${H-padB} Z`);
+})();
+
+/* ===== DAU bars ===== */
+(function(){
+  const W=500,H=220,padL=32,padR=10,padT=10,padB=28;
+  const max = Math.max(...dau.map(d=>d.r+d.n));
+  const bw = (W-padL-padR)/dau.length * 0.55;
+  const step = (W-padL-padR)/dau.length;
+  const grid = document.getElementById('dauGrid');
+  for(let i=0;i<=4;i++){
+    const y = padT + i*((H-padT-padB)/4);
+    grid.insertAdjacentHTML('beforeend', `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--border)"/><text x="${padL-6}" y="${y+3}" text-anchor="end" fill="var(--muted)" font-size="9">${Math.round(max*(1-i/4))}</text>`);
+  }
+  const bars = document.getElementById('dauBars');
+  const labels = document.getElementById('dauLabels');
+  dau.forEach((d,i)=>{
+    const x = padL + i*step + (step-bw)/2;
+    const hR = (d.r/max)*(H-padT-padB);
+    const hN = (d.n/max)*(H-padT-padB);
+    const yR = H-padB-hR;
+    const yN = yR-hN;
+    bars.insertAdjacentHTML('beforeend',
+      `<rect x="${x}" y="${yR}" width="${bw}" height="${hR}" fill="var(--primary)" rx="3"/>
+       <rect x="${x}" y="${yN}" width="${bw}" height="${hN}" fill="var(--primary-soft)" rx="3"/>`);
+    labels.insertAdjacentHTML('beforeend',
+      `<text x="${x+bw/2}" y="${H-padB+14}" text-anchor="middle" fill="var(--muted)" font-size="10">${d.day}</text>`);
+  });
+})();
+
+/* ===== Funnel ===== */
+requestAnimationFrame(()=> {
+  document.getElementById('fill-login').style.width = funnel.logins+'%';
+  document.getElementById('fill-service').style.width = funnel.service+'%';
+  document.getElementById('fill-rate').style.width = funnel.rate+'%';
+  document.getElementById('pct-login').textContent = funnel.logins+'%';
+  document.getElementById('pct-service').textContent = funnel.service+'%';
+  document.getElementById('pct-rate').textContent = funnel.rate+'%';
+});
+
+/* ===== Radar ===== */
+(function(){
+  const cx=100, cy=100, R=70, n=radar.axes.length;
+  const grid = document.getElementById('radarGrid');
+  const shapes = document.getElementById('radarShapes');
+  const labels = document.getElementById('radarLabels');
+  // grid rings
+  for(let k=1;k<=4;k++){
+    const pts = [];
+    for(let i=0;i<n;i++){
+      const a = -Math.PI/2 + i*2*Math.PI/n;
+      pts.push((cx+Math.cos(a)*R*k/4)+','+(cy+Math.sin(a)*R*k/4));
+    }
+    grid.insertAdjacentHTML('beforeend', `<polygon class="radar-grid" points="${pts.join(' ')}"/>`);
+  }
+  // axes labels
+  for(let i=0;i<n;i++){
+    const a = -Math.PI/2 + i*2*Math.PI/n;
+    const x = cx+Math.cos(a)*(R+12), y = cy+Math.sin(a)*(R+12)+3;
+    labels.insertAdjacentHTML('beforeend', `<text class="radar-label" x="${x}" y="${y}" text-anchor="middle">${radar.axes[i]}</text>`);
+  }
+  // series
+  const legend = document.getElementById('radarLegend');
+  radar.series.forEach(s=>{
+    const pts = s.values.map((v,i)=>{
+      const a = -Math.PI/2 + i*2*Math.PI/n;
+      return (cx+Math.cos(a)*R*v)+','+(cy+Math.sin(a)*R*v);
+    });
+    shapes.insertAdjacentHTML('beforeend', `<polygon class="radar-shape" fill="${s.color}" stroke="${s.color}" points="${pts.join(' ')}"/>`);
+    legend.insertAdjacentHTML('beforeend', `<div class="legend-item"><span class="dot" style="background:${s.color}"></span>${s.name}</div>`);
+  });
+})();
+</script>
+
 </body>
 </html>
