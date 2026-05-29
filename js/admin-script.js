@@ -1,9 +1,7 @@
-// ===== IMPORTS =====
 import { FetchData, PostData, DeleteData, UpdateData } from "../js/api/crud.js";
 
 /**
  * The core engine for all modals and popups.
- * Handles DOM creation, styling, and event cleanup.
  */
 function createBasePopup({
   title = "",
@@ -17,18 +15,14 @@ function createBasePopup({
   onConfirm = () => {},
   onCancel = () => {},
   confirmBtnStyle = "",
-  cancelBtnStyle = ""
+  cancelBtnStyle = "",
 }) {
-  // 1. Prevent duplicate popups by removing any existing ones
   const existingOverlay = document.getElementById("progressWarningOverlay");
   if (existingOverlay) existingOverlay.remove();
 
-  // 2. Create the overlay container
   const overlay = document.createElement("div");
   overlay.id = "progressWarningOverlay";
-  
-  // 3. Build the inner HTML structure
-  // We use the iconColor for the icon and optional inline styles for buttons
+
   overlay.innerHTML = `
     <div id="progressWarningBox">
       <div class="pw-icon" style="color: ${iconColor}">
@@ -37,47 +31,28 @@ function createBasePopup({
       <h3>${title}</h3>
       <div class="pw-message-content">${message}</div>
       <div class="pw-actions">
-        ${showCancel ? `
-          <button class="pw-btn pw-btn-cancel" style="${cancelBtnStyle}">
-            ${cancelText}
-          </button>` : ''
-        }
-        ${showConfirm ? `
-          <button class="pw-btn pw-btn-confirm" style="${confirmBtnStyle}">
-            ${confirmText}
-          </button>` : ''
-        }
+        ${showCancel ? `<button class="pw-btn pw-btn-cancel" style="${cancelBtnStyle}">${cancelText}</button>` : ""}
+        ${showConfirm ? `<button class="pw-btn pw-btn-confirm" style="${confirmBtnStyle}">${confirmText}</button>` : ""}
       </div>
     </div>
   `;
 
-  // 4. Append to the document body
   document.body.appendChild(overlay);
 
-  // 5. Helper function to close and cleanup
-  const closePopup = () => {
-    overlay.remove();
-  };
+  const closePopup = () => overlay.remove();
 
-  // 6. Event Listeners
-  
-  // Cancel/Close Button
   if (showCancel) {
     overlay.querySelector(".pw-btn-cancel").addEventListener("click", () => {
       closePopup();
       onCancel();
     });
   }
-
-  // Confirm Button
   if (showConfirm) {
     overlay.querySelector(".pw-btn-confirm").addEventListener("click", () => {
       closePopup();
       onConfirm();
     });
   }
-
-  // Click outside the box (on the overlay) to close
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) {
       closePopup();
@@ -85,106 +60,73 @@ function createBasePopup({
     }
   });
 }
-/**
- * A standardized informational popup for the UI.
- * Used for errors, warnings, and success messages.
- */
+
 function showInfoPopup(
   title,
   message,
   icon = "fas fa-info-circle",
-  iconColor = "#0097b2"
+  iconColor = "#0097b2",
 ) {
-  // Use the base popup logic to ensure consistent behavior/overlay
   createBasePopup({
-    title: title,
-    message: message,
-    icon: icon,
-    iconColor: iconColor,
-    
-    // Admin/Info specific settings:
-    showConfirm: false,         // Only one button needed for info
-    cancelText: "OK",           // The button text
-    showCancel: true,           // Ensure the OK button (mapped to cancel) is visible
-    
-    // Style the "OK" button to match the theme
+    title,
+    message,
+    icon,
+    iconColor,
+    showConfirm: false,
+    cancelText: "OK",
+    showCancel: true,
     cancelBtnStyle: `background: ${iconColor}; color: #fff; border: none;`,
-    
-    // Logic for closing
     onCancel: () => {
       console.log(`Popup "${title}" dismissed.`);
-    }
+    },
   });
 }
-/**
- * Processes any API response and shows the appropriate popup for errors.
- * @param {Object} response - The object returned by FetchData/PostData/etc.
- * @returns {boolean} - Returns true if an error was handled, false if successful.
- */
+
 function handleApiResponse(response) {
   console.log("API Response:", response);
-  // If the request was successful, we don't show an error popup
-  if (response?.success !== false && response?.status < 400) {
-    return false;
-  }
+  if (response?.success !== false && response?.status < 400) return false;
 
-  // Define styling based on specific status codes
   let config = {
     title: "Error",
     icon: "fas fa-exclamation-circle",
-    color: "#e74c3c" // Default Red
+    color: "#e74c3c",
   };
-
-  if (response.status === 403) {
+  if (response.status === 403)
     config = {
       title: "Access Restricted",
       icon: "fas fa-lock",
-      color: "#f39c12" // Warning Orange
+      color: "#f39c12",
     };
-  } else if (response.status === 401) {
+  else if (response.status === 401)
     config = {
       title: "Session Expired",
       icon: "fas fa-user-shield",
-      color: "#3498db" // Info Blue
+      color: "#3498db",
     };
-  } else if (response.status >= 500) {
-    config = {
-      title: "Server Error",
-      icon: "fas fa-server",
-      color: "#c0392b" // Dark Red
-    };
-  } else if (!response.status) {
-    config = {
-      title: "Network Issue",
-      icon: "fas fa-wifi",
-      color: "#95a5a6" // Grey
-    };
-  }
+  else if (response.status >= 500)
+    config = { title: "Server Error", icon: "fas fa-server", color: "#c0392b" };
+  else if (!response.status)
+    config = { title: "Network Issue", icon: "fas fa-wifi", color: "#95a5a6" };
 
-  // Call your existing popup function with the determined config
   showInfoPopup(
     config.title,
     response.userMessage || "An unexpected error occurred.",
     config.icon,
-    config.color
+    config.color,
   );
-
   return true;
 }
-// Runtime state (populated from backend on load)
+
+// ── Runtime state ─────────────────────────────────────────────────────────────
 let users = [];
 let questions = [];
 let selectedQuestionIds = [];
 
-// ===== NAVIGATION FUNCTIONS =====
+// ===== NAVIGATION =====
 
-/**
- * Toggle mobile menu visibility
- */
 function toggleMobileMenu() {
-  var links = document.querySelector(".links");
+  const links = document.querySelector(".links");
   links.style.display = links.style.display === "flex" ? "none" : "flex";
-
   if (links.style.display === "flex") {
     links.style.position = "fixed";
     links.style.top = "86px";
@@ -199,76 +141,42 @@ function toggleMobileMenu() {
   }
 }
 
-/**
- * Toggle sidebar visibility
- */
 function toggleSidebar() {
-  var sidebar = document.querySelector(".left-sidebar");
-  var overlay = document.querySelector(".sidebar-overlay");
-
-  sidebar.classList.toggle("active");
-  overlay.classList.toggle("active");
+  document.querySelector(".left-sidebar").classList.toggle("active");
+  document.querySelector(".sidebar-overlay").classList.toggle("active");
 }
 
-/**
- * Close sidebar
- */
 function closeSidebar() {
-  var sidebar = document.querySelector(".left-sidebar");
-  var overlay = document.querySelector(".sidebar-overlay");
-
-  sidebar.classList.remove("active");
-  overlay.classList.remove("active");
+  document.querySelector(".left-sidebar").classList.remove("active");
+  document.querySelector(".sidebar-overlay").classList.remove("active");
 }
 
-/**
- * Show specific section and update navigation
- * @param {string} sectionId - The ID of the section to show
- */
 function showSection(sectionId) {
-  // Hide all sections
-  var sections = document.querySelectorAll(".admin-section");
-  sections.forEach(function (section) {
-    section.classList.remove("active");
-  });
-
-  // Show selected section
+  document
+    .querySelectorAll(".admin-section")
+    .forEach((s) => s.classList.remove("active"));
   document.getElementById(sectionId).classList.add("active");
-
-  // Update sidebar nav
-  var navItems = document.querySelectorAll(".nav-item");
-  navItems.forEach(function (item) {
-    item.classList.remove("active");
+  document
+    .querySelectorAll(".nav-item")
+    .forEach((i) => i.classList.remove("active"));
+  document.querySelectorAll(".links a").forEach((l) => {
+    l.style.background = "";
+    l.style.color = "";
   });
-
-  // Update header links
-  var headerLinks = document.querySelectorAll(".links a");
-  headerLinks.forEach(function (link) {
-    link.style.background = "";
-    link.style.color = "";
-  });
-
-  // Close mobile menu
-  var links = document.querySelector(".links");
+  const links = document.querySelector(".links");
   if (window.innerWidth <= 768) {
     links.style.display = "none";
     closeSidebar();
   }
-
-  console.log("Navigated to " + sectionId + " section");
 }
 
-// ===== CHARTS INITIALIZATION =====
+// ===== CHARTS =====
 
-/**
- * Initialize all dashboard charts
- */
 async function initializeCharts() {
-  // Questions by Topic Chart
-  var questionsCtx = document.getElementById("questionsChart").getContext("2d");
+  const questionsCtx = document
+    .getElementById("questionsChart")
+    .getContext("2d");
   const response = await FetchData("/stats/topics", true);
-  const data = response.data.stats || [];
-  console.log(response);
   new Chart(questionsCtx, {
     type: "doughnut",
     data: {
@@ -284,18 +192,11 @@ async function initializeCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      plugins: {
-        legend: {
-          position: "bottom",
-        },
-      },
+      plugins: { legend: { position: "bottom" } },
     },
   });
 
-  // User Growth Chart
-  // TODO: Replace with backend endpoint e.g. FetchData("/stats/user-growth", true)
-  // Expected response shape: { labels: [...months], data: [...counts] }
-  var usersCtx = document.getElementById("usersChart").getContext("2d");
+  const usersCtx = document.getElementById("usersChart").getContext("2d");
   new Chart(usersCtx, {
     type: "line",
     data: {
@@ -319,10 +220,7 @@ async function initializeCharts() {
     },
   });
 
-  // Activity Chart
-  // TODO: Replace with backend endpoint e.g. FetchData("/stats/activity", true)
-  // Expected response shape: { labels: [...days], data: [...counts] }
-  var activityCtx = document.getElementById("activityChart").getContext("2d");
+  const activityCtx = document.getElementById("activityChart").getContext("2d");
   new Chart(activityCtx, {
     type: "bar",
     data: {
@@ -344,10 +242,7 @@ async function initializeCharts() {
     },
   });
 
-  // Performance Chart
-  // TODO: Replace with backend endpoint e.g. FetchData("/stats/performance", true)
-  // Expected response shape: { labels: [...topics], data: [...avgScores] }
-  var performanceCtx = document
+  const performanceCtx = document
     .getElementById("performanceChart")
     .getContext("2d");
   new Chart(performanceCtx, {
@@ -375,71 +270,59 @@ async function initializeCharts() {
   });
 }
 
-// ===== TOPICS MANAGEMENT =====
+// ===== TOPICS =====
 
-/**
- * Load and display all topics
- */
 async function loadTopics() {
-  var topicsList = document.getElementById("topicsList");
+  const topicsList = document.getElementById("topicsList");
   topicsList.innerHTML = "";
   const response = await FetchData("/topic", true);
-  if (handleApiResponse(response)) return; // Handle errors and exit if needed
+  if (handleApiResponse(response)) return;
   const data = response.data.topics || [];
   document.getElementById("totalTopics").textContent = data.length;
-  data.forEach(function (topic) {
-    var topicCard = document.createElement("div");
+
+  data.forEach((topic) => {
+    const topicCard = document.createElement("div");
     topicCard.className = "topic-card";
     topicCard.innerHTML = `
-            <div class="topic-header-section">
-                <div class="topic-info">
-                    <h3>${topic.name}</h3>
-                    <p>${topic.description || "No description provided"}</p>
-                </div>
-                <div class="topic-actions">
-                    <button class="btn-edit" data-action="edit-topic" data-id="${topic.id}">Edit</button>
-                    <button class="btn-delete" data-action="delete-topic" data-id="${topic.id}">Delete</button>
-                </div>
-            </div>
-            <div class="subtopics-container">
-                <div class="subtopics-header">
-                    <h4>Subtopics (${topic.subtopics.length})</h4>
-                    <button class="btn-small" data-action="add-subtopic" data-topic-id="${topic.id}">+ Add Subtopic</button>
-                </div>
-                <div class="subtopics-grid">
-                    ${topic.subtopics
-                      .map(function (sub) {
-                        return `
-                        <div class="subtopic-item">
-                            <span>${sub.name}</span>
-                            <div class="subtopic-actions">
-                                <button data-action="edit-subtopic" data-topic-id="${topic.id}" data-id="${sub.id}" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button data-action="delete-subtopic" data-topic-id="${topic.id}" data-id="${sub.id}" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                      })
-                      .join("")}
-                </div>
-            </div>
-        `;
+      <div class="topic-header-section">
+        <div class="topic-info">
+          <h3>${topic.name}</h3>
+          <p>${topic.description || "No description provided"}</p>
+        </div>
+        <div class="topic-actions">
+          <button class="btn-edit"   data-action="edit-topic"   data-id="${topic.id}">Edit</button>
+          <button class="btn-delete" data-action="delete-topic" data-id="${topic.id}">Delete</button>
+        </div>
+      </div>
+      <div class="subtopics-container">
+        <div class="subtopics-header">
+          <h4>Subtopics (${topic.subtopics.length})</h4>
+          <button class="btn-small" data-action="add-subtopic" data-topic-id="${topic.id}">+ Add Subtopic</button>
+        </div>
+        <div class="subtopics-grid">
+          ${topic.subtopics
+            .map(
+              (sub) => `
+            <div class="subtopic-item">
+              <span>${sub.name}</span>
+              <div class="subtopic-actions">
+                <button data-action="edit-subtopic"   data-topic-id="${topic.id}" data-id="${sub.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                <button data-action="delete-subtopic" data-topic-id="${topic.id}" data-id="${sub.id}" title="Delete"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>`,
+            )
+            .join("")}
+        </div>
+      </div>`;
     topicsList.appendChild(topicCard);
   });
 }
 
-/**
- * Open topic modal for add or edit
- * @param {number|null} topicId - ID of topic to edit, or null for new topic
- */
 async function openTopicModal(topicId) {
-  var modal = document.getElementById("topicModal");
-  var form = document.getElementById("topicForm");
-  var title = document.getElementById("topicModalTitle");
-  var subtopicsSection = document.getElementById("subtopicsSection");
+  const modal = document.getElementById("topicModal");
+  const form = document.getElementById("topicForm");
+  const title = document.getElementById("topicModalTitle");
+  const subtopicsSection = document.getElementById("subtopicsSection");
 
   form.reset();
   document.getElementById("topicId").value = "";
@@ -455,154 +338,102 @@ async function openTopicModal(topicId) {
       document.getElementById("topicName").value = topic.name;
       document.getElementById("topicDescription").value =
         topic.description || "";
-
-      // Show subtopics for editing
       subtopicsSection.style.display = "block";
       loadSubtopicsForEdit(topic);
     }
   } else {
     title.textContent = "Add New Topic";
   }
-
   modal.classList.add("active");
 }
 
-/**
- * Close topic modal
- */
 function closeTopicModal() {
   document.getElementById("topicModal").classList.remove("active");
 }
 
-/**
- * Load subtopics for editing
- * @param {Object} topic - Topic object containing subtopics
- */
 function loadSubtopicsForEdit(topic) {
-  var subtopicsList = document.getElementById("subtopicsList");
+  const subtopicsList = document.getElementById("subtopicsList");
   subtopicsList.innerHTML = "";
-
-  topic.subtopics.forEach(function (sub) {
-    var field = document.createElement("div");
+  topic.subtopics.forEach((sub) => {
+    const field = document.createElement("div");
     field.className = "subtopic-field";
     field.innerHTML = `
-            <input type="text" value="${sub.name}" data-subtopic-id="${sub.id}">
-            <button type="button" data-action="remove-subtopic-field" data-id="${sub.id}">Remove</button>
-        `;
+      <input type="text" value="${sub.name}" data-subtopic-id="${sub.id}">
+      <button type="button" data-action="remove-subtopic-field" data-id="${sub.id}">Remove</button>`;
     subtopicsList.appendChild(field);
   });
 }
 
-/**
- * Add a new subtopic input field
- */
 function addSubtopicField() {
-  var subtopicsList = document.getElementById("subtopicsList");
-  var field = document.createElement("div");
+  const field = document.createElement("div");
   field.className = "subtopic-field";
   field.innerHTML = `
-        <input type="text" placeholder="Enter subtopic name" data-subtopic-id="new">
-        <button type="button" data-action="remove-subtopic-field">Remove</button>
-    `;
-  subtopicsList.appendChild(field);
+    <input type="text" placeholder="Enter subtopic name" data-subtopic-id="new">
+    <button type="button" data-action="remove-subtopic-field">Remove</button>`;
+  document.getElementById("subtopicsList").appendChild(field);
 }
 
-/**
- * Remove subtopic field
- * @param {HTMLElement} button - The remove button element
- * @param {number|null} subtopicId - ID of subtopic to remove
- */
 function removeSubtopicField(button, subtopicId) {
   if (subtopicId) {
-    if (confirm("Are you sure you want to delete this subtopic?")) {
+    if (confirm("Are you sure you want to delete this subtopic?"))
       button.parentElement.remove();
-      console.log("Subtopic " + subtopicId + " marked for deletion");
-    }
   } else {
     button.parentElement.remove();
   }
 }
 
-/**
- * Handle topic form submission
- * @param {Event} event - Form submit event
- */
 async function handleTopicSubmit(event) {
   event.preventDefault();
-
-  var topicId = document.getElementById("topicId").value;
-  var name = document.getElementById("topicName").value;
-  var description = document.getElementById("topicDescription").value;
+  const topicId = document.getElementById("topicId").value;
+  const name = document.getElementById("topicName").value;
+  const description = document.getElementById("topicDescription").value;
 
   if (topicId) {
-    // Update existing topic
-    const response = await UpdateData(`/topic`, { id: topicId, topicName: name });
+    const response = await UpdateData(
+      "/topic",
+      { id: topicId, topicName: name },
+      true,
+    );
     if (handleApiResponse(response)) return;
     alert("Topic updated!");
   } else {
-    // Create new topic
-    const payload = { topicName: name };
-    const response = await PostData("/topic", payload, true);
-   if (handleApiResponse(response)) return;
+    const response = await PostData("/topic", { topicName: name }, true);
+    if (handleApiResponse(response)) return;
   }
-
   loadTopics();
   loadTopicOptions();
   closeTopicModal();
 }
 
-/**
- * Edit a topic
- * @param {number} topicId - ID of topic to edit
- */
 function editTopic(topicId) {
   openTopicModal(topicId);
 }
 
-/**
- * Delete a topic
- * @param {number} topicId - ID of topic to delete
- */
 async function deleteTopic(topicId) {
   if (
     confirm(
       "Are you sure you want to delete this topic? This will also delete all associated subtopics.",
     )
   ) {
-    const response = await DeleteData(`/topic`, { id: topicId }, true);
+    const response = await DeleteData("/topic", { id: topicId }, true);
     if (handleApiResponse(response)) return;
     loadTopics();
     loadTopicOptions();
   }
 }
 
-/**
- * Add a new subtopic
- * @param {number} topicId - ID of parent topic
- */
-async function addSubtopic(topicId) {
+function addSubtopic(topicId) {
   openSubtopicModal(topicId);
 }
-
-/**
- * Edit a subtopic
- * @param {number} topicId - ID of parent topic
- * @param {number} subtopicId - ID of subtopic to edit
- */
 function editSubtopic(topicId, subtopicId) {
   openSubtopicModal(topicId, subtopicId);
 }
 
-/**
- * Open subtopic modal
- * @param {number} topicId - ID of parent topic
- * @param {number|null} subtopicId - ID of subtopic to edit, or null for new
- */
 async function openSubtopicModal(topicId, subtopicId) {
   alert(`topic ${topicId} subtopic ${subtopicId}`);
-  var modal = document.getElementById("subtopicModal");
-  var form = document.getElementById("subtopicForm");
-  var title = document.getElementById("subtopicModalTitle");
+  const modal = document.getElementById("subtopicModal");
+  const form = document.getElementById("subtopicForm");
+  const title = document.getElementById("subtopicModalTitle");
 
   form.reset();
   document.getElementById("subtopicTopicId").value = topicId;
@@ -620,96 +451,78 @@ async function openSubtopicModal(topicId, subtopicId) {
     title.textContent = "Add New Subtopic";
     document.getElementById("subtopicId").value = "";
   }
-
   modal.classList.add("active");
 }
 
-/**
- * Close subtopic modal
- */
 function closeSubtopicModal() {
   document.getElementById("subtopicModal").classList.remove("active");
 }
 
-/**
- * Handle subtopic form submission
- * @param {Event} event - Form submit event
- */
 async function handleSubtopicSubmit(event) {
   event.preventDefault();
-
-  var topicId = parseInt(document.getElementById("subtopicTopicId").value);
-  var subtopicId = document.getElementById("subtopicId").value;
-  var name = document.getElementById("subtopicName").value.trim();
+  const topicId = parseInt(document.getElementById("subtopicTopicId").value);
+  const subtopicId = document.getElementById("subtopicId").value;
+  const name = document.getElementById("subtopicName").value.trim();
 
   if (subtopicId) {
-    // Update existing subtopic
-    const payload = { id: subtopicId, topicName: name };
-    const response = await UpdateData(`/topic`, payload, true);
+    const response = await UpdateData(
+      "/topic",
+      { id: subtopicId, topicName: name },
+      true,
+    );
     if (handleApiResponse(response)) return;
   } else {
-    // Create new subtopic
-    const payload = { subtopicName: name, parentId: topicId };
-    const response = await PostData("/subtopic", payload, true);
+    const response = await PostData(
+      "/subtopic",
+      { subtopicName: name, parentId: topicId },
+      true,
+    );
     if (handleApiResponse(response)) return;
   }
-
   loadTopics();
   closeSubtopicModal();
 }
 
-/**
- * Delete a subtopic
- * @param {number} topicId - ID of parent topic
- * @param {number} subtopicId - ID of subtopic to delete
- */
 async function deleteSubtopic(topicId, subtopicId) {
   if (confirm("Are you sure you want to delete this subtopic?")) {
-    const response = await DeleteData(`/topic`, { id: subtopicId }, true);
+    const response = await DeleteData("/topic", { id: subtopicId }, true);
     if (handleApiResponse(response)) return;
     loadTopics();
     loadTopicOptions();
   }
 }
 
-// ===== QUESTIONS MANAGEMENT =====
+// ===== QUESTIONS =====
 
-/**
- * Load and display all questions
- */
 async function loadQuestions() {
-  var tbody = document.getElementById("questionsTableBody");
+  const tbody = document.getElementById("questionsTableBody");
   tbody.innerHTML = "";
   const response = await FetchData("/questions", true);
   if (handleApiResponse(response)) return;
-  const questions = response.data.questions;
-  document.getElementById("totalQuestions").textContent = questions.length;
-  questions.forEach(function (question) {
-    var row = document.createElement("tr");
+  const qs = response.data.questions;
+  document.getElementById("totalQuestions").textContent = qs.length;
+
+  qs.forEach((question) => {
+    const row = document.createElement("tr");
     row.setAttribute("data-topic-id", `${question.topic_id}`);
     row.innerHTML = `
-            <td>${question.question_id}</td>
-            <td class="question-text" title="${question.content}">${question.content}</td>
-            <td>
-                <div class="table-actions">
-                    <button class="btn-edit" data-action="edit-question" data-id="${question.question_id}">Edit</button>
-                    <button class="btn-delete" data-action="delete-question" data-id="${question.question_id}">Delete</button>
-                </div>
-            </td>
-        `;
+      <td>${question.question_id}</td>
+      <td class="question-text" title="${question.content}">${question.content}</td>
+      <td>
+        <div class="table-actions">
+          <button class="btn-edit"   data-action="edit-question"   data-id="${question.question_id}">Edit</button>
+          <button class="btn-delete" data-action="delete-question" data-id="${question.question_id}">Delete</button>
+        </div>
+      </td>`;
     tbody.appendChild(row);
   });
 }
 
-/**
- * Open question modal for add or edit
- * @param {number|null} questionId - ID of question to edit, or null for new
- */
 async function openQuestionModal(questionId) {
-  var modal = document.getElementById("questionModal");
-  var form = document.getElementById("questionForm");
-  var title = document.getElementById("questionModalTitle");
-  var imagePreview = document.getElementById("imagePreview");
+  const modal = document.getElementById("questionModal");
+  const form = document.getElementById("questionForm");
+  const title = document.getElementById("questionModalTitle");
+  const imagePreview = document.getElementById("imagePreview");
 
   form.reset();
   imagePreview.innerHTML = "";
@@ -720,13 +533,11 @@ async function openQuestionModal(questionId) {
     const response = await FetchData(`/question/${questionId}`, true);
     if (handleApiResponse(response)) return;
     const question = response.data.question;
-
     if (question) {
       title.textContent = "Edit Question";
       document.getElementById("questionId").value = questionId;
       document.getElementById("questionStatement").value = question.statement;
       document.getElementById("questionTopic").value = question.topicId;
-      console.log(question.options);
       document.getElementById("optionA").value = question.options.A.text;
       document
         .getElementById("optionA")
@@ -744,59 +555,37 @@ async function openQuestionModal(questionId) {
         .getElementById("optionD")
         .setAttribute("option-id", question.options.D.id);
       document.querySelector(
-        'input[value="' + question.correctAnswer + '"]',
+        `input[value="${question.correctAnswer}"]`,
       ).checked = true;
 
       if (question.image) {
-        var imgSrc = question.image;
-        var removeImageContainer = document.getElementById(
-          "removeImageContainer",
-        );
-
-        // Check if it's already a data URI (base64)
+        let imgSrc = question.image;
         if (!imgSrc.startsWith("data:") && !imgSrc.startsWith("http")) {
-          // If it's raw base64 without the data URI prefix, add it
           imgSrc = "data:image/png;base64," + imgSrc;
         }
-
-        imagePreview.innerHTML =
-          '<img src="' + imgSrc + '" alt="Question Image">';
+        imagePreview.innerHTML = `<img src="${imgSrc}" alt="Question Image">`;
         imagePreview.classList.add("show");
-        removeImageContainer.style.display = "block";
-      } else {
-        // Clear preview if no image
-        imagePreview.innerHTML = "";
-        imagePreview.classList.remove("show");
+        document.getElementById("removeImageContainer").style.display = "block";
       }
     }
   } else {
     title.textContent = "Add New Question";
   }
-
   modal.classList.add("active");
 }
 
-/**
- * Close question modal
- */
 function closeQuestionModal() {
-  var removeImageContainer = document.getElementById("removeImageContainer");
-  removeImageContainer.style.display = "none";
+  document.getElementById("removeImageContainer").style.display = "none";
   document.getElementById("questionModal").classList.remove("active");
 }
 
-/**
- * Preview uploaded image
- * @param {Event} event - File input change event
- */
 function previewImage(event) {
-  var file = event.target.files[0];
-  var preview = document.getElementById("imagePreview");
-
+  const file = event.target.files[0];
+  const preview = document.getElementById("imagePreview");
   if (file) {
-    var reader = new FileReader();
-    reader.onload = function (e) {
-      preview.innerHTML = '<img src="' + e.target.result + '" alt="Preview">';
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
       preview.classList.add("show");
     };
     reader.readAsDataURL(file);
@@ -805,240 +594,180 @@ function previewImage(event) {
     preview.classList.remove("show");
   }
 }
+
 async function populateTopicSelects() {
   const modalTopicSelect = document.getElementById("questionTopic");
   const filterTopic = document.getElementById("filterTopic");
-  let optionsHtml = "";
   const response = await FetchData("/topic", true);
   if (handleApiResponse(response)) return;
 
-  const data = response.data.topics || [];
-
-  data.forEach((cat) => {
-    optionsHtml += `<optgroup label="${cat.name}">`;
-    optionsHtml += `<option value="${cat.id}">${cat.name}</option>`;
+  let optionsHtml = "";
+  (response.data.topics || []).forEach((cat) => {
+    optionsHtml += `<optgroup label="${cat.name}"><option value="${cat.id}">${cat.name}</option>`;
     cat.subtopics.forEach((sub) => {
       optionsHtml += `<option value="${sub.id}">${sub.name}</option>`;
     });
-    optionsHtml += `</optgroup>`;
+    optionsHtml += "</optgroup>";
   });
   filterTopic.innerHTML = '<option value="">All Topics</option>' + optionsHtml;
   modalTopicSelect.innerHTML =
     '<option value="">Select topic</option>' + optionsHtml;
 }
+
 async function populateTopicSelects_2(select) {
-  let optionsHtml = "";
   const response = await FetchData("/topic", true);
   if (handleApiResponse(response)) return;
 
-  const data = response.data.topics || [];
-
-  data.forEach((cat) => {
-    optionsHtml += `<optgroup label="${cat.name}">`;
-    optionsHtml += `<option value="${cat.id}">${cat.name}</option>`;
+  let optionsHtml = "";
+  (response.data.topics || []).forEach((cat) => {
+    optionsHtml += `<optgroup label="${cat.name}"><option value="${cat.id}">${cat.name}</option>`;
     cat.subtopics.forEach((sub) => {
       optionsHtml += `<option value="${sub.id}">${sub.name}</option>`;
     });
-    optionsHtml += `</optgroup>`;
+    optionsHtml += "</optgroup>";
   });
   select.innerHTML = '<option value="">Select topic</option>' + optionsHtml;
 }
-/**
- * Handle question form submission
- * @param {Event} event - Form submit event
- */
+
 async function handleQuestionSubmit(event) {
   event.preventDefault();
-
-  var questionId = document.getElementById("questionId").value;
-  var statement = document.getElementById("questionStatement").value;
-  var topicId = parseInt(document.getElementById("questionTopic").value);
-
-  var correctAnswer = document.querySelector(
+  const questionId = document.getElementById("questionId").value;
+  const statement = document.getElementById("questionStatement").value;
+  const topicId = parseInt(document.getElementById("questionTopic").value);
+  const correctAnswer = document.querySelector(
     'input[name="correctAnswer"]:checked',
   ).value;
 
-  // Create FormData object
-  var formData = new FormData();
-
-  // Append all the fields
+  const formData = new FormData();
   formData.append("statement", statement);
   formData.append("topicId", topicId);
   formData.append("correctAnswer", correctAnswer);
-  var imageInput = document.getElementById("questionImage");
-  var removeImageCheckbox = document.getElementById("removeImage");
-  // Handle image - send raw file if available
-  if (removeImageCheckbox && removeImageCheckbox.checked) {
-    // Scenario 3: User wants to REMOVE the image
+
+  const imageInput = document.getElementById("questionImage");
+  const removeImageCheckbox = document.getElementById("removeImage");
+
+  if (removeImageCheckbox?.checked) {
     formData.append("removeImage", "true");
-  } else if (imageInput && imageInput.files && imageInput.files[0]) {
-    // Scenario 2: User uploaded a NEW image
+  } else if (imageInput?.files?.[0]) {
     formData.append("image", imageInput.files[0]);
   }
 
   if (questionId) {
-    // Update existing question
     formData.append("id", questionId);
-    var options = {
-      A: {
-        id: document.getElementById("optionA").getAttribute("option-id"),
-        text: document.getElementById("optionA").value,
-      },
-      B: {
-        id: document.getElementById("optionB").getAttribute("option-id"),
-        text: document.getElementById("optionB").value,
-      },
-      C: {
-        id: document.getElementById("optionC").getAttribute("option-id"),
-        text: document.getElementById("optionC").value,
-      },
-      D: {
-        id: document.getElementById("optionD").getAttribute("option-id"),
-        text: document.getElementById("optionD").value,
-      },
-    };
-    formData.append("options", JSON.stringify(options));
-
+    formData.append(
+      "options",
+      JSON.stringify({
+        A: {
+          id: document.getElementById("optionA").getAttribute("option-id"),
+          text: document.getElementById("optionA").value,
+        },
+        B: {
+          id: document.getElementById("optionB").getAttribute("option-id"),
+          text: document.getElementById("optionB").value,
+        },
+        C: {
+          id: document.getElementById("optionC").getAttribute("option-id"),
+          text: document.getElementById("optionC").value,
+        },
+        D: {
+          id: document.getElementById("optionD").getAttribute("option-id"),
+          text: document.getElementById("optionD").value,
+        },
+      }),
+    );
     const response = await UpdateData("/question", formData, true);
     if (handleApiResponse(response)) return;
   } else {
-    // Append options as JSON string
-
-    var options = {
-      A: document.getElementById("optionA").value,
-      B: document.getElementById("optionB").value,
-      C: document.getElementById("optionC").value,
-      D: document.getElementById("optionD").value,
-    };
-
-    formData.append("options", JSON.stringify(options));
+    formData.append(
+      "options",
+      JSON.stringify({
+        A: document.getElementById("optionA").value,
+        B: document.getElementById("optionB").value,
+        C: document.getElementById("optionC").value,
+        D: document.getElementById("optionD").value,
+      }),
+    );
     const response = await PostData("/question", formData, true);
     if (handleApiResponse(response)) return;
   }
-
   loadQuestions();
   closeQuestionModal();
 }
 
-/**
- * Edit a question
- * @param {number} questionId - ID of question to edit
- */
 function editQuestion(questionId) {
   openQuestionModal(questionId);
 }
 
-/**
- * Delete a question
- * @param {number} questionId - ID of question to delete
- */
 async function deleteQuestion(questionId) {
   if (confirm("Are you sure you want to delete this question?")) {
-    const response = await DeleteData(`/question`, { id: questionId }, true);
+    const response = await DeleteData("/question", { id: questionId }, true);
     if (handleApiResponse(response)) return;
     loadQuestions();
   }
 }
 
-/**
- * Filter questions based on topic and search term
- */
 function filterQuestions() {
-  var filterTopic = document.getElementById("filterTopic").value;
-  const rows = document.querySelectorAll("tr[data-topic-id]");
-
-  rows.forEach((row) => {
-    // If id is falsy (nothing passed), show all. Otherwise, match the ID.
-    if (
+  const filterTopic = document.getElementById("filterTopic").value;
+  document.querySelectorAll("tr[data-topic-id]").forEach((row) => {
+    row.style.display =
       !filterTopic ||
       row.getAttribute("data-topic-id") === filterTopic.toString()
-    ) {
-      row.style.display = "";
-    } else {
-      row.style.display = "none";
-    }
+        ? ""
+        : "none";
   });
-
-  /*   // Usage:
-  filterRows(); // Shows everything
-
-  displayFilteredQuestions(filtered); */
 }
 
-/**
- * Search questions
- */
 function searchQuestions() {
   filterQuestions();
 }
-
-/**
- * Load topic options into select dropdowns
- */
 function loadTopicOptions() {
   populateTopicSelects();
 }
 
-// ===== USERS MANAGEMENT =====
+// ===== USERS =====
 
-/**
- * Load and display all users
- */
 async function loadUsers() {
-  var tbody = document.getElementById("usersTableBody");
+  const tbody = document.getElementById("usersTableBody");
   tbody.innerHTML = "";
   const response = await FetchData("/users", true);
-
   if (handleApiResponse(response)) return;
   users = response.data.users;
-  console.log("Response-user: ", users);
   document.getElementById("totalUsers").textContent = users.length;
 
-  users.forEach(function (user) {
+  users.forEach((user) => {
     const isDeactivated = !user.is_active || user.deleted_at !== null;
-
-    var row = document.createElement("tr");
+    const row = document.createElement("tr");
     row.innerHTML = `
       <td>${user.id}</td>
       <td>${user.email}</td>
       <td>${user.role.toUpperCase()}</td>
-      <td>
-        <span class="status-badge ${isDeactivated ? "status-inactive" : "status-active"}">
-          ${isDeactivated ? "Inactive" : "Active"}
-        </span>
-      </td>
+      <td><span class="status-badge ${isDeactivated ? "status-inactive" : "status-active"}">${isDeactivated ? "Inactive" : "Active"}</span></td>
       <td>
         <div class="table-actions">
           ${
             isDeactivated
               ? `<button class="btn-activate" data-action="activate-user" data-id="${user.id}">Activate</button>`
-              : `<button class="btn-edit" data-action="edit-user" data-id="${user.id}">Edit</button>
+              : `<button class="btn-edit"   data-action="edit-user"   data-id="${user.id}">Edit</button>
                <button class="btn-delete" data-action="delete-user" data-id="${user.id}">Delete</button>`
           }
         </div>
-      </td>
-    `;
+      </td>`;
     tbody.appendChild(row);
   });
 }
-/**
- * Open user modal for add or edit
- * @param {number|null} userId - ID of user to edit, or null for new
- */
+
 function openUserModal(userId) {
-  var modal = document.getElementById("userModal");
-  var form = document.getElementById("userForm");
-  var title = document.getElementById("userModalTitle");
-  var passwordHelp = document.getElementById("passwordHelp");
-  var passwordInput = document.getElementById("userPassword");
+  const modal = document.getElementById("userModal");
+  const form = document.getElementById("userForm");
+  const title = document.getElementById("userModalTitle");
+  const passwordHelp = document.getElementById("passwordHelp");
+  const passwordInput = document.getElementById("userPassword");
 
   form.reset();
   document.getElementById("userId").value = "";
 
   if (userId) {
-    var user = users.find(function (u) {
-      return u.id === userId;
-    });
+    const user = users.find((u) => u.id === userId);
     if (user) {
       title.textContent = "Edit User";
       document.getElementById("userId").value = user.id;
@@ -1050,52 +779,34 @@ function openUserModal(userId) {
     passwordInput.required = true;
     passwordHelp.style.display = "none";
   }
-
   modal.classList.add("active");
 }
 
-/**
- * Close user modal
- */
 function closeUserModal() {
   document.getElementById("userModal").classList.remove("active");
 }
 
-/**
- * Handle user form submission
- * @param {Event} event - Form submit event
- */
 async function handleUserSubmit(event) {
   event.preventDefault();
-
-  var userId = document.getElementById("userId").value;
-  var password = document.getElementById("userPassword").value;
-
+  const userId = document.getElementById("userId").value;
+  const password = document.getElementById("userPassword").value;
 
   if (userId) {
-    // Update existing user
-    const payload = { id: parseInt(userId),password: password };
-    console.log(payload);
-    const response = await UpdateData("/admin/reset-password", payload, true);
+    const response = await UpdateData(
+      "/admin/reset-password",
+      { id: parseInt(userId), password },
+      true,
+    );
     if (handleApiResponse(response)) return;
-  } 
-
+  }
   loadUsers();
   closeUserModal();
 }
 
-/**
- * Edit a user
- * @param {number} userId - ID of user to edit
- */
 function editUser(userId) {
   openUserModal(userId);
 }
 
-/**
- * Delete a user
- * @param {number} userId - ID of user to delete
- */
 async function deleteUser(userId) {
   alert(userId);
   if (confirm("Are you sure you want to delete this user?")) {
@@ -1121,130 +832,99 @@ async function activateUser(userId) {
     loadUsers();
   }
 }
-/**
- * Filter users based on role and search term
- */
-function filterUsers() {
-  var filterRole = document.getElementById("filterUserRole").value;
-  var searchTerm = document.getElementById("searchUser").value.toLowerCase();
 
-  var filtered = users.filter(function (u) {
-    var matchesRole = !filterRole || u.role === filterRole;
-    var matchesSearch =
+function filterUsers() {
+  const filterRole = document.getElementById("filterUserRole").value;
+  const searchTerm = document.getElementById("searchUser").value.toLowerCase();
+  const filtered = users.filter((u) => {
+    const matchesRole = !filterRole || u.role === filterRole;
+    const matchesSearch =
       !searchTerm ||
       u.name.toLowerCase().includes(searchTerm) ||
       u.email.toLowerCase().includes(searchTerm);
     return matchesRole && matchesSearch;
   });
-
   displayFilteredUsers(filtered);
 }
 
-/**
- * Search users
- */
 function searchUsers() {
   filterUsers();
 }
 
-/**
- * Display filtered users
- * @param {Array} filtered - Array of filtered users
- */
 function displayFilteredUsers(filtered) {
-  var tbody = document.getElementById("usersTableBody");
+  const tbody = document.getElementById("usersTableBody");
   tbody.innerHTML = "";
-
-  filtered.forEach(function (user) {
-    var row = document.createElement("tr");
+  filtered.forEach((user) => {
+    const row = document.createElement("tr");
     row.innerHTML = `
-            <td>${user.id}</td>
-            <td>${user.name}</td>
-            <td>${user.email}</td>
-            <td>${user.role.toUpperCase()}</td>
-            <td>${user.joined}</td>
-            <td><span class="status-badge status-${user.status}">${user.status.toUpperCase()}</span></td>
-            <td>
-                <div class="table-actions">
-                    <button class="btn-edit" data-action="edit-user" data-id="${user.id}">Edit</button>
-                    <button class="btn-delete" data-action="delete-user" data-id="${user.id}">Delete</button>
-                </div>
-            </td>
-        `;
+      <td>${user.id}</td>
+      <td>${user.name}</td>
+      <td>${user.email}</td>
+      <td>${user.role.toUpperCase()}</td>
+      <td>${user.joined}</td>
+      <td><span class="status-badge status-${user.status}">${user.status.toUpperCase()}</span></td>
+      <td>
+        <div class="table-actions">
+          <button class="btn-edit"   data-action="edit-user"   data-id="${user.id}">Edit</button>
+          <button class="btn-delete" data-action="delete-user" data-id="${user.id}">Delete</button>
+        </div>
+      </td>`;
     tbody.appendChild(row);
   });
 }
 
-// ===== EXAMS MANAGEMENT =====
+// ===== EXAMS =====
 
-/**
- * Load and display all exams
- */
 async function loadExams() {
-  var examsList = document.getElementById("examsList");
+  const examsList = document.getElementById("examsList");
   examsList.innerHTML = "";
-
   const response = await FetchData("/quizzes", true);
   if (handleApiResponse(response)) return;
   const exams = response.data.quizzes;
-  if (exams.length === 0) {
+
+  if (!exams.length) {
     examsList.innerHTML =
-      '<p style="text-align: center; color: var(--gray); padding: 40px;">No exams created yet. Click "Add New Exam" to get started.</p>';
+      '<p style="text-align:center;color:var(--gray);padding:40px;">No exams created yet. Click "Add New Exam" to get started.</p>';
     return;
   }
-  exams.forEach(function (exam) {
-    var examCard = document.createElement("div");
+
+  exams.forEach((exam) => {
+    const examCard = document.createElement("div");
     examCard.className = "exam-card";
     examCard.innerHTML = `
-            <div class="exam-card-header">
-                <div>
-                    <h3>${exam.title}</h3>
-                    <p>${exam.description || "No description provided"}</p>
-                </div>
-                <div class="exam-actions">
-                    <button class="btn-edit" data-action="edit-exam" data-id="${exam.quiz_id}">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="btn-delete" data-action="delete-exam" data-id="${exam.quiz_id}">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
-                </div>
-            </div>
-            <div class="exam-meta">
-                <div class="exam-meta-item">
-                    <i class="fas fa-question-circle"></i>
-                    <span><strong>${exam.question_count}</strong> Questions</span>
-                </div>
-                <div class="exam-meta-item">
-                    <i class="fas fa-calendar"></i>
-                    <span>Created: ${exam.publish_date}</span>
-                </div>
-            </div>
-        `;
+      <div class="exam-card-header">
+        <div>
+          <h3>${exam.title}</h3>
+          <p>${exam.description || "No description provided"}</p>
+        </div>
+        <div class="exam-actions">
+          <button class="btn-edit"   data-action="edit-exam"   data-id="${exam.quiz_id}"><i class="fas fa-edit"></i> Edit</button>
+          <button class="btn-delete" data-action="delete-exam" data-id="${exam.quiz_id}"><i class="fas fa-trash"></i> Delete</button>
+        </div>
+      </div>
+      <div class="exam-meta">
+        <div class="exam-meta-item"><i class="fas fa-question-circle"></i><span><strong>${exam.question_count}</strong> Questions</span></div>
+        <div class="exam-meta-item"><i class="fas fa-calendar"></i><span>Created: ${exam.publish_date}</span></div>
+      </div>`;
     examsList.appendChild(examCard);
   });
 }
 
-/**
- * Open exam modal for add or edit
- * @param {number|null} examId - ID of exam to edit, or null for new
- */
 async function openExamModal(examId) {
-  var modal = document.getElementById("examModal");
-  var form = document.getElementById("examForm");
-  var title = document.getElementById("examModalTitle");
+  const modal = document.getElementById("examModal");
+  const form = document.getElementById("examForm");
+  const title = document.getElementById("examModalTitle");
 
   form.reset();
   document.getElementById("examId").value = "";
   selectedQuestionIds = [];
 
-  // Load topic filter options
-  var topicFilter = document.getElementById("examQuestionTopicFilter");
+  const topicFilter = document.getElementById("examQuestionTopicFilter");
   topicFilter.innerHTML = '<option value="">All Topics</option>';
   populateTopicSelects_2(topicFilter);
 
   if (examId) {
-    const response = await FetchData(`/quiz-admin/${examId}`);
+    const response = await FetchData(`/quiz-admin/${examId}`, true);
     if (handleApiResponse(response)) return;
     const exam = response.data;
     if (exam) {
@@ -1257,193 +937,115 @@ async function openExamModal(examId) {
   } else {
     title.textContent = "Add New Exam";
   }
-
   loadAvailableQuestions();
   updateSelectedQuestionsDisplay();
   modal.classList.add("active");
 }
 
-/**
- * Close exam modal
- */
 function closeExamModal() {
   document.getElementById("examModal").classList.remove("active");
   selectedQuestionIds = [];
 }
 
-/**
- * Load available questions for exam selection
- */
 async function loadAvailableQuestions() {
-  var container = document.getElementById("availableQuestions");
-  var topicFilter = document.getElementById("examQuestionTopicFilter").value;
-  var searchTerm = document
-    .getElementById("examQuestionSearch")
-    .value.toLowerCase();
+  const container = document.getElementById("availableQuestions");
   const response = await FetchData("/questions", true);
   if (handleApiResponse(response)) return;
   questions = response.data.questions;
-  // var filtered = questions.filter(function (q) {
-  //   var matchesTopic = !topicFilter || q.topic === topicFilter;
-  //   var matchesSearch =
-  //     !searchTerm || q.statement.toLowerCase().includes(searchTerm);
-  //   return matchesTopic && matchesSearch;
-  // });
-
-  // if (filtered.length === 0) {
-  //   container.innerHTML =
-  //     '<p style="text-align: center; color: var(--gray); padding: 20px;">No questions found.</p>';
-  //   return;
-  // }
 
   container.innerHTML = "";
-  questions.forEach(function (question) {
-    console.log(question);
-    var isSelected = selectedQuestionIds.indexOf(question.question_id) > -1;
-    var item = document.createElement("div");
+  questions.forEach((question) => {
+    const isSelected = selectedQuestionIds.indexOf(question.question_id) > -1;
+    const item = document.createElement("div");
     item.className = "question-checkbox-item";
     item.innerHTML = `
-            <input type="checkbox" 
-                   id="q-${question.question_id}" 
-                   ${isSelected ? "checked" : ""}
-                   data-question-id="${question.question_id}">
-            <div class="question-checkbox-content">
-                <strong>${question.content}</strong>
-            </div>
-        `;
+      <input type="checkbox" id="q-${question.question_id}" ${isSelected ? "checked" : ""} data-question-id="${question.question_id}">
+      <div class="question-checkbox-content"><strong>${question.content}</strong></div>`;
     container.appendChild(item);
   });
 }
 
-/**
- * Filter available questions for exam
- */
 function filterAvailableQuestions() {
   loadAvailableQuestions();
 }
 
-/**
- * Toggle question selection for exam
- * @param {number} questionId - ID of question to toggle
- */
 function toggleQuestionSelection(questionId) {
-  var index = selectedQuestionIds.indexOf(questionId);
-  if (index > -1) {
-    selectedQuestionIds.splice(index, 1);
-  } else {
-    selectedQuestionIds.push(questionId);
-  }
+  const index = selectedQuestionIds.indexOf(questionId);
+  if (index > -1) selectedQuestionIds.splice(index, 1);
+  else selectedQuestionIds.push(questionId);
   updateSelectedQuestionsDisplay();
 }
 
-/**
- * Update selected questions display
- */
 function updateSelectedQuestionsDisplay() {
-  console.log(selectedQuestionIds);
-  var container = document.getElementById("selectedQuestions");
-  var countSpan = document.getElementById("selectedCount");
-
+  const container = document.getElementById("selectedQuestions");
+  const countSpan = document.getElementById("selectedCount");
   countSpan.textContent = selectedQuestionIds.length;
 
-  if (selectedQuestionIds.length === 0) {
+  if (!selectedQuestionIds.length) {
     container.innerHTML =
       '<p class="no-selection">No questions selected yet</p>';
     return;
   }
-
   container.innerHTML = "";
-  selectedQuestionIds.forEach(function (questionId) {
-    var question = questions.find(function (q) {
-      return q.question_id === questionId;
-    });
+  selectedQuestionIds.forEach((questionId) => {
+    const question = questions.find((q) => q.question_id === questionId);
     if (question) {
-      var item = document.createElement("div");
+      const item = document.createElement("div");
       item.className = "selected-question-item";
       item.innerHTML = `
-                <span>${question.content.substring(0, 60)}${question.content.length > 60 ? "..." : ""}</span>
-                <button type="button" data-action="remove-selected-question" data-id="${questionId}">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
+        <span>${question.content.substring(0, 60)}${question.content.length > 60 ? "..." : ""}</span>
+        <button type="button" data-action="remove-selected-question" data-id="${questionId}"><i class="fas fa-times"></i></button>`;
       container.appendChild(item);
     }
   });
 }
 
-/**
- * Remove question from exam selection
- * @param {number} questionId - ID of question to remove
- */
 function removeQuestionFromSelection(questionId) {
-  var index = selectedQuestionIds.indexOf(questionId);
-  if (index > -1) {
-    selectedQuestionIds.splice(index, 1);
-  }
-
-  // Update checkbox
-  var checkbox = document.getElementById("q-" + questionId);
-  if (checkbox) {
-    checkbox.checked = false;
-  }
-
+  const index = selectedQuestionIds.indexOf(questionId);
+  if (index > -1) selectedQuestionIds.splice(index, 1);
+  const checkbox = document.getElementById("q-" + questionId);
+  if (checkbox) checkbox.checked = false;
   updateSelectedQuestionsDisplay();
 }
 
-/**
- * Handle exam form submission
- * @param {Event} event - Form submit event
- */
 async function handleExamSubmit(event) {
   event.preventDefault();
-
-  if (selectedQuestionIds.length === 0) {
+  if (!selectedQuestionIds.length) {
     alert("Please select at least one question for the exam.");
     return;
   }
-
-  var examId = document.getElementById("examId").value;
-  var name = document.getElementById("examName").value;
-  var description = document.getElementById("examDescription").value;
+  const examId = document.getElementById("examId").value;
+  const name = document.getElementById("examName").value;
+  const description = document.getElementById("examDescription").value;
 
   if (examId) {
-    // Update existing exam
-    const payload = {
-      quiz_id: examId,
-      title: name,
-      description: description,
-      questions: selectedQuestionIds.slice(),
-    };
-    const response = await UpdateData("/quiz", payload, true);
+    const response = await UpdateData(
+      "/quiz",
+      {
+        quiz_id: examId,
+        title: name,
+        description,
+        questions: selectedQuestionIds.slice(),
+      },
+      true,
+    );
     if (handleApiResponse(response)) return;
   } else {
-    // Create new exam
-    var payload = {
-      title: name,
-      description: description,
-      questions: selectedQuestionIds.slice(),
-    };
-
-    const response = await PostData("/quiz", payload, true);
+    const response = await PostData(
+      "/quiz",
+      { title: name, description, questions: selectedQuestionIds.slice() },
+      true,
+    );
     if (handleApiResponse(response)) return;
   }
-
   loadExams();
   closeExamModal();
 }
 
-/**
- * Edit an exam
- * @param {number} examId - ID of exam to edit
- */
 function editExam(examId) {
   openExamModal(examId);
 }
 
-/**
- * Delete an exam
- * @param {number} examId - ID of exam to delete
- */
 async function deleteExam(examId) {
   if (confirm("Are you sure you want to delete this exam?")) {
     const response = await DeleteData("/quiz", { id: examId }, true);
@@ -1454,13 +1056,7 @@ async function deleteExam(examId) {
 
 // ===== EVENT LISTENERS =====
 
-/**
- * Setup all event listeners when DOM is loaded
- */
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("Admin Dashboard loaded successfully");
-
-  // Initialize all sections
   initializeCharts();
   loadTopics();
   loadQuestions();
@@ -1468,233 +1064,126 @@ document.addEventListener("DOMContentLoaded", function () {
   loadExams();
   loadTopicOptions();
 
-  // ===== Logout Event Listener =====
-  document
-    .getElementById("btn-logout")
-    .addEventListener("click", async function () {
-      var response = await FetchData("/logout", true);
-      if (handleApiResponse(response)) return;
-      if (response.success) {
-        localStorage.removeItem("token");
-        alert("Succeessfull Logout");
-        window.location.href = "../auth/login.html";
-      } else {
-        alert("logout failed");
-      }
-    });
+  document.getElementById("btn-logout").addEventListener("click", async () => {
+    const response = await FetchData("/logout", true);
+    if (handleApiResponse(response)) return;
+    if (response.success) {
+      localStorage.removeItem("token");
+      alert("Successful Logout");
+      window.location.href = "../auth/login.html";
+    } else {
+      alert("Logout failed");
+    }
+  });
 
-  // ===== Navigation Event Listeners =====
+  const sidebarToggle = document.getElementById("sidebar-toggle");
+  if (sidebarToggle) sidebarToggle.addEventListener("click", toggleSidebar);
 
-  // Sidebar toggle button
-  var sidebarToggle = document.getElementById("sidebar-toggle");
-  if (sidebarToggle) {
-    sidebarToggle.addEventListener("click", toggleSidebar);
-  }
-
-  // Mobile menu toggle button
-  var mobileMenuToggle = document.getElementById("mobile-menu-toggle");
-  if (mobileMenuToggle) {
+  const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+  if (mobileMenuToggle)
     mobileMenuToggle.addEventListener("click", toggleMobileMenu);
-  }
 
-  // Sidebar overlay click
-  var sidebarOverlay = document.getElementById("sidebar-overlay");
-  if (sidebarOverlay) {
-    sidebarOverlay.addEventListener("click", closeSidebar);
-  }
+  const sidebarOverlay = document.getElementById("sidebar-overlay");
+  if (sidebarOverlay) sidebarOverlay.addEventListener("click", closeSidebar);
 
-  // Header navigation links
-  var headerLinks = document.querySelectorAll(".links a[data-section]");
-  headerLinks.forEach(function (link) {
-    link.addEventListener("click", function (e) {
+  document.querySelectorAll(".links a[data-section]").forEach((link) => {
+    link.addEventListener("click", (e) => {
       e.preventDefault();
-      var section = this.getAttribute("data-section");
-      showSection(section);
+      showSection(link.getAttribute("data-section"));
     });
   });
 
-  // Sidebar navigation buttons
-  var navItems = document.querySelectorAll(".nav-item[data-section]");
-  navItems.forEach(function (item) {
-    item.addEventListener("click", function () {
-      var section = this.getAttribute("data-section");
-      showSection(section);
-    });
+  document.querySelectorAll(".nav-item[data-section]").forEach((item) => {
+    item.addEventListener("click", () =>
+      showSection(item.getAttribute("data-section")),
+    );
   });
 
-  // ===== Add New Item Button Event Listeners =====
+  const btnAddTopic = document.getElementById("btn-add-topic");
+  if (btnAddTopic)
+    btnAddTopic.addEventListener("click", () => openTopicModal(null));
+  const btnAddQuestion = document.getElementById("btn-add-question");
+  if (btnAddQuestion)
+    btnAddQuestion.addEventListener("click", () => openQuestionModal(null));
+  const btnAddUser = document.getElementById("btn-add-user");
+  if (btnAddUser)
+    btnAddUser.addEventListener("click", () => openUserModal(null));
+  const btnAddExam = document.getElementById("btn-add-exam");
+  if (btnAddExam)
+    btnAddExam.addEventListener("click", () => openExamModal(null));
 
-  // Add Topic
-  var btnAddTopic = document.getElementById("btn-add-topic");
-  if (btnAddTopic) {
-    btnAddTopic.addEventListener("click", function () {
-      openTopicModal(null);
-    });
-  }
-
-  // Add Question
-  var btnAddQuestion = document.getElementById("btn-add-question");
-  if (btnAddQuestion) {
-    btnAddQuestion.addEventListener("click", function () {
-      openQuestionModal(null);
-    });
-  }
-
-  // Add User
-  var btnAddUser = document.getElementById("btn-add-user");
-  if (btnAddUser) {
-    btnAddUser.addEventListener("click", function () {
-      openUserModal(null);
-    });
-  }
-
-  // Add Exam
-  var btnAddExam = document.getElementById("btn-add-exam");
-  if (btnAddExam) {
-    btnAddExam.addEventListener("click", function () {
-      openExamModal(null);
-    });
-  }
-
-  // Add Subtopic Field
-  var btnAddSubtopicField = document.getElementById("btn-add-subtopic-field");
-  if (btnAddSubtopicField) {
+  const btnAddSubtopicField = document.getElementById("btn-add-subtopic-field");
+  if (btnAddSubtopicField)
     btnAddSubtopicField.addEventListener("click", addSubtopicField);
-  }
 
-  // ===== Form Submit Event Listeners =====
-
-  // Topic Form
-  var topicForm = document.getElementById("topicForm");
-  if (topicForm) {
-    topicForm.addEventListener("submit", handleTopicSubmit);
-  }
-
-  // Question Form
-  var questionForm = document.getElementById("questionForm");
-  if (questionForm) {
+  const topicForm = document.getElementById("topicForm");
+  if (topicForm) topicForm.addEventListener("submit", handleTopicSubmit);
+  const questionForm = document.getElementById("questionForm");
+  if (questionForm)
     questionForm.addEventListener("submit", handleQuestionSubmit);
-  }
-
-  // User Form
-  var userForm = document.getElementById("userForm");
-  if (userForm) {
-    userForm.addEventListener("submit", handleUserSubmit);
-  }
-
-  // Subtopic Form
-  var subtopicForm = document.getElementById("subtopicForm");
-  if (subtopicForm) {
+  const userForm = document.getElementById("userForm");
+  if (userForm) userForm.addEventListener("submit", handleUserSubmit);
+  const subtopicForm = document.getElementById("subtopicForm");
+  if (subtopicForm)
     subtopicForm.addEventListener("submit", async (e) => {
       await handleSubtopicSubmit(e);
     });
-  }
+  const examForm = document.getElementById("examForm");
+  if (examForm) examForm.addEventListener("submit", handleExamSubmit);
 
-  // Exam Form
-  var examForm = document.getElementById("examForm");
-  if (examForm) {
-    examForm.addEventListener("submit", handleExamSubmit);
-  }
+  const filterTopic = document.getElementById("filterTopic");
+  if (filterTopic) filterTopic.addEventListener("change", filterQuestions);
 
-  // ===== Filter and Search Event Listeners =====
-
-  // Filter Questions by Topic
-  var filterTopic = document.getElementById("filterTopic");
-  if (filterTopic) {
-    filterTopic.addEventListener("change", filterQuestions);
-  }
-
-  // Search Questions
-  var searchQuestion = document.getElementById("searchQuestion");
+  const searchQuestion = document.getElementById("searchQuestion");
   if (searchQuestion) {
-    // searchQuestion.addEventListener("keyup", searchQuestions);
-    // Add this event listener
-    document
-      .getElementById("searchQuestion")
-      .addEventListener("input", function (e) {
-        var searchText = e.target.value.toLowerCase().trim();
-        var tableRows = document.querySelectorAll("#questionsTable tbody tr");
-
-        tableRows.forEach(function (row) {
-          var questionText = row.querySelector(".question-text");
-
-          if (questionText) {
-            var content = questionText.textContent.toLowerCase();
-
-            if (content.includes(searchText)) {
-              row.style.display = ""; // Show the row
-            } else {
-              row.style.display = "none"; // Hide the row
-            }
-          }
-        });
+    searchQuestion.addEventListener("input", (e) => {
+      const searchText = e.target.value.toLowerCase().trim();
+      document.querySelectorAll("#questionsTable tbody tr").forEach((row) => {
+        const qt = row.querySelector(".question-text");
+        if (qt)
+          row.style.display = qt.textContent.toLowerCase().includes(searchText)
+            ? ""
+            : "none";
       });
+    });
   }
 
-  // Filter Users by Role
-  var filterUserRole = document.getElementById("filterUserRole");
-  if (filterUserRole) {
-    filterUserRole.addEventListener("change", filterUsers);
-  }
+  const filterUserRole = document.getElementById("filterUserRole");
+  if (filterUserRole) filterUserRole.addEventListener("change", filterUsers);
+  const searchUser = document.getElementById("searchUser");
+  if (searchUser) searchUser.addEventListener("keyup", searchUsers);
 
-  // Search Users
-  var searchUser = document.getElementById("searchUser");
-  if (searchUser) {
-    searchUser.addEventListener("keyup", searchUsers);
-  }
-
-  // Filter Exam Questions by Topic
-  var examQuestionTopicFilter = document.getElementById(
+  const examQuestionTopicFilter = document.getElementById(
     "examQuestionTopicFilter",
   );
-  if (examQuestionTopicFilter) {
+  if (examQuestionTopicFilter)
     examQuestionTopicFilter.addEventListener(
       "change",
       filterAvailableQuestions,
     );
-  }
-
-  // Search Exam Questions
-  var examQuestionSearch = document.getElementById("examQuestionSearch");
-  if (examQuestionSearch) {
+  const examQuestionSearch = document.getElementById("examQuestionSearch");
+  if (examQuestionSearch)
     examQuestionSearch.addEventListener("keyup", filterAvailableQuestions);
-  }
 
-  // ===== File Input Event Listener =====
+  const questionImage = document.getElementById("questionImage");
+  if (questionImage) questionImage.addEventListener("change", previewImage);
 
-  // Question Image Preview
-  var questionImage = document.getElementById("questionImage");
-  if (questionImage) {
-    questionImage.addEventListener("change", previewImage);
-  }
-
-  // ===== Modal Close Button Event Listeners =====
-
-  // Close buttons with data-modal attribute
-  var modalCloseButtons = document.querySelectorAll("[data-modal]");
-  modalCloseButtons.forEach(function (button) {
-    button.addEventListener("click", function () {
-      var modalId = this.getAttribute("data-modal");
-      var modal = document.getElementById(modalId);
-      if (modal) {
-        modal.classList.remove("active");
-      }
+  document.querySelectorAll("[data-modal]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const modal = document.getElementById(button.getAttribute("data-modal"));
+      if (modal) modal.classList.remove("active");
     });
   });
 
-  // ===== Dynamic Action Button Event Listeners (Event Delegation) =====
-
-  // Topics List Actions
-  var topicsList = document.getElementById("topicsList");
+  // Delegated: Topics list
+  const topicsList = document.getElementById("topicsList");
   if (topicsList) {
-    topicsList.addEventListener("click", function (e) {
-      var target = e.target.closest("[data-action]");
+    topicsList.addEventListener("click", (e) => {
+      const target = e.target.closest("[data-action]");
       if (!target) return;
-
-      var action = target.getAttribute("data-action");
-      var id = parseInt(target.getAttribute("data-id"));
-      var topicId = parseInt(target.getAttribute("data-topic-id"));
-
+      const action = target.getAttribute("data-action");
+      const id = parseInt(target.getAttribute("data-id"));
+      const topicId = parseInt(target.getAttribute("data-topic-id"));
       switch (action) {
         case "edit-topic":
           editTopic(id);
@@ -1715,17 +1204,14 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Subtopics List Actions (inside modal)
-  var subtopicsList = document.getElementById("subtopicsList");
+  // Delegated: Subtopics list (inline remove)
+  const subtopicsList = document.getElementById("subtopicsList");
   if (subtopicsList) {
-    subtopicsList.addEventListener("click", function (e) {
-      var target = e.target.closest("[data-action]");
+    subtopicsList.addEventListener("click", (e) => {
+      const target = e.target.closest("[data-action]");
       if (!target) return;
-
-      var action = target.getAttribute("data-action");
-
-      if (action === "remove-subtopic-field") {
-        var subtopicId = target.getAttribute("data-id")
+      if (target.getAttribute("data-action") === "remove-subtopic-field") {
+        const subtopicId = target.getAttribute("data-id")
           ? parseInt(target.getAttribute("data-id"))
           : null;
         removeSubtopicField(target, subtopicId);
@@ -1733,17 +1219,14 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Questions Table Actions
-  var questionsTableBody = document.getElementById("questionsTableBody");
+  // Delegated: Questions table
+  const questionsTableBody = document.getElementById("questionsTableBody");
   if (questionsTableBody) {
-    questionsTableBody.addEventListener("click", function (e) {
-      var target = e.target.closest("[data-action]");
+    questionsTableBody.addEventListener("click", (e) => {
+      const target = e.target.closest("[data-action]");
       if (!target) return;
-
-      var action = target.getAttribute("data-action");
-      var id = parseInt(target.getAttribute("data-id"));
-
-      switch (action) {
+      const id = parseInt(target.getAttribute("data-id"));
+      switch (target.getAttribute("data-action")) {
         case "edit-question":
           editQuestion(id);
           break;
@@ -1754,41 +1237,35 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Users Table Actions
-  var usersTableBody = document.getElementById("usersTableBody");
+  // Delegated: Users table
+  const usersTableBody = document.getElementById("usersTableBody");
   if (usersTableBody) {
-    usersTableBody.addEventListener("click", function (e) {
-      var target = e.target.closest("[data-action]");
+    usersTableBody.addEventListener("click", (e) => {
+      const target = e.target.closest("[data-action]");
       if (!target) return;
-
-      var action = target.getAttribute("data-action");
-      var id = parseInt(target.getAttribute("data-id"));
-
-      switch (action) {
+      const id = parseInt(target.getAttribute("data-id"));
+      switch (target.getAttribute("data-action")) {
         case "edit-user":
           editUser(id);
           break;
         case "delete-user":
           deleteUser(id);
           break;
-        case "activate-user": 
+        case "activate-user":
           activateUser(id);
           break;
       }
     });
   }
 
-  // Exams List Actions
-  var examsList = document.getElementById("examsList");
+  // Delegated: Exams list
+  const examsList = document.getElementById("examsList");
   if (examsList) {
-    examsList.addEventListener("click", function (e) {
-      var target = e.target.closest("[data-action]");
+    examsList.addEventListener("click", (e) => {
+      const target = e.target.closest("[data-action]");
       if (!target) return;
-
-      var action = target.getAttribute("data-action");
-      var id = parseInt(target.getAttribute("data-id"));
-
-      switch (action) {
+      const id = parseInt(target.getAttribute("data-id"));
+      switch (target.getAttribute("data-action")) {
         case "edit-exam":
           editExam(id);
           break;
@@ -1799,55 +1276,47 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Available Questions Checkboxes
-  var availableQuestions = document.getElementById("availableQuestions");
+  // Delegated: Available questions (checkbox)
+  const availableQuestions = document.getElementById("availableQuestions");
   if (availableQuestions) {
-    availableQuestions.addEventListener("change", function (e) {
+    availableQuestions.addEventListener("change", (e) => {
       if (
         e.target.type === "checkbox" &&
         e.target.hasAttribute("data-question-id")
       ) {
-        var questionId = parseInt(e.target.getAttribute("data-question-id"));
-        toggleQuestionSelection(questionId);
+        toggleQuestionSelection(
+          parseInt(e.target.getAttribute("data-question-id")),
+        );
       }
     });
   }
 
-  // Selected Questions Actions
-  var selectedQuestions = document.getElementById("selectedQuestions");
+  // Delegated: Selected questions (remove)
+  const selectedQuestions = document.getElementById("selectedQuestions");
   if (selectedQuestions) {
-    selectedQuestions.addEventListener("click", function (e) {
-      var target = e.target.closest("[data-action]");
+    selectedQuestions.addEventListener("click", (e) => {
+      const target = e.target.closest("[data-action]");
       if (!target) return;
-
-      var action = target.getAttribute("data-action");
-
-      if (action === "remove-selected-question") {
-        var id = parseInt(target.getAttribute("data-id"));
-        removeQuestionFromSelection(id);
+      if (target.getAttribute("data-action") === "remove-selected-question") {
+        removeQuestionFromSelection(parseInt(target.getAttribute("data-id")));
       }
     });
   }
 
-  // ===== Close Mobile Menu on Outside Click =====
-  document.addEventListener("click", function (e) {
-    var links = document.querySelector(".links");
-    var toggle = document.querySelector(".mobile-menu-toggle");
-
+  // Close mobile menu on outside click
+  document.addEventListener("click", (e) => {
+    const links = document.querySelector(".links");
+    const toggle = document.querySelector(".mobile-menu-toggle");
     if (window.innerWidth <= 768 && links.style.display === "flex") {
-      if (!links.contains(e.target) && !toggle.contains(e.target)) {
+      if (!links.contains(e.target) && !toggle.contains(e.target))
         links.style.display = "none";
-      }
     }
   });
 
-  // ===== Close Modals on Outside Click =====
-  var modals = document.querySelectorAll(".modal");
-  modals.forEach(function (modal) {
-    modal.addEventListener("click", function (e) {
-      if (e.target === modal) {
-        modal.classList.remove("active");
-      }
+  // Close modals on backdrop click
+  document.querySelectorAll(".modal").forEach((modal) => {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.classList.remove("active");
     });
   });
 });

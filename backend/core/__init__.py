@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -8,9 +9,10 @@ from core.config import Config
 abstract_app = Flask(__name__)
 
 abstract_app.config.from_object(Config)
-abstract_app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
+abstract_app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-CORS(abstract_app, supports_credentials=True, origins=["http://localhost:3000"])
+allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+CORS(abstract_app, supports_credentials=True, origins=allowed_origins)
 
 db = SQLAlchemy(abstract_app)
 migrate = Migrate(abstract_app, db)
@@ -25,4 +27,4 @@ def check_if_token_revoked(jwt_header, jwt_payload):
 
 from core.routes import register_blueprints
 
-register_blueprints(abstract_app)  # ← was `app`, should be `abstract_app`
+register_blueprints(abstract_app)

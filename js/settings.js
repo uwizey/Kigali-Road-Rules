@@ -1,7 +1,7 @@
 // ── Swap stubs for your real API calls ────────────────────────────────────
 import { UpdateData } from "./api/crud.js";
-// const apiUpdateEmail    = p => UpdateData("/user/email",    p, true);
-// const apiUpdatePassword = p => UpdateData("/user/password", p, true);
+const apiUpdateEmail    = p => UpdateData("/user/email",    p, true);
+const apiUpdatePassword = p => UpdateData("/user/password", p, true);
 
 async function apiUpdateEmail(payload) {
     console.log("Updating email with payload:", payload);

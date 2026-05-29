@@ -1,114 +1,13 @@
-// ── Data Store ────────────────────────────────
-
 import { FetchData, UpdateData, DeleteData, PostData } from "../js/api/crud.js";
 
-let plans = [
-  {
-    plan_id: 1,
-    name: "Basic",
-    price: 3000,
-    duration: 30,
-    quizzes: 20,
-    templates: 5,
-    topic_quizzes: 10,
-    description: "Starter plan for beginners",
-  },
-  {
-    plan_id: 2,
-    name: "Pro",
-    price: 8000,
-    duration: 30,
-    quizzes: 80,
-    templates: 20,
-    topic_quizzes: 40,
-    description: "Full access for serious learners",
-  },
-  {
-    plan_id: 3,
-    name: "Elite",
-    price: 15000,
-    duration: 90,
-    quizzes: 300,
-    templates: 60,
-    topic_quizzes: 120,
-    description: "Best value for power users",
-  },
-];
-let requests = [
-  {
-    request_id: 1,
-    user_id: 101,
-    user_email: "alice@example.com",
-    plan_id: 1,
-    plan_name: "Basic",
-    subscription_requested: true,
-    request_date: "2025-03-01",
-    status: "pending",
-  },
-  {
-    request_id: 2,
-    user_id: 102,
-    user_email: "bob@example.com",
-    plan_id: 2,
-    plan_name: "Pro",
-    subscription_requested: true,
-    request_date: "2025-03-03",
-    status: "pending",
-  },
-  {
-    request_id: 3,
-    user_id: 103,
-    user_email: "carol@example.com",
-    plan_id: 3,
-    plan_name: "Elite",
-    subscription_requested: true,
-    request_date: "2025-03-05",
-    status: "approved",
-  },
-];
-let subscriptions = [
-  {
-    sub_id: 1,
-    user_id: 103,
-    user_email: "carol@example.com",
-    plan_id: 3,
-    plan_name: "Elite",
-    start_date: "2025-03-06",
-    expiry_date: "2025-06-06",
-    active: true,
-    remaining_quizzes: 280,
-    remaining_template_exams: 58,
-    remaining_topic_quizzes: 115,
-  },
-  {
-    sub_id: 2,
-    user_id: 104,
-    user_email: "dan@example.com",
-    plan_id: 1,
-    plan_name: "Basic",
-    start_date: "2025-02-01",
-    expiry_date: "2025-03-01",
-    active: false,
-    remaining_quizzes: 0,
-    remaining_template_exams: 0,
-    remaining_topic_quizzes: 0,
-  },
-];
-let users = [
-  { user_id: 101, email: "alice@example.com" },
-  { user_id: 102, email: "bob@example.com" },
-  { user_id: 103, email: "carol@example.com" },
-  { user_id: 104, email: "dan@example.com" },
-];
-let nextPlanId = 4,
-  nextSubId = 3;
-
 // ── Helpers ───────────────────────────────────
+
 const $ = (id) => document.getElementById(id);
 
 function openModal(id) {
   $(id).classList.add("open");
 }
+
 function closeModal(id) {
   $(id).classList.remove("open");
 }
@@ -122,64 +21,9 @@ function notify(msg) {
   notifTimer = setTimeout(() => el.classList.remove("show"), 2800);
 }
 
-// ── Render ────────────────────────────────────
-function renderAll() {
-  renderStats();
-  renderPlans();
-  renderRequests();
-  renderSubs();
-  renderUsers();
-}
-
-function renderStats() {
-  $("stat-plans").textContent = plans.length;
-  $("stat-requests").textContent = requests.filter(
-    (r) => r.status === "pending",
-  ).length;
-  $("stat-active").textContent = subscriptions.filter((s) => s.active).length;
-  $("stat-users").textContent = users.length;
-}
-
-async function renderPlans() {
-  const tbody = $("plans-tbody");
-  const response = await FetchData("/allplans", true);
-  console.log(response);
-  if (response.success == false) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty">${response.error.message}.</td></tr>`;
-    return;
-  }
-  const plans = response.data.plans;
-  if (!plans.length) {
-    tbody.innerHTML =
-      '<tr><td colspan="8" class="empty">No plans yet.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = plans
-    .map(
-      (p) => `
-    <tr>
-      <td class="mono">#${p.id}</td>
-      <td><strong>${p.plan_name}</strong></td>
-      <td class="mono">${p.price.toLocaleString()} RWF</td>
-      <td class="mono">${p.duration_days}d</td>
-      <td class="mono">${p.no_quizzes}</td>
-      <td class="mono">${p.no_template_exams}</td>
-      <td class="mono">${p.no_topic_quizzes}</td>
-      <td>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-secondary btn-sm btn-icon" data-action="edit-plan" data-id="${p.id}">✏️</button>
-          <button class="btn btn-danger btn-sm btn-icon"    data-action="delete-plan" data-id="${p.id}">🗑</button>
-        </div>
-      </td>
-    </tr>`,
-    )
-    .join("");
-}
 function timeFormat(isoString) {
   const date = new Date(isoString);
-
-  // Example: "March 28, 2026, 9:27 AM"
-  const normalFormat = date.toLocaleString("en-US", {
+  return date.toLocaleString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -188,39 +32,128 @@ function timeFormat(isoString) {
     second: "2-digit",
     hour12: true,
   });
-  return normalFormat;
 }
+
+function filterTable(tbodyId, query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll(`#${tbodyId} tr`).forEach((row) => {
+    const text = (row.dataset.search || row.textContent).toLowerCase();
+    row.style.display = text.includes(q) ? "" : "none";
+  });
+}
+
+// ── Render ────────────────────────────────────
+
+async function renderAll() {
+  await Promise.all([
+    renderRequests(),
+    renderSubs(),
+    renderUsers(),
+    renderPlans(),
+    renderStats(),
+  ]);
+}
+
+async function renderStats() {
+  // Fetch all three counts in parallel
+  const [plansRes, requestsRes, subsRes, usersRes] = await Promise.all([
+    FetchData("/allplans", true),
+    FetchData("/allrequests", true),
+    FetchData("/all-subscriptions", true),
+    FetchData("/users-subscriptions", true),
+  ]);
+
+  $("stat-plans").textContent = plansRes.success
+    ? plansRes.data.plans.length
+    : "—";
+
+  $("stat-requests").textContent = requestsRes.success
+    ? requestsRes.data.requests.filter((r) => r.status === "pending").length
+    : "—";
+
+  $("stat-active").textContent = subsRes.success
+    ? subsRes.data.subscriptions.filter((s) => s.active).length
+    : "—";
+
+  $("stat-users").textContent = usersRes.success
+    ? usersRes.data.users.length
+    : "—";
+}
+
+async function renderPlans() {
+  const tbody = $("plans-tbody");
+  const response = await FetchData("/allplans", true);
+
+  if (!response.success) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><i class="fa-solid fa-box-open"></i>${response.error?.message ?? "Failed to load plans."}</div></td></tr>`;
+    return;
+  }
+
+  const plans = response.data.plans;
+
+  if (!plans.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><i class="fa-solid fa-box-open"></i>No plans yet. Click "New Plan" to create one.</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = plans
+    .map(
+      (p) => `
+      <tr>
+        <td class="mono">#${p.id}</td>
+        <td><strong>${p.plan_name}</strong></td>
+        <td class="mono">${p.price.toLocaleString()} RWF</td>
+        <td class="mono">${p.duration_days}d</td>
+        <td class="mono">${p.no_quizzes}</td>
+        <td class="mono">${p.no_template_exams}</td>
+        <td class="mono">${p.no_topic_quizzes}</td>
+        <td style="text-align:right">
+          <div class="row-actions">
+            <button class="btn btn-secondary btn-icon" title="Edit" data-action="edit-plan" data-id="${p.id}"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn btn-danger btn-icon" title="Delete" data-action="delete-plan" data-id="${p.id}"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </td>
+      </tr>`,
+    )
+    .join("");
+}
+
 async function renderRequests() {
   const tbody = $("requests-tbody");
   const response = await FetchData("/allrequests", true);
-  console.log(response);
-  const requests = response.data.requests;
-  if (!requests.length) {
-    tbody.innerHTML =
-      '<tr><td colspan="7" class="empty">No requests.</td></tr>';
+
+  if (!response.success) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="fa-solid fa-inbox"></i>${response.error?.message ?? "Failed to load requests."}</div></td></tr>`;
     return;
   }
+
+  const requests = response.data.requests;
+
+  if (!requests.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="fa-solid fa-inbox"></i>No requests found.</div></td></tr>`;
+    return;
+  }
+
   tbody.innerHTML = requests
     .map(
       (r) => `
-    <tr data-search="${r.email} ${r.plan_name} ${r.status}">
-      <td class="mono">#${r.id}</td>
-      <td>${r.email}</td>
-      <td><span class="badge badge-active">${r.plan_name}</span></td>
-   
-      <td class="mono">${timeFormat(r.request_date)}</td>
-      <td><span class="badge badge-${r.status}">${r.status}</span></td>
-      <td>
-        <div style="display:flex;gap:6px">
-          ${
-            r.status === "pending"
-              ? `<button class="btn btn-success btn-sm" data-action="approve-request" data-id="${r.id}">Approve</button>
-               <button class="btn btn-danger  btn-sm" data-action="reject-request"  data-id="${r.id}">Reject</button>`
-              : `<span style="font-size:0.75rem;color:var(--text-muted)">${r.status}</span>`
-          }
-        </div>
-      </td>
-    </tr>`,
+      <tr data-search="${r.email} ${r.plan_name} ${r.status}">
+        <td class="mono">#${r.id}</td>
+        <td>${r.email}</td>
+        <td><span class="badge badge-active">${r.plan_name}</span></td>
+        <td class="mono">${timeFormat(r.request_date)}</td>
+        <td><span class="badge badge-${r.status}">${r.status}</span></td>
+        <td style="text-align:right">
+          <div class="row-actions">
+            ${
+              r.status === "pending"
+                ? `<button class="btn btn-success btn-sm" data-action="approve-request" data-id="${r.id}"><i class="fa-solid fa-check"></i> Approve</button>
+                   <button class="btn btn-danger btn-sm"  data-action="reject-request"  data-id="${r.id}"><i class="fa-solid fa-xmark"></i> Reject</button>`
+                : `<span style="font-size:0.75rem;color:var(--muted)">${r.status}</span>`
+            }
+          </div>
+        </td>
+      </tr>`,
     )
     .join("");
 }
@@ -228,26 +161,34 @@ async function renderRequests() {
 async function renderSubs() {
   const tbody = $("subs-tbody");
   const response = await FetchData("/all-subscriptions", true);
+
+  if (!response.success) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><i class="fa-solid fa-circle-check"></i>${response.error?.message ?? "Failed to load subscriptions."}</div></td></tr>`;
+    return;
+  }
+
   const subscriptions = response.data.subscriptions;
+
   if (!subscriptions.length) {
-    tbody.innerHTML =
-      '<tr><td colspan="8" class="empty">No subscriptions.</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><i class="fa-solid fa-circle-check"></i>No subscriptions found.</div></td></tr>`;
     return;
   }
 
   tbody.innerHTML = subscriptions
     .map(
       (s) => `
-    <tr data-search="${s.email} ${s.plan_name}">
-      <td class="mono">#${s.id}</td>
-      <td>${s.email}</td>
-      <td><span class="badge badge-active">${s.plan_name}</span></td>
-      <td class="mono">${timeFormat(s.start_date)}</td>
-      <td class="mono">${timeFormat(s.expiry_date)}</td>
-      <td><span class="badge badge-${s.active ? "active" : "inactive"}">${s.active ? "Active" : "Expired"}</span></td>
-      <td class="mono">${s.remaining_quizzes + s.remaining_template_exams + s.remaining_topic_quizzes}</td>
-      <td><button class="btn btn-secondary btn-sm" data-action="view-sub" data-id="${s.id}">Details</button></td>
-    </tr>`,
+      <tr data-search="${s.email} ${s.plan_name}">
+        <td class="mono">#${s.id}</td>
+        <td>${s.email}</td>
+        <td><strong>${s.plan_name}</strong></td>
+        <td class="mono">${timeFormat(s.start_date)}</td>
+        <td class="mono">${timeFormat(s.expiry_date)}</td>
+        <td><span class="badge badge-${s.active ? "active" : "inactive"}">${s.active ? "Active" : "Expired"}</span></td>
+        <td class="mono">${s.remaining_quizzes + s.remaining_template_exams + s.remaining_topic_quizzes}</td>
+        <td style="text-align:right">
+          <button class="btn btn-secondary btn-sm" data-action="view-sub" data-id="${s.id}"><i class="fa-solid fa-eye"></i> Details</button>
+        </td>
+      </tr>`,
     )
     .join("");
 }
@@ -256,23 +197,31 @@ async function renderUsers() {
   const tbody = $("users-tbody");
   const response = await FetchData("/users-subscriptions", true);
 
+  if (!response.success) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><i class="fa-solid fa-users"></i>${response.error?.message ?? "Failed to load users."}</div></td></tr>`;
+    return;
+  }
+
   const users = response.data.users;
 
   tbody.innerHTML = users
-    .map((u) => {
-      return `
+    .map(
+      (u) => `
       <tr data-search="${u.email}">
         <td class="mono">#${u.user_id}</td>
         <td>${u.email}</td>
-        <td>${u.status ? `<span class="badge badge-active">hellospan>` : '<span class="badge badge-inactive">None</span>'}</td>
+        <td>${u.active ? `<span class="badge badge-active">${u.plan_name ?? "Active"}</span>` : '<span class="badge badge-inactive">None</span>'}</td>
         <td><span class="badge badge-${u.active ? "active" : "inactive"}">${u.active ? "Active" : "No Sub"}</span></td>
-        <td><button class="btn btn-secondary btn-sm" data-action="view-history" data-id="${u.user_id}">History</button></td>
-      </tr>`;
-    })
+        <td style="text-align:right">
+          <button class="btn btn-secondary btn-sm" data-action="view-history" data-id="${u.user_id}"><i class="fa-solid fa-clock-rotate-left"></i> History</button>
+        </td>
+      </tr>`,
+    )
     .join("");
 }
 
 // ── Plans CRUD ────────────────────────────────
+
 function openNewPlanModal() {
   $("plan-modal-title").textContent = "New Subscription Plan";
   $("plan-id").value = "";
@@ -290,23 +239,23 @@ function openNewPlanModal() {
 
 async function openEditPlanModal(id) {
   const response = await FetchData(`/plans/${id}`, true);
+
   if (!response.success) {
-    alert("Plan not found");
+    notify("Plan not found");
     return;
   }
-  const p = response.data.plans;
-  console.log("the id:", "the=", p);
-  if (!p) return;
 
-  document.getElementById("plan-modal-title").textContent = "Edit Plan";
-  document.getElementById("plan-id").value = p.id;
-  document.getElementById("plan-name").value = p.plan_name;
-  document.getElementById("plan-price").value = p.price;
-  document.getElementById("plan-duration").value = p.duration_days;
-  document.getElementById("plan-quizzes").value = p.no_quizzes;
-  document.getElementById("plan-templates").value = p.no_template_exams;
-  document.getElementById("plan-topic-quizzes").value = p.no_topic_quizzes;
-  document.getElementById("plan-desc").value = p.description;
+  const p = response.data.plans;
+
+  $("plan-modal-title").textContent = "Edit Plan";
+  $("plan-id").value = p.id;
+  $("plan-name").value = p.plan_name;
+  $("plan-price").value = p.price;
+  $("plan-duration").value = p.duration_days;
+  $("plan-quizzes").value = p.no_quizzes;
+  $("plan-templates").value = p.no_template_exams;
+  $("plan-topic-quizzes").value = p.no_topic_quizzes;
+  $("plan-desc").value = p.description;
 
   openModal("modal-plan");
 }
@@ -326,154 +275,120 @@ async function savePlan() {
     return;
   }
 
+  const payload = {
+    name,
+    price,
+    duration,
+    quizzes,
+    templates,
+    topic_quizzes,
+    description,
+  };
+
   if (id) {
-    const idx = plans.findIndex((p) => p.plan_id === parseInt(id));
-    plans[idx] = {
-      plan_id: parseInt(id),
-      name,
-      price,
-      duration,
-      quizzes,
-      templates,
-      topic_quizzes,
-      description,
-    };
-    const subscription = {
-      plan_id: parseInt(id),
-      name,
-      price,
-      duration,
-      quizzes,
-      templates,
-      topic_quizzes,
-      description,
-    };
-
-    const response = await UpdateData(`/plans/${id}`, subscription, true);
-
-    if (response.data.status) {
-      notify("Plan updated ✓");
-    } else {
-      notify("Plan update failed");
-    }
+    const response = await UpdateData(`/plans/${id}`, payload, true);
+    notify(response.data?.status ? "Plan updated ✓" : "Plan update failed");
   } else {
-    const subscription = {
-      name,
-      price,
-      duration,
-      quizzes,
-      templates,
-      topic_quizzes,
-      description,
-    };
-    const response = await PostData(`/plans`, subscription, true);
-
-    if (response.data.status) {
-      notify("Plan created ✓");
-    } else {
-      notify("Plan created failed");
-    }
+    const response = await PostData("/plans", payload, true);
+    notify(response.data?.status ? "Plan created ✓" : "Plan creation failed");
   }
+
   closeModal("modal-plan");
-  renderAll();
+  await renderAll();
 }
 
-function deletePlan(id) {
+async function deletePlan(id) {
   if (!confirm("Delete this plan?")) return;
-  plans = plans.filter((p) => p.plan_id !== id);
-  renderAll();
-  notify("Plan deleted");
+  const response = await DeleteData(`/plans/${id}`, true);
+  notify(response.success ? "Plan deleted" : "Delete failed");
+  await renderAll();
 }
 
 // ── Requests ──────────────────────────────────
+
 async function resolveRequest(id, action) {
-  console.log("action", action);
-  if (action === "approved") {
-    const response = await UpdateData(`/request/${id}/approve`);
-    console.log(response);
-    if (response.success) {
-      notify("Request approved — subscription created ✓");
-    } else {
-      notify("Request approval failed");
-    }
+  const endpoint =
+    action === "approved" ? `/request/${id}/approve` : `/request/${id}/reject`;
+
+  const response = await UpdateData(endpoint, {}, true);
+
+  if (response.success) {
+    notify(
+      action === "approved"
+        ? "Request approved — subscription created ✓"
+        : "Request rejected",
+    );
   } else {
-    const response = await UpdateData(`/request/${id}/reject`);
-    if (response.success) {
-      notify("Request rejection successfully");
-    } else {
-      notify("Request rejection failed");
-    }
+    notify(
+      `Request ${action === "approved" ? "approval" : "rejection"} failed`,
+    );
   }
-  renderAll();
+
+  await renderAll();
 }
 
 // ── Subscription Detail ───────────────────────
+
 async function showSubDetail(id) {
-  const response = await FetchData(`/subscription/${id}`);
-  console.log(response);
+  const response = await FetchData(`/subscription/${id}`, true);
+
+  if (!response.success) {
+    notify("Failed to load subscription details");
+    return;
+  }
+
   const s = response.data.subscription;
-  console.log(s);
 
   $("sub-detail-content").innerHTML = `
     <div class="detail-grid">
-      <div class="detail-item"><div class="detail-item-label">Sub ID</div><div class="detail-item-val">#${s.id}</div></div>
-      <div class="detail-item"><div class="detail-item-label">User</div><div class="detail-item-val">${s.email}</div></div>
-      <div class="detail-item"><div class="detail-item-label">Plan</div><div class="detail-item-val">${s.plan_name}</div></div>
-      <div class="detail-item"><div class="detail-item-label">Status</div><div class="detail-item-val">${s.active ? "🟢 Active" : "🔴 Expired"}</div></div>
-      <div class="detail-item"><div class="detail-item-label">Start Date</div><div class="detail-item-val">${timeFormat(s.start_date)}</div></div>
-      <div class="detail-item"><div class="detail-item-label">Expiry Date</div><div class="detail-item-val">${timeFormat(s.expiry_date)}</div></div>
+      <div class="detail-item"><p class="detail-item-label">Sub ID</p><p class="detail-item-val">#${s.sub_id ?? s.id}</p></div>
+      <div class="detail-item"><p class="detail-item-label">User</p><p class="detail-item-val">${s.user_email ?? s.email}</p></div>
+      <div class="detail-item"><p class="detail-item-label">Plan</p><p class="detail-item-val">${s.plan_name}</p></div>
+      <div class="detail-item"><p class="detail-item-label">Status</p><p class="detail-item-val">${s.active ? "🟢 Active" : "🔴 Expired"}</p></div>
+      <div class="detail-item"><p class="detail-item-label">Start Date</p><p class="detail-item-val">${timeFormat(s.start_date)}</p></div>
+      <div class="detail-item"><p class="detail-item-label">Expiry Date</p><p class="detail-item-val">${timeFormat(s.expiry_date)}</p></div>
     </div>
-    <div class="section-divider"></div>
+    <hr class="section-divider" />
     <div class="card-title">Remaining Quotas</div>
     <div class="detail-grid">
-      <div class="detail-item"><div class="detail-item-label">Quizzes Left</div><div class="detail-item-val" style="color:var(--cyan-dark)">${s.remaining_quizzes} / ${s.plan_no_quizzes ?? "—"}</div></div>
-      <div class="detail-item"><div class="detail-item-label">Template Exams</div><div class="detail-item-val" style="color:var(--cyan-dark)">${s.remaining_template_exams} / ${s.plan_no_template_exams ?? "—"}</div></div>
-      <div class="detail-item"><div class="detail-item-label">Topic Quizzes</div><div class="detail-item-val" style="color:var(--cyan-dark)">${s.remaining_topic_quizzes} / ${s.plan_no_topic_quizzes ?? "—"}</div></div>
+      <div class="detail-item"><p class="detail-item-label">Quizzes Left</p><p class="detail-item-val" style="color:var(--primary)">${s.remaining_quizzes}</p></div>
+      <div class="detail-item"><p class="detail-item-label">Template Exams</p><p class="detail-item-val" style="color:var(--primary)">${s.remaining_template_exams}</p></div>
+      <div class="detail-item"><p class="detail-item-label">Topic Quizzes</p><p class="detail-item-val" style="color:var(--primary)">${s.remaining_topic_quizzes}</p></div>
     </div>
     <div class="btn-row" style="margin-top:20px">
-  <button 
-    class="btn ${s.active ? "btn-danger" : "btn-success"} btn-sm" 
-    data-action="${s.active ? "deactivate-sub" : "activate-sub"}" 
-    data-id="${s.id}"
-  >
-    ${s.active ? "Deactivate" : "Activate"}
-  </button>
-</div>`;
+      <button
+        class="btn ${s.active ? "btn-danger" : "btn-success"} btn-sm"
+        data-action="${s.active ? "deactivate-sub" : "activate-sub"}"
+        data-id="${s.sub_id ?? s.id}"
+      >
+        ${s.active ? "Deactivate" : "Activate"}
+      </button>
+    </div>`;
+
   openModal("modal-sub-detail");
 }
 
-async function deactivateSub(id,action) {
-  console.log(id);
+async function toggleSubStatus(id, action) {
   const response = await UpdateData(
     `/subscription/${id}/status`,
-    { action: action },
+    { action },
     true,
   );
-  if (response.success == false) {
-    if (action == "deactivate") {
-      notify("Subscription not  deactivated");
-    }
-    else {
-      notify("Subscription not  activated");
-    }
-    closeModal("modal-sub-detail");
-    return;
-  }
-  if (action == "activate") {
-      notify("Subscription activated successfully");
-  }
-  else {
-       notify("Subscription deactivated successfully");
-  }
+
+  notify(
+    response.success
+      ? `Subscription ${action === "activate" ? "activated" : "deactivated"} successfully`
+      : `Subscription ${action === "activate" ? "activation" : "deactivation"} failed`,
+  );
+
   closeModal("modal-sub-detail");
-  renderAll();
-  
+  await renderAll();
 }
 
 // ── User History ──────────────────────────────
+
 async function showUserHistory(userId) {
   const response = await FetchData(`/user/${userId}/history`, true);
-  console.log("History Data: ", response);
 
   if (!response.success) {
     notify("Failed to load user history");
@@ -484,15 +399,13 @@ async function showUserHistory(userId) {
   const userSubs = data.subscriptions || [];
   const userReqs = data.requests || [];
 
-  $("history-modal-title").textContent = `History — #${data.user_id}`;
+  $("history-modal-title").textContent = `History — User #${data.user_id}`;
 
-  // 1. Render Subscriptions Section
   let html = `<div class="card-title">Subscriptions (${data.subscription_count})</div>`;
 
-  if (userSubs.length > 0) {
+  if (userSubs.length) {
     html += userSubs
       .map((s) => {
-        // Determine status based on the 'active' boolean and expiry date
         const isExpired = new Date(s.expiry_date) < new Date();
         const statusLabel = s.active
           ? isExpired
@@ -504,61 +417,59 @@ async function showUserHistory(userId) {
             ? "expired"
             : "active"
           : "inactive";
+        const dotColor =
+          s.active && !isExpired ? "var(--success)" : "var(--muted)";
 
         return `
-        <div class="history-item">
-          <div class="history-dot" style="background: ${s.active && !isExpired ? "var(--success)" : "var(--text-muted)"}"></div>
-          <div>
-            <div class="history-label">
-              ${s.plan_name} — 
-              <span class="badge badge-${badgeClass}" style="font-size:0.65rem">${statusLabel}</span>
+          <div class="history-item">
+            <div class="history-dot" style="background:${dotColor}"></div>
+            <div>
+              <div class="history-label">
+                ${s.plan_name} — <span class="badge badge-${badgeClass}" style="font-size:0.65rem">${statusLabel}</span>
+              </div>
+              <div class="history-meta">${timeFormat(s.start_date)} → ${timeFormat(s.expiry_date)}</div>
+              <div class="history-meta" style="margin-top:4px;color:var(--primary)">
+                Remaining: Q: ${s.remaining_quizzes} | E: ${s.remaining_template_exams} | T: ${s.remaining_topic_quizzes}
+              </div>
+              <div class="btn-row" style="margin-top:10px">
+                <button
+                  class="btn ${s.active ? "btn-danger" : "btn-success"} btn-xs"
+                  data-action="${s.active ? "deactivate-sub" : "activate-sub"}"
+                  data-id="${s.sub_id ?? s.id}"
+                >
+                  ${s.active ? "Deactivate" : "Activate"}
+                </button>
+              </div>
             </div>
-            <div class="history-meta">
-              ${timeFormat(s.start_date)} → ${timeFormat(s.expiry_date)}
-            </div>
-            <div class="history-meta" style="margin-top:4px; color: var(--cyan-dark)">
-              Remaining: Q: ${s.remaining_quizzes} | E: ${s.remaining_template_exams} | T: ${s.remaining_topic_quizzes}
-            </div>
-            <div class="btn-row" style="margin-top:10px">
-              <button 
-                class="btn ${s.active ? "btn-danger" : "btn-success"} btn-xs" 
-                data-action="${s.active ? "deactivate-sub" : "activate-sub"}" 
-                data-id="${s.id}"
-              >
-                ${s.active ? "Deactivate" : "Activate"}
-              </button>
-            </div>
-          </div>
-        </div>`;
+          </div>`;
       })
       .join("");
   } else {
     html += '<div class="empty">No subscriptions</div>';
   }
 
-  // 2. Render Requests Section
-  html += `<div class="section-divider"></div><div class="card-title">Requests (${data.request_count})</div>`;
+  html += `<hr class="section-divider" /><div class="card-title">Requests (${data.request_count})</div>`;
 
-  if (userReqs.length > 0) {
+  if (userReqs.length) {
     html += userReqs
       .map((r) => {
-        // Color coding for request dots
-        let dotColor = "var(--warn)"; // pending/default
-        if (r.status === "approved") dotColor = "var(--success)";
-        if (r.status === "rejected" || r.status === "canceled")
-          dotColor = "var(--danger)";
+        const dotColor =
+          r.status === "approved"
+            ? "var(--success)"
+            : r.status === "rejected" || r.status === "canceled"
+              ? "var(--danger)"
+              : "var(--warning)";
 
         return `
-        <div class="history-item">
-          <div class="history-dot" style="background:${dotColor}"></div>
-          <div>
-            <div class="history-label">
-              ${r.plan_name} — 
-              <span class="badge badge-${r.status}">${r.status}</span>
+          <div class="history-item">
+            <div class="history-dot" style="background:${dotColor}"></div>
+            <div>
+              <div class="history-label">
+                ${r.plan_name} — <span class="badge badge-${r.status}">${r.status}</span>
+              </div>
+              <div class="history-meta">Requested: ${timeFormat(r.request_date)}</div>
             </div>
-            <div class="history-meta">Requested: ${timeFormat(r.request_date)}</div>
-          </div>
-        </div>`;
+          </div>`;
       })
       .join("");
   } else {
@@ -566,72 +477,45 @@ async function showUserHistory(userId) {
   }
 
   $("user-history-content").innerHTML = html;
-
-  // Attach listeners for the toggle buttons inside the history modal
-  $("user-history-content")
-    .querySelectorAll("button[data-action]")
-    .forEach((btn) => {
-      btn.onclick = () => {
-        const action = btn.dataset.action;
-        const subId = btn.dataset.id;
-        // You would call your toggle function here, e.g.:
-        // toggleSubscriptionStatus(subId, action);
-        console.log(`${action} subscription ${subId}`);
-      };
-    });
-
   openModal("modal-user-history");
-}
-
-// ── Search & Filter ───────────────────────────
-function filterTable(tbodyId, query) {
-  const q = query.toLowerCase();
-  document.querySelectorAll(`#${tbodyId} tr`).forEach((row) => {
-    const text = (row.dataset.search || row.textContent).toLowerCase();
-    row.style.display = text.includes(q) ? "" : "none";
-  });
 }
 
 // ══════════════════════════════════════════════
 //  EVENT LISTENERS
 // ══════════════════════════════════════════════
+
 document.addEventListener("DOMContentLoaded", () => {
-  // ── Sidebar navigation ──
-  document.querySelectorAll(".nav-item[data-view]").forEach((item) => {
-    item.addEventListener("click", () => {
+  // ── Tab navigation ──
+  document.querySelectorAll(".tab[data-tab]").forEach((tab) => {
+    tab.addEventListener("click", () => {
       document
-        .querySelectorAll(".view")
-        .forEach((v) => v.classList.remove("active"));
-      document
-        .querySelectorAll(".nav-item")
-        .forEach((n) => n.classList.remove("active"));
-      document
-        .getElementById("view-" + item.dataset.view)
-        .classList.add("active");
-      item.classList.add("active");
-      renderAll();
+        .querySelectorAll(".tab")
+        .forEach((t) => t.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach((p) => (p.hidden = true));
+      tab.classList.add("active");
+      document.getElementById("panel-" + tab.dataset.tab).hidden = false;
     });
   });
 
-  // ── Open new plan modal ──
+  // ── Plan modal open ──
   $("btn-new-plan").addEventListener("click", openNewPlanModal);
 
-  // ── Save plan ──
+  // ── Plan save ──
   $("btn-save-plan").addEventListener("click", savePlan);
 
-  // ── Close modals via data-close buttons ──
+  // ── Close modals via data-close attribute ──
   document.querySelectorAll("[data-close]").forEach((btn) => {
     btn.addEventListener("click", () => closeModal(btn.dataset.close));
   });
 
-  // ── Close modals by clicking overlay backdrop ──
+  // ── Close modal by clicking overlay backdrop ──
   document.querySelectorAll(".modal-overlay").forEach((overlay) => {
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) closeModal(overlay.id);
     });
   });
 
-  // ── Delegated clicks for dynamically rendered table buttons ──
+  // ── Delegated clicks for dynamic table buttons ──
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
@@ -655,10 +539,10 @@ document.addEventListener("DOMContentLoaded", () => {
         showSubDetail(id);
         break;
       case "deactivate-sub":
-        deactivateSub(id, "deactivate");
+        toggleSubStatus(id, "deactivate");
         break;
       case "activate-sub":
-        deactivateSub(id, "activate");
+        toggleSubStatus(id, "activate");
         break;
       case "view-history":
         showUserHistory(id);
@@ -677,20 +561,15 @@ document.addEventListener("DOMContentLoaded", () => {
     filterTable("users-tbody", e.target.value),
   );
 
-  // ── Status filter ──
+  // ── Status filter for requests ──
   $("filter-status").addEventListener("change", (e) => {
     const status = e.target.value;
     document.querySelectorAll("#requests-tbody tr").forEach((row) => {
-      if (!status) {
-        row.style.display = "";
-        return;
-      }
-      row.style.display = (row.dataset.search || "").includes(status)
-        ? ""
-        : "none";
+      row.style.display =
+        !status || (row.dataset.search || "").includes(status) ? "" : "none";
     });
   });
 
-  // ── Init ──
+  // ── Initial render ──
   renderAll();
 });

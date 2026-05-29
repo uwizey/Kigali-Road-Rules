@@ -6,11 +6,12 @@
   --green: #00d26a;
   --green-dark: #00a854;
   --bg-light: #f8fafc;
+  --off-white: #f5feff;
   --black: #0f172a;
   --gray: #64748b;
   --gray-dark: #334155;
   --gray-light: #f1f5f9;
-  --white: #ffffff;
+  --white:  #f5feff;
   --border: #e2e8f0;
   --radius: 6px;
   --radius-lg: 20px;
@@ -28,7 +29,7 @@
 }
 
 body {
-  background-color: var(--bg-light);
+  background-color: var(--off-white);
   display: flex;
   justify-content: center;
   align-items: center;

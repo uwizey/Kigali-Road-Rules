@@ -6,7 +6,37 @@ function autoLogout(storage = "localStorage") {
   window.location.href = "../auth/login.html"; // redirect to login page
 }
 
+export function setAuthToken(token, storage = "localStorage") {
+  if (storage === "localStorage") {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else if (storage === "sessionStorage") {
+    sessionStorage.setItem(TOKEN_KEY, token);
+  } else {
+    // fallback: memory
+    window._authToken = token;
+  }
+}
 
+export function getAuthToken(storage = "localStorage") {
+  if (storage === "localStorage") {
+    return localStorage.getItem(TOKEN_KEY);
+  } else if (storage === "sessionStorage") {
+    return sessionStorage.getItem(TOKEN_KEY);
+  } else {
+    return window._authToken || null;
+  }
+}
+
+// Clear token
+export function clearAuthToken(storage = "localStorage") {
+  if (storage === "localStorage") {
+    localStorage.removeItem(TOKEN_KEY);
+  } else if (storage === "sessionStorage") {
+    sessionStorage.removeItem(TOKEN_KEY);
+  } else {
+    window._authToken = null;
+  }
+}
 
 async function handleResponse(response) {
   const contentType = response.headers.get("content-type");

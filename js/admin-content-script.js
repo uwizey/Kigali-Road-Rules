@@ -30,7 +30,6 @@ function createBasePopup({
   overlay.id = "progressWarningOverlay";
 
   // 3. Build the inner HTML structure
-  // We use the iconColor for the icon and optional inline styles for buttons
   overlay.innerHTML = `
     <div id="progressWarningBox">
       <div class="pw-icon" style="color: ${iconColor}">
@@ -41,16 +40,14 @@ function createBasePopup({
       <div class="pw-actions">
         ${
           showCancel
-            ? `
-          <button class="pw-btn pw-btn-cancel" style="${cancelBtnStyle}">
+            ? `<button class="pw-btn pw-btn-cancel" style="${cancelBtnStyle}">
             ${cancelText}
           </button>`
             : ""
         }
         ${
           showConfirm
-            ? `
-          <button class="pw-btn pw-btn-confirm" style="${confirmBtnStyle}">
+            ? `<button class="pw-btn pw-btn-confirm" style="${confirmBtnStyle}">
             ${confirmText}
           </button>`
             : ""
@@ -93,6 +90,7 @@ function createBasePopup({
     }
   });
 }
+
 /**
  * A standardized informational popup for the UI.
  * Used for errors, warnings, and success messages.
@@ -103,27 +101,21 @@ function showInfoPopup(
   icon = "fas fa-info-circle",
   iconColor = "#0097b2",
 ) {
-  // Use the base popup logic to ensure consistent behavior/overlay
   createBasePopup({
-    title: title,
-    message: message,
-    icon: icon,
-    iconColor: iconColor,
-
-    // Admin/Info specific settings:
-    showConfirm: false, // Only one button needed for info
-    cancelText: "OK", // The button text
-    showCancel: true, // Ensure the OK button (mapped to cancel) is visible
-
-    // Style the "OK" button to match the theme
+    title,
+    message,
+    icon,
+    iconColor,
+    showConfirm: false,
+    cancelText: "OK",
+    showCancel: true,
     cancelBtnStyle: `background: ${iconColor}; color: #fff; border: none;`,
-
-    // Logic for closing
     onCancel: () => {
       console.log(`Popup "${title}" dismissed.`);
     },
   });
 }
+
 /**
  * Processes any API response and shows the appropriate popup for errors.
  * @param {Object} response - The object returned by FetchData/PostData/etc.
@@ -131,45 +123,34 @@ function showInfoPopup(
  */
 function handleApiResponse(response) {
   console.log("API Response:", response);
-  // If the request was successful, we don't show an error popup
   if (response?.success !== false && response?.status < 400) {
     return false;
   }
 
-  // Define styling based on specific status codes
   let config = {
     title: "Error",
     icon: "fas fa-exclamation-circle",
-    color: "#e74c3c", // Default Red
+    color: "#e74c3c",
   };
 
   if (response.status === 403) {
     config = {
       title: "Access Restricted",
       icon: "fas fa-lock",
-      color: "#f39c12", // Warning Orange
+      color: "#f39c12",
     };
   } else if (response.status === 401) {
     config = {
       title: "Session Expired",
       icon: "fas fa-user-shield",
-      color: "#3498db", // Info Blue
+      color: "#3498db",
     };
   } else if (response.status >= 500) {
-    config = {
-      title: "Server Error",
-      icon: "fas fa-server",
-      color: "#c0392b", // Dark Red
-    };
+    config = { title: "Server Error", icon: "fas fa-server", color: "#c0392b" };
   } else if (!response.status) {
-    config = {
-      title: "Network Issue",
-      icon: "fas fa-wifi",
-      color: "#95a5a6", // Grey
-    };
+    config = { title: "Network Issue", icon: "fas fa-wifi", color: "#95a5a6" };
   }
 
-  // Call your existing popup function with the determined config
   showInfoPopup(
     config.title,
     response.userMessage || "An unexpected error occurred.",
@@ -196,7 +177,7 @@ const FORMAT_TYPES = {
   exercise: { icon: "✏️", label: "Exercise" },
 };
 
-// Groups for the <select> optgroups — keeps related formats together visually
+// Groups for the <select> optgroups
 const FORMAT_GROUPS = [
   {
     label: "Content Formats",
@@ -612,7 +593,7 @@ async function deleteSection(id) {
 // API — COMPONENTS
 // ════════════════════════════════════════════════════════════════════════════
 
-// GET /components/:sectionId
+// GET /sections/:sectionId/components
 // Normalized on arrival so id / format_type always exist regardless of server shape.
 async function fetchComponents(sectionId) {
   if (DB.components[sectionId] !== undefined) return;
@@ -630,7 +611,7 @@ async function fetchComponents(sectionId) {
 }
 
 // POST /component
-// Creates a blank component immediately (no modal — same UX as Add Section).
+// Creates a blank component immediately (no modal).
 // The format_type selector lives inside the card — user picks it there.
 async function createComponent() {
   if (!state.activeSection) return;
@@ -660,13 +641,12 @@ async function createComponent() {
 
   // POST in the background; swap temp id for the real server-assigned id
   try {
-    alert("Creating component on server...");
     const res = await PostData(
       "/component",
       {
         section_id: sid,
         format_type: "",
-        title: "New Component ",
+        title: "New Component",
         order_index: order,
         items: [],
       },
@@ -706,53 +686,26 @@ async function createComponent() {
 // ALL image files use the key image_N regardless of whether the item field is
 // named "image" (flipcards, timeline etc.) or "url" (imageblock).
 // The backend always looks for image_0, image_1 etc. — never url_0.
-//
-// If an item has no image, its image field in the JSON is simply null — no file appended.
-// The backend reads the items JSON, and for each item checks:
-//   if item.image === "image_0"  →  look in request.files["image_0"] for the binary
-//   if item.image === null       →  no image for this item
 
 const IMAGE_FIELDS = ["image", "url"]; // field names that carry image data
 
 // Builds and sends a FormData for a single component.
-// Called by saveComponents() for each dirty component.
 async function saveOneComponent(comp) {
   const form = new FormData();
 
-  // ── Top-level component fields ────────────────────────────────────────────
   form.append("title", comp.title || "");
   form.append("format_type", comp.format_type || "");
   form.append("order_index", String(comp.order_index ?? 0));
   form.append("section_id", String(comp.section_id || ""));
 
-  // ── Deleted item IDs — backend must DELETE these rows ─────────────────────
-  // When a user removes an item tab, its server item_id is recorded on
-  // comp._deletedItemIds. We send them here so the backend deletes them
-  // explicitly rather than inferring by comparison.
+  // Deleted item IDs — backend must DELETE these rows
   if (comp._deletedItemIds?.length) {
     form.append("deleted_item_ids", JSON.stringify(comp._deletedItemIds));
-    comp._deletedItemIds = []; // clear after sending — don't re-send on next save
+    comp._deletedItemIds = [];
   }
 
-  // ── Items — each item carries its own image directly ──────────────────────
-  // For each item:
-  //   • Strip _localId (UI-only tracking, backend doesn't need it)
-  //   • If it has a raw File on an image field:
-  //       - append the file to FormData as  image_{itemIdx}  (e.g. image_0, image_1)
-  //       - set that JSON field to the same key so backend knows where to find it
-  //   • If it already has a string (URL returned by server on load) — leave untouched
-  //   • If it has nothing — send null
-  //
-  // Example for a 3-item timeline where items 0 and 2 have new images:
-  //   items     → '[{"title":"A","image":"image_0"},{"title":"B","image":null},{"title":"C","image":"image_2"}]'
-  //   image_0   → [binary of file A]
-  //   image_2   → [binary of file C]
-  //   (no image_1 appended — item B has no image)
   const itemsForJson = (comp.items || []).map((item, idx) => {
-    // Strip UI-only flags — backend never needs them
-    // Strip all UI-only fields — backend never needs them
     const { _localId, _dragOver, ...rest } = item;
-    // Strip all _objectUrl_ and _clearImage_ keys (UI state only)
     const jsonItem = Object.fromEntries(
       Object.entries(rest).filter(
         ([k]) =>
@@ -762,38 +715,19 @@ async function saveOneComponent(comp) {
       ),
     );
 
-    // Always send the current array position as order_index
-    // so the backend can persist the exact order the user arranged
     jsonItem.order_index = idx;
 
-    // Only process image fields that this format type actually uses.
-    // e.g. imageblock uses "url", all others use "image".
     const formatFields = FORMAT_ITEM_FIELDS[comp.format_type] || [];
     const activeImageFields = IMAGE_FIELDS.filter((field) =>
       formatFields.some((f) => f.key === field),
     );
 
-    // Remove any irrelevant image fields from the payload entirely
     IMAGE_FIELDS.forEach((field) => {
       if (!activeImageFields.includes(field)) delete jsonItem[field];
     });
 
-    // All image data is normalized to the "image" key in the JSON payload
-    // regardless of the internal field name (image or url).
-    // The backend always reads item.image — never item.url.
-    //
-    // Example — imageblock item 0 with a new file:
-    //   FormData:  image_0 → [binary]
-    //   items JSON: { "image": "image_0", "caption": "..." }
-    //
-    // Example — timeline item 1 with a new file:
-    //   FormData:  image_1 → [binary]
-    //   items JSON: { "title": "Step 2", "image": "image_1" }
-
-    // Remove url from payload — backend never needs it, image is the canonical field
     delete jsonItem.url;
 
-    // Resolve the value from whichever field actually holds the image data
     const imageValue = activeImageFields.reduce(
       (val, field) => val ?? item[field] ?? null,
       null,
@@ -823,7 +757,6 @@ async function saveOneComponent(comp) {
       jsonItem.image = null;
     }
 
-    // Strip UI-only flags before sending
     activeImageFields.forEach((field) => {
       delete jsonItem[`_hasImage_${field}`];
       delete jsonItem[`_clearImage_${field}`];
@@ -833,13 +766,9 @@ async function saveOneComponent(comp) {
   });
   form.append("items", JSON.stringify(itemsForJson));
 
-  // UpdateData: detects FormData → does NOT JSON.stringify, does NOT set Content-Type
-  // Browser sets: Content-Type: multipart/form-data; boundary=...  automatically
   const res = await UpdateData(`/component/${comp.id}`, form, true);
   handleApiResponse(res);
 }
-
-// Auto-save removed — components are saved explicitly via the "Save Changes" button.
 
 // DELETE /component/:componentId
 // Shows a confirmation modal before deleting. Removes optimistically.
@@ -966,20 +895,10 @@ function renderBuilder() {
     </div>`;
 }
 
-// ── Component card ────────────────────────────────────────────────────────────
-// Structure:
-//   Header — drag handle · format badge · title · actions · chevron
-//   Body   — [1] component title input
-//             [2] FORMAT TYPE selector (grouped optgroups)
-//             [3] item TABS — one tab per item, click to select
-//             [4] selected item's fields shown below the tabs
-//
-// comp._activeItem  tracks which item index is currently selected (default 0).
-// Single-item formats skip the tab bar and just show the fields directly.
+// ── Component card ─────────────────────────────────────────────────────────
 function renderComponentCard(comp) {
   const fmt = FORMAT_TYPES[comp.format_type] || null;
 
-  // Build grouped <optgroup> options
   const typeOptions = [
     `<option value="" ${!comp.format_type ? "selected" : ""} disabled>— Choose a format type —</option>`,
     ...FORMAT_GROUPS.map((g) => {
@@ -998,16 +917,13 @@ function renderComponentCard(comp) {
   const fields = FORMAT_ITEM_FIELDS[comp.format_type] || [];
   if (!comp.items || !comp.items.length) comp.items = [{}];
 
-  // Track which item is active — default to 0
   if (comp._activeItem === undefined || comp._activeItem >= comp.items.length) {
     comp._activeItem = 0;
   }
 
-  // Build items content
   let itemsSection = "";
   if (hasType) {
     if (isSingle) {
-      // Single-item: no tab bar, just render the fields directly
       itemsSection = `
         <div class="items-section">
           <div class="items-section-header"><span>Content</span></div>
@@ -1021,9 +937,6 @@ function renderComponentCard(comp) {
           <div class="exercise-block">&#9999;&#65039; Exercise — content managed externally</div>
         </div>`;
     } else {
-      // Multi-item: render tab bar + selected item's fields.
-      // Each tab is draggable so the user can reorder items by dragging tabs.
-      // Drag state is tracked on comp._dragItemIdx (the tab being dragged).
       const tabBar = comp.items
         .map((item, idx) => {
           const label = item.title ? escHtml(item.title) : `Item ${idx + 1}`;
@@ -1113,9 +1026,7 @@ function renderComponentCard(comp) {
     </div>`;
 }
 
-// ── Item fields ───────────────────────────────────────────────────────────────
-// Renders the editable fields for ONE item (no wrapper row, no drag handle).
-// Used for both single-item formats and the selected tab in multi-item formats.
+// ── Item fields ────────────────────────────────────────────────────────────
 function renderItemFields(comp, item, idx, fields) {
   if (!item) return "";
   return fields
@@ -1125,13 +1036,8 @@ function renderItemFields(comp, item, idx, fields) {
         const hasExisting = item[`_hasImage_${f.key}`];
         const isCleared = item[`_clearImage_${f.key}`];
 
-        // Resolve what to show in the thumbnail:
-        //   File object  → user picked a new file; use the cached objectUrl stored on item
-        //   string       → data: URL (from server base64) or regular URL
-        //   _hasImage    → server has binary but no URL returned (shouldn't happen now but safe fallback)
         let previewSrc = "";
         if (rawVal instanceof File) {
-          // Use cached object URL stored when user picked the file
           previewSrc = item[`_objectUrl_${f.key}`] || "";
         } else if (typeof rawVal === "string" && rawVal) {
           previewSrc = rawVal;
@@ -1265,8 +1171,6 @@ function startRename(id) {
   });
 }
 
-// Mark a component as having unsaved changes.
-// Updates the Save Changes button text/style without re-rendering the whole card.
 function markDirty(comp, card) {
   comp._dirty = true;
   const btn = card?.querySelector(".btn-save-comp");
@@ -1276,7 +1180,6 @@ function markDirty(comp, card) {
   }
 }
 
-// Mark a component as clean after a successful save.
 function markClean(comp, card) {
   comp._dirty = false;
   const btn = card?.querySelector(".btn-save-comp");
@@ -1286,8 +1189,6 @@ function markClean(comp, card) {
   }
 }
 
-// Builder: clicks — action buttons handled first with stopPropagation
-// so the header expand-toggle at the bottom does not also fire.
 function handleBuilderClick(e) {
   const sid = state.activeSection?.section_id;
   if (!sid) return;
@@ -1302,19 +1203,15 @@ function handleBuilderClick(e) {
     if (!comp) return;
     const idx = parseInt(itemIdx);
     if (!comp.items[idx]) return;
-
-    // Mark this image field as explicitly cleared by the user.
-    // saveOneComponent will send null for this field → backend clears image_data.
     comp.items[idx][field] = null;
     comp.items[idx][`_hasImage_${field}`] = false;
     comp.items[idx][`_clearImage_${field}`] = true;
-
     markDirty(comp, e.target.closest(".component-card"));
-    renderBuilder(); // re-render to remove the thumbnail and button
+    renderBuilder();
     return;
   }
 
-  // ── Save Changes button — saves only this one component ──────────────────
+  // ── Save Changes button ──────────────────────────────────────────────────
   const saveBtn = e.target.closest(".btn-save-comp");
   if (saveBtn) {
     e.stopPropagation();
@@ -1340,8 +1237,7 @@ function handleBuilderClick(e) {
     return;
   }
 
-  // ── Remove item tab (✕ on active tab) — must come BEFORE tab-select
-  // so the click doesn't bubble into the tab select handler first
+  // ── Remove item tab ──────────────────────────────────────────────────────
   const removeItemBtn = e.target.closest(".btn-remove-item");
   if (removeItemBtn) {
     e.stopPropagation();
@@ -1351,25 +1247,20 @@ function handleBuilderClick(e) {
     if (comp && comp.items.length > 1) {
       const idx = parseInt(removeItemBtn.dataset.itemIdx);
       const removedItem = comp.items[idx];
-
-      // If the item has a server-assigned item_id, record it so the backend
-      // knows to DELETE that row — not just ignore it.
       if (removedItem?.item_id) {
         if (!comp._deletedItemIds) comp._deletedItemIds = [];
         comp._deletedItemIds.push(removedItem.item_id);
       }
-
       comp.items.splice(idx, 1);
       if (comp._activeItem >= comp.items.length)
         comp._activeItem = comp.items.length - 1;
       comp._dirty = true;
       renderBuilder();
-      // Deletion is persisted when user clicks Save Changes
     }
     return;
   }
 
-  // ── Select an item tab (clicking the tab label, not the ✕)
+  // ── Select an item tab ───────────────────────────────────────────────────
   const tabBtn = e.target.closest(".item-tab-btn");
   if (tabBtn) {
     e.stopPropagation();
@@ -1381,7 +1272,7 @@ function handleBuilderClick(e) {
     return;
   }
 
-  // ── Add new item (the ＋ button at the end of the tab bar)
+  // ── Add new item ─────────────────────────────────────────────────────────
   const addItemBtn = e.target.closest(".btn-add-comp-item");
   if (addItemBtn) {
     e.stopPropagation();
@@ -1389,10 +1280,9 @@ function handleBuilderClick(e) {
       (c) => c.id === parseInt(addItemBtn.dataset.compId),
     );
     if (comp) {
-      comp.items.push({ _localId: Date.now() }); // new item — persisted on Save Changes
-      comp._activeItem = comp.items.length - 1; // auto-select the new item
+      comp.items.push({ _localId: Date.now() });
+      comp._activeItem = comp.items.length - 1;
       renderBuilder();
-      // No auto-save — user clicks Save Changes to persist
     }
     return;
   }
@@ -1412,7 +1302,7 @@ function handleBuilderClick(e) {
     return;
   }
 
-  // Toggle expand/collapse — only if no action button was clicked
+  // Toggle expand/collapse
   const header = e.target.closest(".component-header");
   if (header && !e.target.closest(".comp-btn")) {
     const comp = comps.find(
@@ -1425,7 +1315,6 @@ function handleBuilderClick(e) {
   }
 }
 
-// Builder: text input changes
 function handleBuilderInput(e) {
   const card = e.target.closest(".component-card");
   if (!card) return;
@@ -1435,7 +1324,6 @@ function handleBuilderInput(e) {
   );
   if (!comp) return;
 
-  // Component title — update header label live, mark dirty
   if (
     e.target.classList.contains("comp-input") &&
     e.target.dataset.field === "title"
@@ -1447,14 +1335,11 @@ function handleBuilderInput(e) {
     return;
   }
 
-  // Item fields — update local state only, mark dirty
   const { itemIdx, field } = e.target.dataset;
   if (itemIdx !== undefined && field) {
     const idx = parseInt(itemIdx);
     if (!comp.items[idx]) comp.items[idx] = { _localId: Date.now() };
     comp.items[idx][field] = e.target.value;
-
-    // Live-update the tab label when item title changes
     if (field === "title") {
       const tabBtn = card.querySelector(
         `.item-tab-btn[data-item-idx="${idx}"]`,
@@ -1466,17 +1351,11 @@ function handleBuilderInput(e) {
   }
 }
 
-// Builder: <select> and file input changes
 function handleBuilderChange(e) {
   const sid = state.activeSection?.section_id;
   if (!sid) return;
 
-  // Format type — structural change, auto-save immediately so the backend
-  // knows the format before any items are added.
   if (e.target.classList.contains("comp-type-select")) {
-    // Always resolve the comp via the card's data-id, which gets updated when
-    // the server returns a real id to replace the temp id. The select's own
-    // data-comp-id may still hold the stale temp id at this point.
     const card = e.target.closest(".component-card");
     const cardId = card
       ? parseInt(card.dataset.id)
@@ -1496,8 +1375,6 @@ function handleBuilderChange(e) {
     return;
   }
 
-  // Image file input — store raw File on item, show instant preview, mark dirty.
-  // The binary is sent only when the user clicks "Save Changes".
   if (e.target.classList.contains("item-file-input")) {
     const { compId, itemIdx, field } = e.target.dataset;
     const comp = (DB.components[sid] || []).find(
@@ -1509,16 +1386,13 @@ function handleBuilderChange(e) {
     const idx = parseInt(itemIdx);
     if (!comp.items[idx]) comp.items[idx] = { _localId: Date.now() };
 
-    // Revoke any previous object URL to avoid memory leaks
     if (comp.items[idx][`_objectUrl_${field}`]) {
       URL.revokeObjectURL(comp.items[idx][`_objectUrl_${field}`]);
     }
 
-    comp.items[idx][field] = file; // raw File — sent as binary on Save Changes
-    comp.items[idx][`_hasImage_${field}`] = false; // new file replaces old — no longer "__keep__"
-    comp.items[idx][`_clearImage_${field}`] = false; // not cleared, actively replacing
-    // Cache the object URL on the item so re-renders (tab switch, dirty update etc.)
-    // can show the preview without hitting [object File] as an img src
+    comp.items[idx][field] = file;
+    comp.items[idx][`_hasImage_${field}`] = false;
+    comp.items[idx][`_clearImage_${field}`] = false;
     comp.items[idx][`_objectUrl_${field}`] = URL.createObjectURL(file);
 
     const thumb = e.target
@@ -1529,30 +1403,24 @@ function handleBuilderChange(e) {
       thumb.classList.add("show");
     }
 
-    const card = e.target.closest(".component-card");
-    markDirty(comp, card);
+    markDirty(comp, e.target.closest(".component-card"));
   }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 // DRAG & DROP — ITEM TABS  (reordering items within a component)
 // ════════════════════════════════════════════════════════════════════════════
-// Each tab button is draggable. Dragging a tab over another tab shows a
-// visual "drop here" indicator. On drop, the items array is spliced into
-// the new order, order_index values are updated, and the component is
-// marked dirty (user still has to click Save Changes to persist).
-
-let _dragTabCompId = null; // comp.id whose tab is being dragged
-let _dragTabFromIdx = null; // original index of the tab being dragged
+let _dragTabCompId = null;
+let _dragTabFromIdx = null;
 
 function onTabDragStart(e) {
   const tab = e.target.closest(".item-tab-btn");
   if (!tab) return;
-  e.stopPropagation(); // prevent comp-level dragstart from also firing
+  e.stopPropagation();
   _dragTabCompId = parseInt(tab.dataset.compId);
   _dragTabFromIdx = parseInt(tab.dataset.itemIdx);
   e.dataTransfer.effectAllowed = "move";
-  e.dataTransfer.setData("text/plain", "tab"); // required for Firefox
+  e.dataTransfer.setData("text/plain", "tab");
   tab.classList.add("tab-dragging");
 }
 
@@ -1563,7 +1431,6 @@ function onTabDragOver(e) {
   if (parseInt(tab.dataset.itemIdx) === _dragTabFromIdx) return;
   e.preventDefault();
   e.dataTransfer.dropEffect = "move";
-  // Highlight the potential drop target
   builderBody
     .querySelectorAll(".item-tab-btn.tab-drop-target")
     .forEach((t) => t.classList.remove("tab-drop-target"));
@@ -1583,22 +1450,17 @@ function onTabDrop(e) {
   if (compId !== _dragTabCompId) return;
   if (toIdx === _dragTabFromIdx) return;
   e.preventDefault();
-  e.stopPropagation(); // don't let onCompDrop also fire
+  e.stopPropagation();
 
   const sid = state.activeSection?.section_id;
   const comp = (DB.components[sid] || []).find((c) => c.id === compId);
   if (!comp) return;
 
-  // Reorder: remove from source, insert at destination
   const [moved] = comp.items.splice(_dragTabFromIdx, 1);
   comp.items.splice(toIdx, 0, moved);
-
-  // Stamp order_index on every item to match new positions
   comp.items.forEach((item, i) => {
     item.order_index = i;
   });
-
-  // Keep the active tab following the moved item
   comp._activeItem = toIdx;
 
   markDirty(
@@ -1609,7 +1471,6 @@ function onTabDrop(e) {
 }
 
 function onTabDragEnd(e) {
-  // Clean up drag styles regardless of whether drop succeeded
   builderBody
     .querySelectorAll(
       ".item-tab-btn.tab-dragging, .item-tab-btn.tab-drop-target",
@@ -1690,7 +1551,6 @@ function onCompDrop(e) {
   comps.forEach((c, i) => (c.order_index = i));
   dragCompId = null;
   renderBuilder();
-  // Save only order_index for each component — not their items
   comps
     .filter((c) => c.format_type)
     .forEach((c) => {
@@ -1705,7 +1565,6 @@ function onCompDrop(e) {
 // PREVIEW MODAL
 // ════════════════════════════════════════════════════════════════════════════
 async function openPreviewModal(comp) {
-  // Ensure the modal shell exists before we start loading
   let modal = document.getElementById("compPreviewModal");
   if (!modal) {
     modal = document.createElement("div");
@@ -1721,25 +1580,19 @@ async function openPreviewModal(comp) {
     document.body.appendChild(modal);
   }
 
-  // Show a loading state immediately so the user gets feedback
   const body = document.getElementById("compPreviewBody");
   body.innerHTML = `<p style="text-align:center;color:#9ca3af;padding:40px">&#128247; Loading preview...</p>`;
   modal.classList.add("active");
 
-  // Fetch fresh component data from the backend so images are real server URLs,
-  // not stale in-memory File objects or data: URLs that only exist in this session.
   const res = await FetchData(`/component/${comp.id}`, true);
-  console.log("[Preview fetch]", handleApiResponse(res) ,res);
-  
+  console.log("[Preview fetch]", handleApiResponse(res), res);
+
   if (handleApiResponse(res)) {
     modal.classList.remove("active");
     return;
   }
 
-  // Normalize the server response the same way fetchComponents does —
-  // this converts image_data (base64) + mimetype into a renderable data: URL.
   const freshComp = normalizeComp(res.data.component || res.data);
-
   const items = (freshComp.items || []).filter(
     (i) => i.title || i.content || i.url || i.image,
   );
@@ -1888,7 +1741,7 @@ function showConfirmModal(title, message, onConfirm) {
   document.getElementById("confirmMsg").textContent = message;
   document.getElementById("modalConfirm").classList.add("active");
   const old = document.getElementById("confirmBtn");
-  const btn = old.cloneNode(true); // clone to remove previous handler
+  const btn = old.cloneNode(true);
   old.parentNode.replaceChild(btn, old);
   btn.addEventListener("click", () => {
     closeModal("modalConfirm");
@@ -1908,9 +1761,6 @@ function closeModal(id) {
 /**
  * normalizeComp — converts any server or local component shape into the
  * consistent internal shape used throughout this file.
- *
- * Server may return:  component_id, format_type OR component_type OR type
- * Internal always:    id + component_id,  format_type + type
  */
 function normalizeComp(c) {
   const id =
@@ -1923,6 +1773,7 @@ function normalizeComp(c) {
         : c.type != null
           ? c.type
           : "";
+
   return Object.assign({}, c, {
     id,
     component_id: id,
@@ -1942,14 +1793,9 @@ function normalizeComp(c) {
                 order_index: it.order_index ?? i,
                 ...it,
               };
-              // Convert image_data (base64) + mimetype → data: URL so the
-              // preview <img> renders immediately without any extra work.
-              // image_data is the raw base64 string the server returns.
-              // After conversion we delete image_data/mimetype — we only
-              // keep the data URL on the canonical image field (image / url).
+              // Convert image_data (base64) + mimetype → data: URL
               IMAGE_FIELDS.forEach((field) => {
                 if (it.image_data && it.mimetype) {
-                  // Build the data URL and store it on the correct field
                   item[field] = `data:${it.mimetype};base64,${it.image_data}`;
                   item[`_hasImage_${field}`] = true;
                 } else if (
@@ -1959,7 +1805,6 @@ function normalizeComp(c) {
                   item[`_hasImage_${field}`] = true;
                 }
               });
-              // Clean up raw server fields — not needed in UI state
               delete item.image_data;
               delete item.mimetype;
               return item;

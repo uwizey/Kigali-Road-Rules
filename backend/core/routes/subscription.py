@@ -169,7 +169,7 @@ def update_subscription_plan(plan_id):
 
 @subscription_bp.route("/allrequests", methods=["GET"])
 @role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1) 
+@rate_limit(capacity=10, refill_rate=1) 
 def get_all_requests():
     try:
         # Order by request_date descending so latest requests come first

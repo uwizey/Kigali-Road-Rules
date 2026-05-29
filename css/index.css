@@ -9,8 +9,9 @@
     --gray: #64748B;
     --gray-dark: #334155;
     --gray-light: #F1F5F9;
-    --white: #FFFFFF;
+    --white:  #f5feff;
     --border: #E2E8F0;
+    --off-white: #f5feff;
     
     /* Utils */
     --radius: 6px;
@@ -33,7 +34,7 @@ html {
 }
 
 body {
-    background-color: var(--bg-light);
+    background-color: var(--off-white);
     color: var(--black);
     line-height: 1.6;
     overflow-x: hidden;
@@ -49,48 +50,44 @@ body {
     z-index: 1000;
     border-bottom: 1px solid var(--border);
     transition: var(--speed);
-    background: rgb(240, 247, 255);
+    background: var(--bg-light);
 }
-
-.header.hide {
-    transform: translateY(-100%);
+ 
+.logo-group {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  cursor: pointer;
+  text-decoration: none;
+  flex-shrink: 0;
+  margin-right: 32px;
 }
-
-.header.scrolled {
-    background: rgba(240, 247, 255, 0.95);
-    backdrop-filter: blur(14px);
-    box-shadow: var(--shadow);
+.logo-mark {
+  width: 46px;
+  height: 46px;
+  background: var(--primary);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform var(--speed);
 }
-
-.logo {
-    width: 70px;
-    height: 70px;
-    border-radius: var(--radius);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: var(--speed);
+.logo-group:hover .logo-mark { transform: scale(0.93); }
+.logo-text { display: flex; flex-direction: column; gap: 2px; }
+.logo-text .top {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--black);
+  letter-spacing: -0.02em;
 }
-
-.logo img {
-    max-height: 60px;
-}
-
-.logo:hover {
-    transform: scale(1.05);
-}
-
-.site-name {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--black);
-    margin-left: 14px;
-    line-height: 1.1;
-}
-
-.site-name span {
-    color: var(--primary);
+.logo-text .bottom {
+  font-family: 'DM Mono', monospace;
+  font-size: 8.5px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
 }
 
 .links {
@@ -285,8 +282,9 @@ body {
 .scroll-delay-6 { transition-delay: 0.6s; }
 
 /* ========== PARALLAX DECORATIONS ========== */
-.intro-image-container {
+ .intro-image-container {
     flex: 1;
+    max-width: 450px;
     min-width: 400px;
     height: 450px;
     background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
@@ -298,7 +296,11 @@ body {
     transition: var(--speed);
     position: relative;
     overflow: hidden;
-    animation: fadeIn 0.6s ease 0.4s both;
+}
+
+.bg-decoration {
+    position: absolute;
+    border-radius: 50%;
 }
 
 .decoration-1 {
@@ -328,6 +330,7 @@ body {
 }
 
 /* ========== FREE BADGE ========== */
+ /* ========== FREE BADGE (UPDATED THEME) ========== */
 .free-badge {
     position: absolute;
     top: 20px;
@@ -335,13 +338,15 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: linear-gradient(135deg, var(--green), var(--green-dark));
+    /* Uses your new primary variables for the gradient */
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: var(--white);
     padding: 10px 20px;
     border-radius: var(--radius-full);
     font-size: 13px;
     font-weight: 700;
-    box-shadow: 0 4px 15px rgba(0, 210, 106, 0.3);
+    /* Updated glow shadow to match the #0097b2 branding */
+    box-shadow: 0 4px 15px rgba(0, 151, 178, 0.35);
     z-index: 10;
     animation: badgePulse 2s ease-in-out infinite;
 }
@@ -349,6 +354,69 @@ body {
 .free-badge svg {
     width: 18px;
     height: 18px;
+}
+
+/* ========== NEW ROAD SIGN STYLES ========== */
+.road-sign-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+    margin-top: 30px;
+    transition: transform 0.3s  ease;
+}
+
+.road-sign {
+    width: 130px;
+    height: 130px;
+    background-color: #ffcc00; 
+    border: 5px solid #1f2937; 
+    border-radius: 12px;
+    transform: rotate(45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12), 
+                inset 0 0 0 3px #ffcc00, 
+                inset 0 0 0 5px #1f2937;
+}
+
+.sign-inner {
+    transform: rotate(-45deg);
+    text-align: center;
+    font-family: 'Impact', 'Arial Black', sans-serif;
+    color: #1f2937;
+}
+
+.sign-inner span {
+    display: block;
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    line-height: 1;
+}
+
+.sign-inner .sub-text {
+    font-size: 13px;
+    margin-top: 4px;
+    letter-spacing: 2px;
+}
+
+.sign-pole {
+    width: 12px;
+    height: 180px;
+    background: linear-gradient(90deg, #9ca3af 0%, #d1d5db 50%, #6b7280 100%);
+    margin-top: -8px; 
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    box-shadow: 4px 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+/* Hover micro-interaction for the sign */
+.intro-image-container:hover .road-sign-wrapper {
+    transform: translateY(-10px);
 }
 
 @keyframes badgePulse {

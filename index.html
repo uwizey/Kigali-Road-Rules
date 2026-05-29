@@ -7,21 +7,25 @@
     <title>Kigali Road Rules</title>
     <link rel="icon" href="assets/logo.png" type="image/png">
     <link rel="stylesheet" href="css/index.css">
-   <!-- <link rel="stylesheet" href="css/components.css">  -->
 </head>
 
 <body>
     <header class="header">
-        <div class="logo" onclick="window.location.href='index.html'">
-            <img src="assets/logo.png" alt="logo">
+        <a class="logo-group" href="index.html">
+        <div class="logo-mark">
+        
+            <img src="../assets/logo.png" alt="logo" height="45px" onerror="this.style.display='none'"> 
+        
+            
         </div>
-
-        <div class="site-name">
-            Kigali <br><span>RoadRules</span>
+        <div class="logo-text">
+        <span class="top">Kigali</span>
+        <span class="bottom">RoadRules</span>
         </div>
+    </a>
         
         <nav class="links">
-            <a href="auth/login.html" class="login">Injira</a>
+            <a href="auth/login.html" class="login">Log In</a>
         </nav>
     </header>
 
@@ -66,7 +70,7 @@
         </section>
 
         <!-- Right Column -->
-        <section class="intro-image-container">
+        <!-- <section class="intro-image-container">
             <div class="free-badge">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -75,10 +79,35 @@
                 100% FREE
             </div>
 
-            <!-- Background Decoration -->
+             
             <div class="bg-decoration decoration-1"></div>
             <div class="bg-decoration decoration-2"></div>
-        </section>
+        </section> -->
+        <section class="intro-image-container">
+        <!-- 100% Free Badge -->
+        <div class="free-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            100% FREE
+        </div>
+
+        <!-- Background Decoration Circles -->
+        <div class="bg-decoration decoration-1"></div>
+        <div class="bg-decoration decoration-2"></div>
+
+        <!-- The Road Sign Assembly -->
+        <div class="road-sign-wrapper">
+            <div class="road-sign">
+                <div class="sign-inner">
+                    <span>PASS</span>
+                    <span class="sub-text">AHEAD</span>
+                </div>
+            </div>
+            <div class="sign-pole"></div>
+        </div>
+    </section>
     </main>
 
     <!-- Features Section -->

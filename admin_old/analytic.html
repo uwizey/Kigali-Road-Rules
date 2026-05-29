@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Analytics Dashboard</title>
+    <link rel="stylesheet" href="analtytic.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <header>
+            <h1>Analytics Overview</h1>
+        </header>
+
+        <section class="dashboard-card heatmap-module">
+            <div class="card-header">
+                <h2>User Retention Heatmap</h2>
+                <p>Cohort analysis based on registration date From <span id="startDate"></span> to <span id="endDate"></span></p>
+
+            </div>
+            <div class="table-responsive">
+                <table id="retentionTable">
+                    <thead>
+                        <tr>
+                            <th>Cohort</th>
+                            <th>Users</th>
+                            <th>Day 1</th>
+                            <th>Day 7</th>
+                            <th>Day 14</th>
+                            <th>Day 30</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+        </section>
+
+         <section class="dashboard-card stepped-module">
+    <div class="card-header">
+        <h2>Cumulative Milestones</h2>
+        <p>Vertical jumps indicate new user activity</p>
+    </div>
+    <div class="chart-container">
+        <svg id="steppedChart" viewBox="0 0 450 220">
+            <defs>
+                <linearGradient id="stepGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--primary-cyan)" stop-opacity="0.4" />
+                    <stop offset="100%" stop-color="var(--primary-cyan)" stop-opacity="0" />
+                </linearGradient>
+            </defs>
+            
+            <g id="chartAxes" class="axis-style"></g>
+            
+            <path id="stepArea" fill="url(#stepGradient)" d=""></path>
+            <path id="stepLine" fill="none" stroke="var(--primary-cyan)" stroke-width="3" stroke-linejoin="round" d=""></path>
+            
+            <text x="225" y="215" text-anchor="middle" class="axis-title">Registration Timeline</text>
+            <text x="10" y="100" text-anchor="middle" transform="rotate(-90 10,100)" class="axis-title">Total Events</text>
+        </svg>
+    </div>
+</section>
+<section class="dashboard-card dau-module">
+    <div class="card-header">
+        <h2>Daily Active Users (DAU)</h2>
+        <p>New vs. Returning user distribution</p>
+    </div>
+    <div class="chart-container">
+        <svg id="dauChart" viewBox="0 0 500 250">
+            <g id="dauGrid"></g>
+            <g id="dauBars"></g>
+            <g id="dauLabels"></g>
+        </svg>
+    </div>
+    <div class="dau-legend">
+        <div class="legend-item"><span class="dot returning"></span> Returning</div>
+        <div class="legend-item"><span class="dot new"></span> New Users</div>
+    </div>
+</section>
+<section class="dashboard-card platform-module">
+    <div class="card-header">
+        <h2>Platform Distribution</h2>
+        <p>Active sessions by device type</p>
+    </div>
+    <div class="platform-container">
+        <div class="pill-bar">
+            <div id="bar-desktop" class="segment desktop"></div>
+            <div id="bar-mobile" class="segment mobile"></div>
+            <div id="bar-tablet" class="segment tablet"></div>
+            <div id="bar-other" class="segment other"></div>
+        </div>
+    </div>
+    <div class="platform-legend">
+        <div class="legend-item"><span class="dot d-color"></span> Desktop <strong id="val-desktop">0%</strong></div>
+        <div class="legend-item"><span class="dot m-color"></span> Mobile <strong id="val-mobile">0%</strong></div>
+        <div class="legend-item"><span class="dot t-color"></span> Tablet <strong id="val-tablet">0%</strong></div>
+        <div class="legend-item"><span class="dot o-color"></span> Other <strong id="val-other">0%</strong></div>
+    </div>
+</section>
+<section class="dashboard-card donut-module">
+    <div class="card-header">
+        <h2>Service Adoption</h2>
+        <p>Proportion of total interactions</p>
+    </div>
+    <div class="donut-content">
+        <div class="donut-wrapper">
+            <svg id="serviceDonut" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f0f7f8" stroke-width="8" />
+                <g id="donutSegments"></g>
+            </svg>
+            <div class="donut-center">
+                <span id="totalHits">0</span>
+                <label>Total Hits</label>
+            </div>
+        </div>
+        <div id="donutLegend" class="donut-legend">
+            </div>
+    </div>
+</section>
+<section class="dashboard-card funnel-module">
+    <div class="card-header">
+        <h2 class="neon-text">Learning Funnel</h2>
+    </div>
+    
+    <div class="funnel-steps">
+        <div class="step">
+            <div class="step-info">
+                <span>1. Logins</span>
+                <span class="step-pct" id="pct-login">100%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="fill-login" style="width: 100%;"></div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-info">
+                <span>2. Service Usage</span>
+                <span class="step-pct" id="pct-service">0%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="fill-service" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-info">
+                <span>3. Conversion Rate</span>
+                <span class="step-pct" id="pct-rate">0%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="fill-rate" style="width: 0%;"></div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="dashboard-card radar-module">
+    <div class="card-header">
+        <h2>User Engagement DNA</h2>
+        <p>Comparing Event Volume, Depth, and Type Variety</p>
+    </div>
+    <div class="radar-container">
+        <svg id="engagementRadar" viewBox="0 0 200 200">
+            <g id="radarGrid"></g>
+            <g id="radarShapes"></g>
+            <g id="radarLabels"></g>
+        </svg>
+    </div>
+    <div id="radarLegend" class="radar-legend"></div>
+</section>
+    </div>
+    <script type="module" src="../js/analytic.js"></script>
+</body>
+</html>

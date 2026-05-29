@@ -47,6 +47,14 @@ def register():
                 "_event_metadata": {"reason": "missing_fields"}
             }, 400
 
+        if len(password) < 8:
+            return {
+                "status": False,
+                "message": "Password must be at least 8 characters",
+                "_event_type": "register_failed",
+                "_event_metadata": {"reason": "weak_password"}
+            }, 400
+
         if User.query.filter_by(email=email).first():
             return {
                 "status": False,
@@ -55,7 +63,6 @@ def register():
                 "_event_metadata": {"reason": "duplicate_email", "email": email}
             }, 409
 
-        # Create new user
         db.session.add(User(
             email=email,
             password=generate_password_hash(password),
@@ -240,24 +247,23 @@ def update_password():
         if not old_password or not new_password:
             return jsonify({"status": False, "message": "Missing required fields"}), 400
 
-        # ✅ Identify user from JWT
+        if len(new_password) < 8:
+            return jsonify({"status": False, "message": "Password must be at least 8 characters"}), 400
+
         user_id = get_jwt_identity()
         user = User.query.get(user_id)
         if not user:
             return jsonify({"status": False, "message": "User not found"}), 404
 
-        # ✅ Verify old password
         if not check_password_hash(user.password, old_password):
             return jsonify({"status": False, "message": "Invalid current password"}), 403
 
-        # ✅ Update password (hash new one)
         user.password = generate_password_hash(new_password)
         db.session.commit()
 
-        # ✅ Refresh JWT with updated claims
         additional_claims = {"email": user.email, "role": user.role}
         new_token = create_access_token(
-            identity=user.id,   # use your actual PK field
+            identity=user.id,
             additional_claims=additional_claims,
             expires_delta=timedelta(hours=1)
         )
@@ -303,9 +309,14 @@ def get_all_users():
         return jsonify({"status": False, "message": "Error retrieving users"}), 500
 
 @auth_bp.route("/user/<int:user_id>", methods=["DELETE"])
+@jwt_required()
+@role_required(["admin"])
 def delete_user(user_id):
-    from core.utils.decorators import role_required
     try:
+        admin_id = get_jwt_identity()
+        if admin_id == user_id:
+            return jsonify({"status": False, "message": "Admins cannot delete their own account using this route"}), 403
+
         user = User.query.get(user_id)
         if not user:
             return jsonify({"status": False, "message": "User not found"}), 404
@@ -317,9 +328,14 @@ def delete_user(user_id):
         return jsonify({"status": False, "message": "Error deleting user"}), 500
 
 @auth_bp.route("/user/<int:user_id>", methods=["PUT"])
-def update_user(user_id):   
-    from core.utils.decorators import role_required
+@jwt_required()
+@role_required(["admin"])
+def update_user(user_id):
     try:
+        admin_id = get_jwt_identity()
+        if admin_id == user_id:
+            return jsonify({"status": False, "message": "Admins cannot update their own account using this route"}), 403
+
         payload = request.get_json(force=True, silent=True)
         if not payload:
             return jsonify({"status": False, "message": "Invalid or missing JSON payload"}), 400
@@ -329,8 +345,12 @@ def update_user(user_id):
         email = payload.get("email", "").strip().lower()
         password = payload.get("password")
         if email:
+            if User.query.filter_by(email=email).first():
+                return jsonify({"status": False, "message": "Email already in use"}), 409
             user.email = email
         if password:
+            if len(password) < 8:
+                return jsonify({"status": False, "message": "Password must be at least 8 characters"}), 400
             user.password = generate_password_hash(password)
         db.session.commit()
         return jsonify({"status": True, "message": "User updated successfully"}), 200
@@ -364,23 +384,23 @@ def admin_reset_password():
         if not user_id or not new_password:
             return jsonify({"status": False, "message": "User ID and new password are required"}), 400
 
-        # Fetch user
+        if len(new_password) < 8:
+            return jsonify({"status": False, "message": "Password must be at least 8 characters"}), 400
+
         user = User.query.get(user_id)
         if not user:
-            return jsonify({"status": False, "message": f"User with ID {user_id} not found"}), 404
+            return jsonify({"status": False, "message": "User not found"}), 404
 
-        # Prevent admin from using this endpoint on themselves
         admin_id = get_jwt_identity()
         if admin_id == user_id:
             return jsonify({"status": False, "message": "Admins cannot reset their own password using this route"}), 403
 
-        # Hash and update password
         user.password = generate_password_hash(new_password)
         db.session.commit()
 
         return jsonify({
             "status": True,
-            "message": f"Password for user {user_id} has been updated successfully"
+            "message": "Password has been updated successfully"
         }), 200
 
     except Exception as e:
@@ -395,12 +415,11 @@ def deactivate_user(user_id):
     try:
         user = User.query.get(user_id)
         if not user:
-            return jsonify({"status": False, "message": f"User {user_id} not found"}), 404
+            return jsonify({"status": False, "message": "User not found"}), 404
 
         if not user.is_active:
             return jsonify({"status": False, "message": "User already deactivated"}), 400
 
-        # Prevent admin from deactivating themselves
         admin_id = get_jwt_identity()
         if admin_id == user_id:
             return jsonify({"status": False, "message": "You cannot deactivate your own account"}), 403
@@ -411,7 +430,7 @@ def deactivate_user(user_id):
 
         return jsonify({
             "status": True,
-            "message": f"User {user_id} deactivated successfully",
+            "message": "User deactivated successfully",
             "deleted_at": user.deleted_at.isoformat()
         }), 200
 
@@ -426,25 +445,22 @@ def activate_user(user_id):
     try:
         user = User.query.get(user_id)
         if not user:
-            return jsonify({"status": False, "message": f"User {user_id} not found"}), 404
+            return jsonify({"status": False, "message": "User not found"}), 404
 
-        # Already active
         if user.is_active:
             return jsonify({"status": False, "message": "User is already active"}), 400
 
-        # Optional: prevent admin from activating themselves through this route
         admin_id = get_jwt_identity()
         if admin_id == user_id:
             return jsonify({"status": False, "message": "You cannot activate your own account using this route"}), 403
 
-        # Reactivate user
         user.is_active = True
         user.deleted_at = None
         db.session.commit()
 
         return jsonify({
             "status": True,
-            "message": f"User {user_id} activated successfully"
+            "message": "User activated successfully"
         }), 200
 
     except Exception as e:

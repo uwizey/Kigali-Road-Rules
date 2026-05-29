@@ -13,17 +13,19 @@ quizzes_bp = Blueprint("quizzes", __name__)
 @subscription_required("quizzes")
 @track_event("quiz_generation_attempt")
 def _generate_random_quiz(quiz_size):
-    
     TARGET_SIZE = quiz_size
+
+    # 1. Load top-level topics
     top_topics = Topic.query.filter_by(parent_topic=None).all()
     if not top_topics:
         return {
-                "status": False,
-                "message": "No topics found",
-                "_event_type": "quiz_generation_failed",
-                "_event_metadata": {"reason": "no_topics"}
-            }, 404
+            "status": False,
+            "message": "No topics found",
+            "_event_type": "quiz_generation_failed",
+            "_event_metadata": {"reason": "no_topics"}
+        }, 404
 
+    # 2. Build topic data: subtopics, parent questions, totals
     topic_data = {}
     for topic in top_topics:
         subtopics = topic.subtopics
@@ -31,38 +33,60 @@ def _generate_random_quiz(quiz_size):
         parent_qs = [q.question_id for q in topic.questions]
         total = sum(len(v) for v in sub_qs.values()) + len(parent_qs)
         topic_data[topic.topic_id] = {
-            "subtopics": sub_qs, "parent_questions": parent_qs, "total_available": total
+            "subtopics": sub_qs,
+            "parent_questions": parent_qs,
+            "total_available": total
         }
 
+    # 3. Distribute quota per top topic
     T = len(top_topics)
     base_quota = TARGET_SIZE // T
     leftover = TARGET_SIZE % T
+
     topic_quota = {t.topic_id: base_quota for t in top_topics}
-    sorted_topics = sorted(top_topics, key=lambda t: topic_data[t.topic_id]["total_available"], reverse=True)
+    # Give extra slots to topics with more questions
+    sorted_topics = sorted(
+        top_topics,
+        key=lambda t: topic_data[t.topic_id]["total_available"],
+        reverse=True
+    )
     for i in range(leftover):
         topic_quota[sorted_topics[i].topic_id] += 1
 
     selected = defaultdict(list)
     global_shortage = 0
 
+    # 4. Select questions per topic (subtopics + parent)
     for topic in top_topics:
         tid = topic.topic_id
         quota = topic_quota[tid]
         data = topic_data[tid]
         subtopics = data["subtopics"]
         parent_qs = data["parent_questions"]
+
+        # Shuffle parent questions to avoid deterministic picks
+        random.shuffle(parent_qs)
+
         S = len(subtopics) if subtopics else 1
         sub_quota = quota // S
         sub_leftover = quota % S
 
+        # 4a. Base allocation per subtopic
         for sid, qs in subtopics.items():
-            take = min(len(qs), sub_quota)
-            selected[tid].extend(random.sample(qs, take))
+            qs_copy = qs[:]  # avoid mutating original
+            random.shuffle(qs_copy)
+            take = min(len(qs_copy), sub_quota)
+            selected[tid].extend(qs_copy[:take])
             if take < sub_quota:
                 global_shortage += (sub_quota - take)
 
+        # 4b. Distribute leftover across subtopics with more questions
         if subtopics:
-            sorted_subs = sorted(subtopics.items(), key=lambda x: len(x[1]), reverse=True)
+            sorted_subs = sorted(
+                subtopics.items(),
+                key=lambda x: len(x[1]),
+                reverse=True
+            )
             for i in range(sub_leftover):
                 sid, qs = sorted_subs[i % len(sorted_subs)]
                 if qs:
@@ -72,70 +96,96 @@ def _generate_random_quiz(quiz_size):
                 else:
                     global_shortage += 1
 
+        # 4c. Fill remaining from parent questions
         remaining = quota - len(selected[tid])
         if remaining > 0:
             take = min(len(parent_qs), remaining)
-            selected[tid].extend(random.sample(parent_qs, take))
+            selected[tid].extend(parent_qs[:take])
             if take < remaining:
                 global_shortage += (remaining - take)
 
+    # 5. Global shortage fill from remaining pool
     if global_shortage > 0:
         remaining_pool = []
         for tid, data in topic_data.items():
             all_qs = [q for qs in data["subtopics"].values() for q in qs] + data["parent_questions"]
             remaining_pool.extend([q for q in all_qs if q not in selected[tid]])
-        extra = random.sample(remaining_pool, min(len(remaining_pool), global_shortage))
+
+        random.shuffle(remaining_pool)
+        extra = remaining_pool[:min(len(remaining_pool), global_shortage)]
         for qid in extra:
             q = Question.query.get(qid)
-            selected[q.topic.parent_topic or q.topic.topic_id].append(qid)
+            parent_tid = q.topic.parent_topic or q.topic.topic_id
+            selected[parent_tid].append(qid)
 
+    # 6. Flatten to final_list and map question → topic
     topic_of = {}
     final_list = []
     for tid, qs in selected.items():
+        # Shuffle per-topic selection to avoid deterministic order
+        random.shuffle(qs)
         for q in qs:
             final_list.append(q)
             topic_of[q] = tid
 
+    # 7. If we overshoot, randomly trim to TARGET_SIZE
     if len(final_list) > TARGET_SIZE:
         final_list = random.sample(final_list, TARGET_SIZE)
 
+    # 8. Extra shuffle before topic‑balancing to break patterns
+    random.shuffle(final_list)
+
+    # 9. Group by topic into deques
     grouped = defaultdict(deque)
     for q in final_list:
         grouped[topic_of[q]].append(q)
 
-    heap = [(-len(v), tid) for tid, v in grouped.items()]
+    # 10. Build a heap with random tie‑breaking to avoid stable ordering
+    heap = [(-len(v), random.random(), tid) for tid, v in grouped.items()]
     heapq.heapify(heap)
+
     ordered = []
     prev_topic = None
 
     while heap:
-        count1, tid1 = heapq.heappop(heap)
+        count1, rand1, tid1 = heapq.heappop(heap)
+
+        # If same topic as previous and there is another option, try alternate topic
         if tid1 == prev_topic and heap:
-            count2, tid2 = heapq.heappop(heap)
-            qid = grouped[tid2].popleft()
+            count2, rand2, tid2 = heapq.heappop(heap)
+
+            # Randomly decide which topic to use first when both are available
+            if random.random() < 0.5:
+                tid_first, count_first, rand_first = tid2, count2, rand2
+                tid_second, count_second, rand_second = tid1, count1, rand1
+            else:
+                tid_first, count_first, rand_first = tid1, count1, rand1
+                tid_second, count_second, rand_second = tid2, count2, rand2
+
+            qid = grouped[tid_first].popleft()
             ordered.append(qid)
-            prev_topic = tid2
-            if grouped[tid2]:
-                heapq.heappush(heap, (-len(grouped[tid2]), tid2))
-            heapq.heappush(heap, (count1, tid1))
+            prev_topic = tid_first
+
+            if grouped[tid_first]:
+                heapq.heappush(heap, (-len(grouped[tid_first]), random.random(), tid_first))
+            heapq.heappush(heap, (count_second, rand_second, tid_second))
+
         else:
             qid = grouped[tid1].popleft()
             ordered.append(qid)
             prev_topic = tid1
             if grouped[tid1]:
-                heapq.heappush(heap, (-len(grouped[tid1]), tid1))
-    
-    
-    
+                heapq.heappush(heap, (-len(grouped[tid1]), random.random(), tid1))
+
     return {
-            "status": True,
-            "questions": ordered,
-            "_event_type": "quiz_generation_success",
-            "_event_metadata": {
-                "quiz_size": TARGET_SIZE,
-                "selected_count": len(ordered)
-            }
-        }, 200
+        "status": True,
+        "questions": ordered,
+        "_event_type": "quiz_generation_success",
+        "_event_metadata": {
+            "quiz_size": TARGET_SIZE,
+            "selected_count": len(ordered)
+        }
+    }, 200
 
 @quizzes_bp.route("/quiz", methods=["POST"])
 @role_required("admin")
@@ -411,5 +461,3 @@ def random_quiz():
         db.session.rollback()
         logging.error(f"Error generating quiz: {e}")
         return jsonify({"status": False, "message": "Server error"}), 500
-
-
