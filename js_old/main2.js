@@ -1,4 +1,7 @@
-import { FetchData, PostData } from "./api/crud.js";
+import { FetchData, PostData } from "../js/api/crud.js";
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const logoutbtn = document.getElementById("btn-logout");
 
 if (logoutbtn) {
@@ -14,16 +17,7 @@ if (logoutbtn) {
   });
 }
 
-const useremail = document.getElementById("userEmail");
-if (useremail) {
-  async () => {
-    const response = await FetchData("/user/profile", true);
-    console.log(response);
-    useremail.textContent = response.success
-      ? response.data.data.email
-      : "Unknown User";
-  };
-}
+
 
 // ─── Message box helpers ──────────────────────────────────────────────────────
 
@@ -38,24 +32,18 @@ function showMessage(text, type) {
 function hideMessage() {
   msgBox.style.display = "none";
 }
+ 
 
 // ─── Tab event listeners ──────────────────────────────────────────────────────
 
-document
-  .getElementById("login-tab")
-  .addEventListener("click", () => setMode("login"));
-document
-  .getElementById("signup-tab")
-  .addEventListener("click", () => setMode("signup"));
+document.getElementById("login-tab").addEventListener("click", () => setMode("login"));
+document.getElementById("signup-tab").addEventListener("click", () => setMode("signup"));
 
 // ─── Scroll-aware header ──────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
   const header = document.querySelector(".header");
-  if (!header) {
-    console.error("Header not found!");
-    return;
-  }
+  if (!header) { console.error("Header not found!"); return; }
 
   let lastScrollY = window.scrollY;
 
@@ -83,12 +71,12 @@ const eyeClosed = `<svg class="eye-off-icon" viewBox="0 0 24 24" fill="none" str
 function setMode(newMode) {
   mode = newMode;
 
-  const loginTab = document.getElementById("login-tab");
-  const signupTab = document.getElementById("signup-tab");
-  const confirmGroup = document.getElementById("confirm-password-group");
-  const forgotLink = document.getElementById("forgot-password-link");
-  const submitBtn = document.getElementById("submit-btn");
-  const confirmInput = document.getElementById("confirmPassword");
+  const loginTab      = document.getElementById("login-tab");
+  const signupTab     = document.getElementById("signup-tab");
+  const confirmGroup  = document.getElementById("confirm-password-group");
+  const forgotLink    = document.getElementById("forgot-password-link");
+  const submitBtn     = document.getElementById("submit-btn");
+  const confirmInput  = document.getElementById("confirmPassword");
 
   if (mode === "login") {
     loginTab.classList.add("active");
@@ -120,69 +108,67 @@ function togglePass(inputId, btn) {
 
 // ─── Form submission ──────────────────────────────────────────────────────────
 
-document
-  .getElementById("auth-form")
-  .addEventListener("submit", async function (e) {
-    e.preventDefault();
+document.getElementById("auth-form").addEventListener("submit", async function (e) {
+  e.preventDefault();
 
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    const confirmPassword = document.getElementById("confirmPassword").value;
+  const email           = document.getElementById("email").value;
+  const password        = document.getElementById("password").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
 
-    if (mode === "login") {
-      const response = await PostData("/login", { email, password });
-      console.log(response);
+  if (mode === "login") {
+    const response = await PostData("/login", { email, password });
+    console.log(response);
 
-      if (response.success) {
-        localStorage.setItem("authToken", response.data.token);
-        window.location.href =
-          response.data.role === "client"
-            ? "../user/modeselection.html"
-            : "../admin/admin-dashboard.html";
-      } else {
-        showMessage(response.error.message, "error");
-      }
+    if (response.success) {
+      localStorage.setItem("authToken", response.data.token);
+      window.location.href =
+        response.data.role === "client"
+          ? "../user/modeselection.html"
+          : "../admin/admin-dashboard.html";
     } else {
-      if (password.length < 8) {
-        showMessage("Password should be at least 8 characters.", "error");
-        return;
-      }
-      if (password !== confirmPassword) {
-        showMessage("Passwords do not match!", "error");
-        return;
-      }
-
-      const response = await PostData("/register", { email, password });
-
-      if (response.success) {
-        setTimeout(() => {
-          setMode("login");
-          showMessage(
-            `${response.data.message}. Login with your credentials.`,
-            "success",
-          );
-          setTimeout(hideMessage, 7000);
-        }, 1000);
-      } else {
-        console.log(response);
-        showMessage(response.error.message, "error");
-      }
+      showMessage(response.error.message, "error");
     }
-  });
+
+  } else {
+    if (password.length < 8) {
+      showMessage("Password should be at least 8 characters.", "error");
+      return;
+    }
+    if (password !== confirmPassword) {
+      showMessage("Passwords do not match!", "error");
+      return;
+    }
+
+    const response = await PostData("/register", { email, password });
+
+    if (response.success) {
+      setTimeout(() => {
+        setMode("login");
+        showMessage(`${response.data.message}. Login with your credentials.`, "success");
+        setTimeout(hideMessage, 7000);
+      }, 1000);
+    } else {
+      console.log(response);
+      showMessage(response.error.message, "error");
+    }
+  }
+});
 
 const observer = new IntersectionObserver(
   (entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
-        entry.target.classList.add("visible");
+        entry.target.classList.add('visible');
         observer.unobserve(entry.target); // animate once
       }
     });
   },
-  { threshold: 0.12 },
+  { threshold: 0.12 }
 );
 
 /* observe every .fade-up element on the page */
-document.querySelectorAll(".fade-up").forEach((el) => {
+document.querySelectorAll('.fade-up').forEach((el) => {
   observer.observe(el);
 });
+
+
