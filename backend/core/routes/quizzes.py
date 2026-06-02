@@ -3,52 +3,60 @@ import random
 import heapq
 from collections import defaultdict, deque
 from datetime import datetime
-from flask import Blueprint, request, jsonify,g
-from core.models import db, Quiz, QuizQuestion, Question, Topic, Subscription
-from core.utils.decorators import role_required,subscription_required,rate_limit,track_event
+from flask import Blueprint, request, g
+from core.models import db, Quiz, QuizQuestion, Question, Topic
+from core.utils.decorators import (
+    role_required,
+    subscription_required,
+    rate_limit,
+    track_event,
+    APIResponse,
+)
 from flask_jwt_extended import get_jwt_identity
 
 quizzes_bp = Blueprint("quizzes", __name__)
+
+
+# ─── Internal helpers (use @track_event — must return plain dicts) ────────────
+
 
 @subscription_required("quizzes")
 @track_event("quiz_generation_attempt")
 def _generate_random_quiz(quiz_size):
     TARGET_SIZE = quiz_size
 
-    # 1. Load top-level topics
     top_topics = Topic.query.filter_by(parent_topic=None).all()
     if not top_topics:
         return {
-            "status": False,
+            "status": "error",
             "message": "No topics found",
             "_event_type": "quiz_generation_failed",
-            "_event_metadata": {"reason": "no_topics"}
+            "_event_metadata": {"reason": "no_topics"},
         }, 404
 
-    # 2. Build topic data: subtopics, parent questions, totals
     topic_data = {}
     for topic in top_topics:
         subtopics = topic.subtopics
-        sub_qs = {sub.topic_id: [q.question_id for q in sub.questions] for sub in subtopics}
+        sub_qs = {
+            sub.topic_id: [q.question_id for q in sub.questions] for sub in subtopics
+        }
         parent_qs = [q.question_id for q in topic.questions]
         total = sum(len(v) for v in sub_qs.values()) + len(parent_qs)
         topic_data[topic.topic_id] = {
             "subtopics": sub_qs,
             "parent_questions": parent_qs,
-            "total_available": total
+            "total_available": total,
         }
 
-    # 3. Distribute quota per top topic
     T = len(top_topics)
     base_quota = TARGET_SIZE // T
     leftover = TARGET_SIZE % T
 
     topic_quota = {t.topic_id: base_quota for t in top_topics}
-    # Give extra slots to topics with more questions
     sorted_topics = sorted(
         top_topics,
         key=lambda t: topic_data[t.topic_id]["total_available"],
-        reverse=True
+        reverse=True,
     )
     for i in range(leftover):
         topic_quota[sorted_topics[i].topic_id] += 1
@@ -56,7 +64,6 @@ def _generate_random_quiz(quiz_size):
     selected = defaultdict(list)
     global_shortage = 0
 
-    # 4. Select questions per topic (subtopics + parent)
     for topic in top_topics:
         tid = topic.topic_id
         quota = topic_quota[tid]
@@ -64,28 +71,23 @@ def _generate_random_quiz(quiz_size):
         subtopics = data["subtopics"]
         parent_qs = data["parent_questions"]
 
-        # Shuffle parent questions to avoid deterministic picks
         random.shuffle(parent_qs)
 
         S = len(subtopics) if subtopics else 1
         sub_quota = quota // S
         sub_leftover = quota % S
 
-        # 4a. Base allocation per subtopic
         for sid, qs in subtopics.items():
-            qs_copy = qs[:]  # avoid mutating original
+            qs_copy = qs[:]
             random.shuffle(qs_copy)
             take = min(len(qs_copy), sub_quota)
             selected[tid].extend(qs_copy[:take])
             if take < sub_quota:
-                global_shortage += (sub_quota - take)
+                global_shortage += sub_quota - take
 
-        # 4b. Distribute leftover across subtopics with more questions
         if subtopics:
             sorted_subs = sorted(
-                subtopics.items(),
-                key=lambda x: len(x[1]),
-                reverse=True
+                subtopics.items(), key=lambda x: len(x[1]), reverse=True
             )
             for i in range(sub_leftover):
                 sid, qs = sorted_subs[i % len(sorted_subs)]
@@ -96,51 +98,44 @@ def _generate_random_quiz(quiz_size):
                 else:
                     global_shortage += 1
 
-        # 4c. Fill remaining from parent questions
         remaining = quota - len(selected[tid])
         if remaining > 0:
             take = min(len(parent_qs), remaining)
             selected[tid].extend(parent_qs[:take])
             if take < remaining:
-                global_shortage += (remaining - take)
+                global_shortage += remaining - take
 
-    # 5. Global shortage fill from remaining pool
     if global_shortage > 0:
         remaining_pool = []
         for tid, data in topic_data.items():
-            all_qs = [q for qs in data["subtopics"].values() for q in qs] + data["parent_questions"]
+            all_qs = [q for qs in data["subtopics"].values() for q in qs] + data[
+                "parent_questions"
+            ]
             remaining_pool.extend([q for q in all_qs if q not in selected[tid]])
 
         random.shuffle(remaining_pool)
-        extra = remaining_pool[:min(len(remaining_pool), global_shortage)]
-        for qid in extra:
+        for qid in remaining_pool[: min(len(remaining_pool), global_shortage)]:
             q = Question.query.get(qid)
             parent_tid = q.topic.parent_topic or q.topic.topic_id
             selected[parent_tid].append(qid)
 
-    # 6. Flatten to final_list and map question → topic
     topic_of = {}
     final_list = []
     for tid, qs in selected.items():
-        # Shuffle per-topic selection to avoid deterministic order
         random.shuffle(qs)
         for q in qs:
             final_list.append(q)
             topic_of[q] = tid
 
-    # 7. If we overshoot, randomly trim to TARGET_SIZE
     if len(final_list) > TARGET_SIZE:
         final_list = random.sample(final_list, TARGET_SIZE)
 
-    # 8. Extra shuffle before topic‑balancing to break patterns
     random.shuffle(final_list)
 
-    # 9. Group by topic into deques
     grouped = defaultdict(deque)
     for q in final_list:
         grouped[topic_of[q]].append(q)
 
-    # 10. Build a heap with random tie‑breaking to avoid stable ordering
     heap = [(-len(v), random.random(), tid) for tid, v in grouped.items()]
     heapq.heapify(heap)
 
@@ -150,11 +145,9 @@ def _generate_random_quiz(quiz_size):
     while heap:
         count1, rand1, tid1 = heapq.heappop(heap)
 
-        # If same topic as previous and there is another option, try alternate topic
         if tid1 == prev_topic and heap:
             count2, rand2, tid2 = heapq.heappop(heap)
 
-            # Randomly decide which topic to use first when both are available
             if random.random() < 0.5:
                 tid_first, count_first, rand_first = tid2, count2, rand2
                 tid_second, count_second, rand_second = tid1, count1, rand1
@@ -167,9 +160,10 @@ def _generate_random_quiz(quiz_size):
             prev_topic = tid_first
 
             if grouped[tid_first]:
-                heapq.heappush(heap, (-len(grouped[tid_first]), random.random(), tid_first))
+                heapq.heappush(
+                    heap, (-len(grouped[tid_first]), random.random(), tid_first)
+                )
             heapq.heappush(heap, (count_second, rand_second, tid_second))
-
         else:
             qid = grouped[tid1].popleft()
             ordered.append(qid)
@@ -177,228 +171,38 @@ def _generate_random_quiz(quiz_size):
             if grouped[tid1]:
                 heapq.heappush(heap, (-len(grouped[tid1]), random.random(), tid1))
 
-    return {
-        "status": True,
-        "questions": ordered,
-        "_event_type": "quiz_generation_success",
-        "_event_metadata": {
-            "quiz_size": TARGET_SIZE,
-            "selected_count": len(ordered)
-        }
-    }, 200
-
-@quizzes_bp.route("/quiz", methods=["POST"])
-@role_required("admin")
-@rate_limit(capacity=5, refill_rate=1) 
-def create_quiz():
-    try:
-        payload = request.get_json(force=True, silent=True)
-        if not payload:
-            return jsonify({"status": False, "message": "Invalid or missing JSON payload"}), 400
-        title = payload.get("title")
-        description = payload.get("description")
-        question_ids = payload.get("questions")
-        if not title or not description or not question_ids:
-            return jsonify({"status": False, "message": "Title, description, and questions are required"}), 400
-        new_quiz = Quiz(title=title, description=description, publish_date=datetime.utcnow())
-        db.session.add(new_quiz)
-        db.session.flush()
-        for q_id in question_ids:
-            if not Question.query.get(q_id):
-                return jsonify({"status": False, "message": f"Question {q_id} not found"}), 404
-            db.session.add(QuizQuestion(quiz_id=new_quiz.quiz_id, question_id=q_id))
-
-        sub = g.subscription
+    sub = g.subscription
+    if sub.remaining_quizzes > 0:
         sub.remaining_quizzes -= 1
         db.session.commit()
-        
-        return jsonify({"status": True, "message": "Quiz created successfully", "quiz_id": new_quiz.quiz_id}), 201
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"Error creating quiz: {str(e)}")
-        return jsonify({"status": False, "message": "Error creating quiz"}), 500
-
-@quizzes_bp.route("/quizzes", methods=["GET"])
-@role_required(["admin", "client"])
-@rate_limit(capacity=5, refill_rate=1) 
-def get_all_quizzes():
-    try:
-        quizzes = Quiz.query.all()
-        response = [
-            {
-                "quiz_id": quiz.quiz_id, "title": quiz.title,
-                "description": quiz.description,
-                "question_count": len(quiz.questions),
-                "publish_date": quiz.publish_date.isoformat() if quiz.publish_date else None,
-            }
-            for quiz in quizzes
-        ]
-        return jsonify({"status": True, "quizzes": response}), 200
-    except Exception as e:
-        logging.error(f"Error retrieving quizzes: {str(e)}")
-        return jsonify({"status": False, "message": "Error retrieving quizzes"}), 500
-
-@quizzes_bp.route("/quiz/<int:quiz_id>", methods=["GET"])
-@role_required(["admin", "client"])
-@subscription_required("template_exams")
-@rate_limit(capacity=5, refill_rate=1)
-@track_event("template_exams")   # 👈 added decorator
-def get_quiz(quiz_id):
-    try:
-        quiz = Quiz.query.get(quiz_id)
-        sub = g.subscription
-        print(f"Before decrement: {sub.remaining_template_exams}")
-
-        sub.remaining_template_exams -= 1
-        db.session.commit()
-
-        print(f"After decrement: {sub.remaining_template_exams}")
-
-        if not quiz:
-            return {
-                "status": False,
-                "message": "Quiz not found",
-                "_event_type": "quiz_failed",
-                "_event_metadata": {"quiz_id": quiz_id}
-            }, 404
-
+    else:
         return {
-            "status": True,
-            "quiz_id": quiz.quiz_id,
-            "title": quiz.title,
-            "description": quiz.description,
-            "questions": [qq.question_id for qq in quiz.questions],
-            "_event_type": "quiz_provided",
-            "_event_metadata": {"quiz_id": quiz.quiz_id, "title": quiz.title}
-        }, 200
+            "status": "error",
+            "message": "No remaining quizzes in subscription",
+            "_event_type": "quiz_generation_failed",
+            "_event_metadata": {"reason": "quota_exceeded"},
+        }, 403
 
-    except Exception as e:
-        logging.error(f"Error retrieving quiz: {str(e)}")
-        return {
-            "status": False,
-            "message": "Error retrieving quiz",
-            "_event_type": "quiz_error",
-            "_event_metadata": {"quiz_id": quiz_id, "error": str(e)}
-        }, 500
-
-
-@quizzes_bp.route("/quiz-admin/<int:quiz_id>", methods=["GET"])
-@role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1) 
-def get_quiz_admin(quiz_id):
-    try:
-        quiz = Quiz.query.get(quiz_id)
-        if not quiz:
-            return jsonify({"status": False, "message": "Quiz not found"}), 404
-        return jsonify({
-            "quiz_id": quiz.quiz_id, "title": quiz.title,
-            "description": quiz.description,
-            "questions": [qq.question_id for qq in quiz.questions]
-        }), 200
-    except Exception as e:
-        logging.error(f"Error retrieving quiz: {str(e)}")
-        return jsonify({"status": False, "message": "Error retrieving quiz"}), 500
-
-
-@quizzes_bp.route("/quiz", methods=["PUT"])
-@role_required("admin")
-@rate_limit(capacity=5, refill_rate=1) 
-def update_quiz():
-    try:
-        payload = request.get_json(force=True, silent=True)
-        if not payload:
-            return jsonify({"status": False, "message": "Invalid or missing JSON payload"}), 400
-        quiz_id = payload.get("quiz_id")
-        title = payload.get("title")
-        description = payload.get("description")
-        question_ids = payload.get("questions")
-        if not all([quiz_id, title, description, question_ids]):
-            return jsonify({"status": False, "message": "quiz_id, title, description, and questions are required"}), 400
-        quiz = Quiz.query.get(quiz_id)
-        if not quiz:
-            return jsonify({"status": False, "message": "Quiz not found"}), 404
-        quiz.title = title
-        quiz.description = description
-        QuizQuestion.query.filter_by(quiz_id=quiz_id).delete()
-        for q_id in question_ids:
-            if not Question.query.get(q_id):
-                return jsonify({"status": False, "message": f"Question {q_id} not found"}), 404
-            db.session.add(QuizQuestion(quiz_id=quiz_id, question_id=q_id))
-        db.session.commit()
-        return jsonify({"status": True, "message": "Quiz updated successfully", "quiz_id": quiz.quiz_id}), 200
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"Error updating quiz: {str(e)}")
-        return jsonify({"status": False, "message": "Error updating quiz"}), 500
-
-@quizzes_bp.route("/quiz", methods=["DELETE"])
-@role_required("admin")
-@rate_limit(capacity=5, refill_rate=1) 
-def delete_quiz():
-    try:
-        payload = request.get_json(force=True, silent=True)
-        if not payload:
-            return jsonify({"status": False, "message": "Invalid or missing JSON payload"}), 400
-        quiz_id = payload.get("id")
-        if not quiz_id:
-            return jsonify({"status": False, "message": "Quiz ID required"}), 400
-        quiz = Quiz.query.get(quiz_id)
-        if not quiz:
-            return jsonify({"status": False, "message": "Quiz not found"}), 404
-        QuizQuestion.query.filter_by(quiz_id=quiz_id).delete()
-        db.session.delete(quiz)
-        db.session.commit()
-        return jsonify({"status": True, "message": "Quiz deleted successfully"}), 200
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"Error deleting quiz: {str(e)}")
-        return jsonify({"status": False, "message": "Error deleting quiz"}), 500
-
-@quizzes_bp.route("/exercise", methods=["GET"])
-@role_required("client")
-@rate_limit(capacity=5, refill_rate=1) 
-def _handle_exercise_quiz():
-    target_size=5
-    topic_name = request.args.get("topic")
-    is_exercise = request.args.get("exercise", "false").lower() == "true"
-    if not topic_name:
-        return jsonify({"status": False, "message": "Topic name required for exercises"}), 400
-
-    topic = Topic.query.filter_by(name=topic_name).first()
-    if not topic:
-        return jsonify({"status": False, "message": "Topic not found"}), 404
-
-    def collect_recursive(t):
-        qs = [q.question_id for q in t.questions]
-        for sub in t.subtopics:
-            qs.extend(collect_recursive(sub))
-        return qs
-
-    all_qs = collect_recursive(topic)
-    if not all_qs:
-        return jsonify({"status": False, "message": "No questions found"}), 404
-
-    questions = random.sample(all_qs, min(len(all_qs), target_size))
-    return jsonify({
-        "status": True,
-        "questions": questions,
-        "count": len(questions),
-        "topic": topic_name,
-        "exercise": True
-    }), 200
+    return {
+        "status": "success",
+        "message": "Quiz generated successfully",
+        "data": {"questions": ordered},
+        "_event_type": "quiz_generation_success",
+        "_event_metadata": {"quiz_size": TARGET_SIZE, "selected_count": len(ordered)},
+    }, 200
 
 
 @subscription_required("topic_quizzes")
-@track_event("topic_quiz_attempt")   # 👈 added decorator
+@track_event("topic_quiz_attempt")
 def _handle_topic_quiz(topic_name, target_size):
     try:
         topic = Topic.query.filter_by(name=topic_name).first()
         if not topic:
             return {
-                "status": False,
+                "status": "error",
                 "message": "Topic not found",
                 "_event_type": "topic_quiz_failed",
-                "_event_metadata": {"topic": topic_name, "reason": "not_found"}
+                "_event_metadata": {"topic": topic_name, "reason": "not_found"},
             }, 404
 
         def collect_recursive(t):
@@ -410,10 +214,10 @@ def _handle_topic_quiz(topic_name, target_size):
         all_qs = collect_recursive(topic)
         if not all_qs:
             return {
-                "status": False,
-                "message": "No questions found",
+                "status": "error",
+                "message": "No questions found for this topic",
                 "_event_type": "topic_quiz_failed",
-                "_event_metadata": {"topic": topic_name, "reason": "no_questions"}
+                "_event_metadata": {"topic": topic_name, "reason": "no_questions"},
             }, 404
 
         questions = random.sample(all_qs, min(len(all_qs), target_size))
@@ -422,36 +226,287 @@ def _handle_topic_quiz(topic_name, target_size):
         db.session.commit()
 
         return {
-            "status": True,
-            "questions": questions,
-            "count": len(questions),
-            "topic": topic_name,
+            "status": "success",
+            "message": "Topic quiz generated successfully",
+            "data": {
+                "questions": questions,
+                "count": len(questions),
+                "topic": topic_name,
+            },
             "_event_type": "topic_quiz_success",
             "_event_metadata": {
                 "topic": topic_name,
                 "target_size": target_size,
-                "selected_count": len(questions)
-            }
+                "selected_count": len(questions),
+            },
         }, 200
 
     except Exception as e:
         logging.error(f"Error handling topic quiz: {str(e)}")
         return {
-            "status": False,
+            "status": "error",
             "message": "Error handling topic quiz",
             "_event_type": "topic_quiz_error",
-            "_event_metadata": {"topic": topic_name, "error": str(e)}
+            "_event_metadata": {"topic": topic_name, "error": str(e)},
         }, 500
+
+
+# ─── Routes (use APIResponse) ─────────────────────────────────────────────────
+
+
+@quizzes_bp.route("/quiz", methods=["POST"])
+@role_required("admin")
+@rate_limit(capacity=5, refill_rate=1)
+def create_quiz():
+    try:
+        payload = request.get_json(force=True, silent=True)
+        if not payload:
+            return APIResponse.bad_request("Invalid or missing JSON payload")
+
+        title = payload.get("title")
+        description = payload.get("description")
+        question_ids = payload.get("questions")
+
+        if not title or not description or not question_ids:
+            return APIResponse.bad_request(
+                "Title, description, and questions are required"
+            )
+
+        new_quiz = Quiz(
+            title=title, description=description, publish_date=datetime.utcnow()
+        )
+        db.session.add(new_quiz)
+        db.session.flush()
+
+        for q_id in question_ids:
+            if not Question.query.get(q_id):
+                return APIResponse.not_found(f"Question {q_id} not found")
+            db.session.add(QuizQuestion(quiz_id=new_quiz.quiz_id, question_id=q_id))
+
+        db.session.commit()
+        return APIResponse.created(
+            data={"quiz_id": new_quiz.quiz_id},
+            message="Quiz created successfully",
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error creating quiz: {str(e)}")
+        return APIResponse.server_error("Error creating quiz")
+
+
+@quizzes_bp.route("/quizzes", methods=["GET"])
+@role_required(["admin", "client"])
+@rate_limit(capacity=5, refill_rate=1)
+def get_all_quizzes():
+    try:
+        quizzes = Quiz.query.all()
+        data = [
+            {
+                "quiz_id": quiz.quiz_id,
+                "title": quiz.title,
+                "description": quiz.description,
+                "question_count": len(quiz.questions),
+                "publish_date": (
+                    quiz.publish_date.isoformat() if quiz.publish_date else None
+                ),
+            }
+            for quiz in quizzes
+        ]
+        return APIResponse.success(data=data, meta={"count": len(data)})
+
+    except Exception as e:
+        logging.error(f"Error retrieving quizzes: {str(e)}")
+        return APIResponse.server_error("Error retrieving quizzes")
+
+
+@quizzes_bp.route("/quiz/<int:quiz_id>", methods=["GET"])
+@role_required(["admin", "client"])
+@subscription_required("template_exams")
+@rate_limit(capacity=5, refill_rate=1)
+@track_event("template_exams")
+def get_quiz(quiz_id):
+    try:
+        quiz = Quiz.query.get(quiz_id)
+        sub = g.subscription
+        sub.remaining_template_exams -= 1
+        db.session.commit()
+
+        if not quiz:
+            return {
+                "status": "error",
+                "message": "Quiz not found",
+                "_event_type": "quiz_failed",
+                "_event_metadata": {"quiz_id": quiz_id},
+            }, 404
+
+        return {
+            "status": "success",
+            "message": "Quiz retrieved successfully",
+            "data": {
+                "quiz_id": quiz.quiz_id,
+                "title": quiz.title,
+                "description": quiz.description,
+                "questions": [qq.question_id for qq in quiz.questions],
+            },
+            "_event_type": "quiz_provided",
+            "_event_metadata": {"quiz_id": quiz.quiz_id, "title": quiz.title},
+        }, 200
+
+    except Exception as e:
+        logging.error(f"Error retrieving quiz: {str(e)}")
+        return {
+            "status": "error",
+            "message": "Error retrieving quiz",
+            "_event_type": "quiz_error",
+            "_event_metadata": {"quiz_id": quiz_id, "error": str(e)},
+        }, 500
+
+
+@quizzes_bp.route("/quiz-admin/<int:quiz_id>", methods=["GET"])
+@role_required(["admin"])
+@rate_limit(capacity=5, refill_rate=1)
+def get_quiz_admin(quiz_id):
+    try:
+        quiz = Quiz.query.get(quiz_id)
+        if not quiz:
+            return APIResponse.not_found("Quiz not found")
+
+        return APIResponse.success(
+            data={
+                "quiz_id": quiz.quiz_id,
+                "title": quiz.title,
+                "description": quiz.description,
+                "questions": [qq.question_id for qq in quiz.questions],
+            }
+        )
+
+    except Exception as e:
+        logging.error(f"Error retrieving quiz: {str(e)}")
+        return APIResponse.server_error("Error retrieving quiz")
+
+
+@quizzes_bp.route("/quiz", methods=["PUT"])
+@role_required("admin")
+@rate_limit(capacity=5, refill_rate=1)
+def update_quiz():
+    try:
+        payload = request.get_json(force=True, silent=True)
+        if not payload:
+            return APIResponse.bad_request("Invalid or missing JSON payload")
+
+        quiz_id = payload.get("quiz_id")
+        title = payload.get("title")
+        description = payload.get("description")
+        question_ids = payload.get("questions")
+
+        if not all([quiz_id, title, description, question_ids]):
+            return APIResponse.bad_request(
+                "quiz_id, title, description, and questions are required"
+            )
+
+        quiz = Quiz.query.get(quiz_id)
+        if not quiz:
+            return APIResponse.not_found("Quiz not found")
+
+        quiz.title = title
+        quiz.description = description
+        QuizQuestion.query.filter_by(quiz_id=quiz_id).delete()
+
+        for q_id in question_ids:
+            if not Question.query.get(q_id):
+                return APIResponse.not_found(f"Question {q_id} not found")
+            db.session.add(QuizQuestion(quiz_id=quiz_id, question_id=q_id))
+
+        db.session.commit()
+        return APIResponse.success(
+            data={"quiz_id": quiz.quiz_id},
+            message="Quiz updated successfully",
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating quiz: {str(e)}")
+        return APIResponse.server_error("Error updating quiz")
+
+
+@quizzes_bp.route("/quiz", methods=["DELETE"])
+@role_required("admin")
+@rate_limit(capacity=5, refill_rate=1)
+def delete_quiz():
+    try:
+        payload = request.get_json(force=True, silent=True)
+        if not payload:
+            return APIResponse.bad_request("Invalid or missing JSON payload")
+
+        quiz_id = payload.get("id")
+        if not quiz_id:
+            return APIResponse.bad_request("Quiz ID required")
+
+        quiz = Quiz.query.get(quiz_id)
+        if not quiz:
+            return APIResponse.not_found("Quiz not found")
+
+        QuizQuestion.query.filter_by(quiz_id=quiz_id).delete()
+        db.session.delete(quiz)
+        db.session.commit()
+        return APIResponse.success(
+            data={"quiz_id": quiz_id},
+            message="Quiz deleted successfully",
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting quiz: {str(e)}")
+        return APIResponse.server_error("Error deleting quiz")
+
+
+@quizzes_bp.route("/exercise", methods=["GET"])
+@role_required("client")
+@rate_limit(capacity=5, refill_rate=1)
+def handle_exercise_quiz():
+    target_size = 5
+    topic_name = request.args.get("topic")
+
+    if not topic_name:
+        return APIResponse.bad_request("Topic name required for exercises")
+
+    topic = Topic.query.filter_by(name=topic_name).first()
+    if not topic:
+        return APIResponse.not_found("Topic not found")
+
+    def collect_recursive(t):
+        qs = [q.question_id for q in t.questions]
+        for sub in t.subtopics:
+            qs.extend(collect_recursive(sub))
+        return qs
+
+    all_qs = collect_recursive(topic)
+    if not all_qs:
+        return APIResponse.not_found("No questions found for this topic")
+
+    questions = random.sample(all_qs, min(len(all_qs), target_size))
+    return APIResponse.success(
+        data={
+            "questions": questions,
+            "count": len(questions),
+            "topic": topic_name,
+            "exercise": True,
+        }
+    )
+
 
 @quizzes_bp.route("/quiz/random", methods=["GET"])
 @role_required("client")
-@rate_limit(capacity=5, refill_rate=1) 
+@rate_limit(capacity=5, refill_rate=1)
 def random_quiz():
     try:
         topic_name = request.args.get("topic")
-        is_exercise = request.args.get("exercise", "false").lower() == "true"
         user_id = int(get_jwt_identity())
-        print(f"User {user_id} requested a random quiz with topic='{topic_name}' and exercise={is_exercise}")
+        logging.info(
+            f"User {user_id} requested a random quiz with topic='{topic_name}'"
+        )
+
         if topic_name:
             return _handle_topic_quiz(topic_name, target_size=10)
         else:
@@ -460,4 +515,4 @@ def random_quiz():
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error generating quiz: {e}")
-        return jsonify({"status": False, "message": "Server error"}), 500
+        return APIResponse.server_error("Server error generating quiz")

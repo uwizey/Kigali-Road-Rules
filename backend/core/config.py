@@ -18,3 +18,5 @@ class Config:
     if not JWT_SECRET_KEY:
         raise ValueError("JWT_SECRET_KEY environment variable is required")
     JWT_ACCESS_TOKEN_EXPIRES = int(os.getenv("JWT_EXPIRES", 3600))
+
+    REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")

@@ -1,14 +1,96 @@
 from functools import wraps
 from user_agents import parse
-from flask import jsonify
 from flask import g
 import json
-from datetime import datetime
-from flask import request
-from core.models import db,Subscription,AnalyticsEvent
-from flask_jwt_extended import verify_jwt_in_request, get_jwt,get_jwt_identity
+from datetime import datetime, timezone
+from flask import request, Response
+from flask import jsonify
+from core.models import db, Subscription, AnalyticsEvent
+from flask_jwt_extended import verify_jwt_in_request, get_jwt, get_jwt_identity
 import logging
 import time
+import threading
+
+
+class APIResponse:
+    """Standardized API Response wrapper for Flask."""
+
+    @staticmethod
+    def _build(status: str, message: str, data, error, meta: dict | None) -> dict:
+        payload = {
+            "status": status,
+            "message": message,
+            "data": data,
+            "error": error,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        if meta:
+            payload["meta"] = meta
+        return payload
+
+    @staticmethod
+    def success(
+        data=None,
+        message: str = "Success",
+        status_code: int = 200,
+        meta: dict | None = None,
+    ) -> Response:
+        return (
+            jsonify(APIResponse._build("success", message, data, None, meta)),
+            status_code,
+        )
+
+    @staticmethod
+    def created(
+        data=None, message: str = "Created", meta: dict | None = None
+    ) -> Response:
+        return APIResponse.success(
+            data=data, message=message, status_code=201, meta=meta
+        )
+
+    @staticmethod
+    def error(
+        message: str = "An error occurred",
+        error_details=None,
+        status_code: int = 400,
+        meta: dict | None = None,
+    ) -> Response:
+        return (
+            jsonify(APIResponse._build("error", message, None, error_details, meta)),
+            status_code,
+        )
+
+    @staticmethod
+    def bad_request(message: str = "Bad request", error_details=None) -> Response:
+        return APIResponse.error(message, error_details, status_code=400)
+
+    @staticmethod
+    def unauthorized(message: str = "Unauthorized") -> Response:
+        return APIResponse.error(message, status_code=401)
+
+    @staticmethod
+    def forbidden(message: str = "Forbidden") -> Response:
+        return APIResponse.error(message, status_code=403)
+
+    @staticmethod
+    def not_found(message: str = "Resource not found") -> Response:
+        return APIResponse.error(message, status_code=404)
+
+    @staticmethod
+    def conflict(message: str = "Conflict", error_details=None) -> Response:
+        return APIResponse.error(message, error_details, status_code=409)
+
+    @staticmethod
+    def server_error(
+        message: str = "Internal server error", error_details=None
+    ) -> Response:
+        return APIResponse.error(message, error_details, status_code=500)
+
+    @staticmethod
+    def rate_limited(retry_after: int) -> Response:
+        response, status = APIResponse.error("Rate limit exceeded", status_code=429)
+        response.headers["Retry-After"] = retry_after
+        return response, status
 
 
 def role_required(required_roles):
@@ -27,13 +109,14 @@ def role_required(required_roles):
             user_role = claims.get("role")
 
             if user_role not in required_roles:
-                return jsonify({
-                    "status": False,
-                    "error": f"Access denied: requires one of {required_roles}"
-                }), 403
+                return APIResponse.forbidden(
+                    f"Access denied: requires one of {required_roles}"
+                )
 
             return fn(*args, **kwargs)
+
         return decorator
+
     return wrapper
 
 
@@ -44,92 +127,116 @@ def subscription_required(resource_type):
             try:
                 user_id = get_jwt_identity()
                 if not user_id:
-                    return jsonify({"status": False, "message": "Unauthorized"}), 401
+                    return APIResponse.unauthorized()
 
                 claims = get_jwt()
                 role = claims.get("role")
 
-                # ✅ Admins bypass subscription checks
                 if role == "admin":
                     return fn(*args, **kwargs)
 
-                # Normal subscription enforcement for clients
-                sub = Subscription.query.filter_by(user_id=user_id).order_by(Subscription.expiry_date.desc()).first()
+                sub = (
+                    Subscription.query.filter_by(user_id=user_id)
+                    .order_by(Subscription.expiry_date.desc())
+                    .first()
+                )
                 if not sub:
-                    print(f"No subscription found for user_id {user_id}")
-                    return jsonify({"status": False, "message": "No subscription found"}), 403
+                    return APIResponse.forbidden("No subscription found")
 
                 now = datetime.utcnow()
                 if sub.expiry_date <= now:
                     sub.active = False
                     db.session.commit()
-                    print(f"Subscription expired for user_id {user_id} at {sub.expiry_date}")
-                    return jsonify({"status": False, "message": "Your subscription has expired"}), 403
+                    return APIResponse.forbidden("Your subscription has expired")
 
                 if not sub.active:
-                    print(f"Inactive subscription for user_id {user_id}")
-                    return jsonify({"status": False, "message": "Your subscription is inactive"}), 403
+                    return APIResponse.forbidden("Your subscription is inactive")
 
-                # ✅ Resource availability check
-                if resource_type == "quizzes" and sub.remaining_quizzes <= 0:
-                    return jsonify({"status": False, "message": "No quizzes remaining"}), 403
-                elif resource_type == "template_exams" and sub.remaining_template_exams <= 0:
-                    return jsonify({"status": False, "message": "No template exams remaining"}), 403
-                elif resource_type == "topic_quizzes" and sub.remaining_topic_quizzes <= 0:
-                    return jsonify({"status": False, "message": "No topic quizzes remaining"}), 403
+                resource_limits = {
+                    "quizzes": (sub.remaining_quizzes, "No quizzes remaining"),
+                    "template_exams": (
+                        sub.remaining_template_exams,
+                        "No template exams remaining",
+                    ),
+                    "topic_quizzes": (
+                        sub.remaining_topic_quizzes,
+                        "No topic quizzes remaining",
+                    ),
+                }
 
-                # ✅ Store subscription in request context
+                if resource_type in resource_limits:
+                    remaining, msg = resource_limits[resource_type]
+                    if remaining <= 0:
+                        return APIResponse.forbidden(msg)
+
                 g.subscription = sub
-
                 return fn(*args, **kwargs)
 
             except Exception as e:
-                print(f"Subscription check error: {e}")
                 logging.error(f"Subscription check error: {e}")
-                return jsonify({"status": False, "message": "Server error during subscription check"}), 500
+                return APIResponse.server_error(
+                    "Server error during subscription check"
+                )
 
         return wrapper
+
     return decorator
 
 
-# Store buckets per user
-buckets = {}
+_bucket_lock = threading.Lock()
+_buckets = {}
+_BUCKET_TTL = 3600
+
 
 class TokenBucket:
     def __init__(self, capacity, refill_rate):
         self.capacity = capacity
         self.tokens = capacity
-        self.refill_rate = refill_rate  # tokens per second
+        self.refill_rate = refill_rate
         self.last_refill = time.time()
+        self.last_used = time.time()
+        self._lock = threading.Lock()
 
     def consume(self, num_tokens=1):
-        now = time.time()
-        elapsed = now - self.last_refill
+        with self._lock:
+            now = time.time()
+            elapsed = now - self.last_refill
+            self.tokens = min(self.capacity, self.tokens + elapsed * self.refill_rate)
+            self.last_refill = now
+            self.last_used = now
 
-        # refill based on elapsed time
-        refill_amount = elapsed * self.refill_rate
-        self.tokens = min(self.capacity, self.tokens + refill_amount)
-        self.last_refill = now
+            if self.tokens >= num_tokens:
+                self.tokens -= num_tokens
+                return True
+            return False
 
-        if self.tokens >= num_tokens:
-            self.tokens -= num_tokens
-            return True
-        return False
+
+def _cleanup_buckets():
+    now = time.time()
+    with _bucket_lock:
+        stale = [uid for uid, b in _buckets.items() if now - b.last_used > _BUCKET_TTL]
+        for uid in stale:
+            del _buckets[uid]
+
 
 def rate_limit(capacity=10, refill_rate=1):
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             user_id = get_jwt_identity()
-            if user_id not in buckets:
-                buckets[user_id] = TokenBucket(capacity, refill_rate)
+            with _bucket_lock:
+                if user_id not in _buckets:
+                    _buckets[user_id] = TokenBucket(capacity, refill_rate)
+                bucket = _buckets[user_id]
 
-            bucket = buckets[user_id]
             if bucket.consume():
                 return fn(*args, **kwargs)
-            else:
-                return jsonify({"status": False, "message": "Rate limit exceeded"}), 429
+
+            retry_after = int(1.0 / bucket.refill_rate)
+            return APIResponse.rate_limited(retry_after)
+
         return wrapper
+
     return decorator
 
 
@@ -137,7 +244,7 @@ def track_event(default_event_type):
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            result = fn(*args, **kwargs)  # run the actual function first
+            result = fn(*args, **kwargs)
 
             try:
                 user_id = None
@@ -146,11 +253,9 @@ def track_event(default_event_type):
                 except Exception:
                     pass
 
-                # Parse User-Agent string
                 ua_string = request.headers.get("User-Agent", "")
                 parsed_ua = parse(ua_string)
 
-                # Decide device category
                 if parsed_ua.is_mobile:
                     device_type = "mobile"
                 elif parsed_ua.is_tablet:
@@ -160,7 +265,6 @@ def track_event(default_event_type):
                 else:
                     device_type = "other"
 
-                # Allow the function to override event_type/metadata if needed
                 event_type = default_event_type
                 metadata = {}
 
@@ -168,7 +272,6 @@ def track_event(default_event_type):
                     event_type = result.pop("_event_type", default_event_type)
                     metadata = result.pop("_event_metadata", {})
 
-                # Ensure metadata is JSON serializable
                 event_metadata = {
                     "path": request.path,
                     "method": request.method,
@@ -181,7 +284,7 @@ def track_event(default_event_type):
                 event = AnalyticsEvent(
                     user_id=user_id,
                     event_type=event_type,
-                    event_metadata=json.dumps(event_metadata),  # <-- serialize!
+                    event_metadata=json.dumps(event_metadata),
                     device=device_type,
                     os=parsed_ua.os.family or "unknown",
                     browser=parsed_ua.browser.family or "unknown",
@@ -193,12 +296,12 @@ def track_event(default_event_type):
                 logging.info(
                     f"Logged event: {event_type} for user_id: {user_id}, device: {device_type}"
                 )
-                print(f"Logged event: {event_type} for user_id: {user_id}, device: {device_type}")
+
             except Exception as e:
-                db.session.rollback()  # <-- rollback on error
+                db.session.rollback()
                 logging.error(f"Analytics logging failed: {e}", exc_info=True)
 
-            return result  # always return the original response untouched
+            return result
 
         return wrapper
 

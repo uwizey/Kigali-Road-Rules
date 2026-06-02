@@ -1,9 +1,9 @@
 import logging
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from core.models import db, User, AnalyticsEvent
-from core.utils.decorators import role_required, rate_limit
+from core.utils.decorators import role_required, rate_limit, APIResponse
 
 analytics_bp = Blueprint("analytics", __name__)
 
@@ -22,7 +22,7 @@ RETENTION_WINDOWS = {
 }
 
 
-# ─── Shared helper ───────────────────────────────────────────────────────────
+# ─── Shared helper ────────────────────────────────────────────────────────────
 
 
 def _resolve_dates(start_param, end_param, default_days=30):
@@ -41,7 +41,15 @@ def _resolve_dates(start_param, end_param, default_days=30):
     return start, end
 
 
-# ─── Retention ───────────────────────────────────────────────────────────────
+def _period(start_date, end_date):
+    """Return a serialized period dict for response payloads."""
+    return {
+        "start": start_date.date().isoformat(),
+        "end": end_date.date().isoformat(),
+    }
+
+
+# ─── Retention ────────────────────────────────────────────────────────────────
 
 
 @analytics_bp.route("/analytics/retention", methods=["GET"])
@@ -54,7 +62,7 @@ def cohort_retention():
                 request.args.get("start"), request.args.get("end")
             )
         except ValueError as ve:
-            return jsonify({"status": False, "message": str(ve)}), 400
+            return APIResponse.bad_request(str(ve))
 
         cohorts = (
             db.session.query(
@@ -68,19 +76,10 @@ def cohort_retention():
         )
 
         if not cohorts:
-            return (
-                jsonify(
-                    {
-                        "status": True,
-                        "period": {
-                            "start": start_date.date().isoformat(),
-                            "end": end_date.date().isoformat(),
-                        },
-                        "cohorts": [],
-                        "message": "No cohorts found for this period.",
-                    }
-                ),
-                200,
+            return APIResponse.success(
+                data={"cohorts": []},
+                message="No cohorts found for this period.",
+                meta=_period(start_date, end_date),
             )
 
         now = datetime.utcnow()
@@ -128,37 +127,17 @@ def cohort_retention():
             for reg_date, user_count in cohorts
         ]
 
-        return (
-            jsonify(
-                {
-                    "status": True,
-                    "period": {
-                        "start": start_date.date().isoformat(),
-                        "end": end_date.date().isoformat(),
-                    },
-                    "cohorts": results,
-                }
-            ),
-            200,
+        return APIResponse.success(
+            data={"cohorts": results},
+            meta=_period(start_date, end_date),
         )
 
     except Exception as e:
         logging.error(f"Retention endpoint error: {e}", exc_info=True)
-        return (
-            jsonify(
-                {
-                    "status": False,
-                    "message": "Error computing retention",
-                    "error": str(e),
-                }
-            ),
-            500,
-        )
+        return APIResponse.server_error("Error computing retention")
 
 
-# ─── Engagement (per-user events) ────────────────────────────────────────────
-# NOTE: Only ONE /analytics/engagement route exists here.
-# The session-based variant was a duplicate that silently overwrote this one in Flask.
+# ─── Engagement ───────────────────────────────────────────────────────────────
 
 
 @analytics_bp.route("/analytics/engagement", methods=["GET"])
@@ -171,7 +150,7 @@ def cumulative_engagement():
                 request.args.get("start"), request.args.get("end")
             )
         except ValueError as ve:
-            return jsonify({"status": False, "message": str(ve)}), 400
+            return APIResponse.bad_request(str(ve))
 
         users = (
             db.session.query(User.id, func.date(User.created_at))
@@ -211,32 +190,18 @@ def cumulative_engagement():
                 }
             )
 
-        return (
-            jsonify(
-                {
-                    "status": True,
-                    "period": {
-                        "start": start_date.date().isoformat(),
-                        "end": end_date.date().isoformat(),
-                    },
-                    "engagement": results,
-                }
-            ),
-            200,
+        return APIResponse.success(
+            data={"engagement": results},
+            meta=_period(start_date, end_date),
         )
 
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error computing engagement: {e}", exc_info=True)
-        return (
-            jsonify(
-                {"status": False, "message": f"Error computing engagement: {str(e)}"}
-            ),
-            500,
-        )
+        return APIResponse.server_error("Error computing engagement")
 
 
-# ─── DAU ─────────────────────────────────────────────────────────────────────
+# ─── DAU ──────────────────────────────────────────────────────────────────────
 
 
 @analytics_bp.route("/analytics/dau", methods=["GET"])
@@ -246,6 +211,7 @@ def daily_active_users():
     try:
         start_p = request.args.get("start")
         end_p = request.args.get("end")
+
         if not start_p or not end_p:
             end_date = datetime.utcnow().date() - timedelta(days=1)
             start_date = end_date - timedelta(days=7)
@@ -289,30 +255,18 @@ def daily_active_users():
             for day, active_users in dau_data
         ]
 
-        return (
-            jsonify(
-                {
-                    "status": True,
-                    "period": {
-                        "start": start_date.isoformat(),
-                        "end": end_date.isoformat(),
-                    },
-                    "dau": results,
-                }
-            ),
-            200,
+        return APIResponse.success(
+            data={"dau": results},
+            meta={"start": start_date.isoformat(), "end": end_date.isoformat()},
         )
 
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error computing DAU: {e}", exc_info=True)
-        return (
-            jsonify({"status": False, "message": f"Error computing DAU: {str(e)}"}),
-            500,
-        )
+        return APIResponse.server_error("Error computing DAU")
 
 
-# ─── Device distribution ─────────────────────────────────────────────────────
+# ─── Device distribution ──────────────────────────────────────────────────────
 
 
 @analytics_bp.route("/analytics/device-distribution", methods=["GET"])
@@ -325,7 +279,7 @@ def device_distribution():
                 request.args.get("start"), request.args.get("end")
             )
         except ValueError as ve:
-            return jsonify({"status": False, "message": str(ve)}), 400
+            return APIResponse.bad_request(str(ve))
 
         device_data = (
             db.session.query(
@@ -350,35 +304,18 @@ def device_distribution():
             for device, count in device_data
         ]
 
-        return (
-            jsonify(
-                {
-                    "status": True,
-                    "period": {
-                        "start": start_date.isoformat(),
-                        "end": end_date.isoformat(),
-                    },
-                    "distribution": results,
-                }
-            ),
-            200,
+        return APIResponse.success(
+            data={"distribution": results},
+            meta=_period(start_date, end_date),
         )
 
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error computing device distribution: {e}", exc_info=True)
-        return (
-            jsonify(
-                {
-                    "status": False,
-                    "message": f"Error computing device distribution: {str(e)}",
-                }
-            ),
-            500,
-        )
+        return APIResponse.server_error("Error computing device distribution")
 
 
-# ─── Service usage ───────────────────────────────────────────────────────────
+# ─── Service usage ────────────────────────────────────────────────────────────
 
 
 @analytics_bp.route("/analytics/service-usage", methods=["GET"])
@@ -391,7 +328,7 @@ def service_usage():
                 request.args.get("start"), request.args.get("end")
             )
         except ValueError as ve:
-            return jsonify({"status": False, "message": str(ve)}), 400
+            return APIResponse.bad_request(str(ve))
 
         service_data = (
             db.session.query(
@@ -418,32 +355,18 @@ def service_usage():
             for event_type, count in service_data
         ]
 
-        return (
-            jsonify(
-                {
-                    "status": True,
-                    "period": {
-                        "start": start_date.isoformat(),
-                        "end": end_date.isoformat(),
-                    },
-                    "services": results,
-                }
-            ),
-            200,
+        return APIResponse.success(
+            data={"services": results},
+            meta=_period(start_date, end_date),
         )
 
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error computing service usage: {e}", exc_info=True)
-        return (
-            jsonify(
-                {"status": False, "message": f"Error computing service usage: {str(e)}"}
-            ),
-            500,
-        )
+        return APIResponse.server_error("Error computing service usage")
 
 
-# ─── Conversion rate ─────────────────────────────────────────────────────────
+# ─── Conversion rate ──────────────────────────────────────────────────────────
 
 
 @analytics_bp.route("/analytics/conversion-rate", methods=["GET"])
@@ -456,7 +379,7 @@ def conversion_rate():
                 request.args.get("start"), request.args.get("end")
             )
         except ValueError as ve:
-            return jsonify({"status": False, "message": str(ve)}), 400
+            return APIResponse.bad_request(str(ve))
 
         login_users = (
             db.session.query(func.count(func.distinct(AnalyticsEvent.user_id)))
@@ -484,37 +407,22 @@ def conversion_rate():
             .scalar()
         )
 
-        conversion_rate_value = (
-            round((service_users / login_users) * 100, 2) if login_users else 0
-        )
-
-        return (
-            jsonify(
-                {
-                    "status": True,
-                    "period": {
-                        "start": start_date.isoformat(),
-                        "end": end_date.isoformat(),
-                    },
-                    "conversion": {
-                        "login_users": login_users,
-                        "service_users": service_users,
-                        "conversion_rate": conversion_rate_value,
-                    },
+        return APIResponse.success(
+            data={
+                "conversion": {
+                    "login_users": login_users,
+                    "service_users": service_users,
+                    "conversion_rate": (
+                        round((service_users / login_users) * 100, 2)
+                        if login_users
+                        else 0
+                    ),
                 }
-            ),
-            200,
+            },
+            meta=_period(start_date, end_date),
         )
 
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error computing conversion rate: {e}", exc_info=True)
-        return (
-            jsonify(
-                {
-                    "status": False,
-                    "message": f"Error computing conversion rate: {str(e)}",
-                }
-            ),
-            500,
-        )
+        return APIResponse.server_error("Error computing conversion rate")

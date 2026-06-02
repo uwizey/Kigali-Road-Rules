@@ -1,121 +1,67 @@
 const backendURL = "http://127.0.0.1:5000";
-
 const TOKEN_KEY = "authToken";
+
+// ─── Auth helpers ─────────────────────────────────────────────────────────────
+
 function autoLogout(storage = "localStorage") {
-  clearAuthToken(storage); // remove token
-  window.location.href = "../auth/login.html"; // redirect to login page
+  clearAuthToken(storage);
+  window.location.href = "../auth/login.html";
 }
 
 export function setAuthToken(token, storage = "localStorage") {
-  if (storage === "localStorage") {
-    localStorage.setItem(TOKEN_KEY, token);
-  } else if (storage === "sessionStorage") {
+  if (storage === "localStorage") localStorage.setItem(TOKEN_KEY, token);
+  else if (storage === "sessionStorage")
     sessionStorage.setItem(TOKEN_KEY, token);
-  } else {
-    // fallback: memory
-    window._authToken = token;
-  }
+  else window._authToken = token;
 }
 
 export function getAuthToken(storage = "localStorage") {
-  if (storage === "localStorage") {
-    return localStorage.getItem(TOKEN_KEY);
-  } else if (storage === "sessionStorage") {
+  if (storage === "localStorage") return localStorage.getItem(TOKEN_KEY);
+  else if (storage === "sessionStorage")
     return sessionStorage.getItem(TOKEN_KEY);
-  } else {
-    return window._authToken || null;
-  }
+  else return window._authToken || null;
 }
 
-// Clear token
 export function clearAuthToken(storage = "localStorage") {
-  if (storage === "localStorage") {
-    localStorage.removeItem(TOKEN_KEY);
-  } else if (storage === "sessionStorage") {
-    sessionStorage.removeItem(TOKEN_KEY);
-  } else {
-    window._authToken = null;
-  }
+  if (storage === "localStorage") localStorage.removeItem(TOKEN_KEY);
+  else if (storage === "sessionStorage") sessionStorage.removeItem(TOKEN_KEY);
+  else window._authToken = null;
 }
 
-async function handleResponse(response) {
-  const contentType = response.headers.get("content-type");
-  let data;
+// ─── Safe user-facing messages (keyed by HTTP status) ────────────────────────
+// Nothing from the raw backend response leaks past this map.
 
-  try {
-    if (contentType?.includes("application/json")) {
-      data = await response.json();
-    } else if (contentType?.includes("text/")) {
-      data = await response.text();
-    } else {
-      data = await response.blob();
-    }
-  } catch {
-    data = null;
-  }
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      autoLogout();
-    }
-
-    if (response.status === 403) {
-      return handleForbidden(data); // Using your existing 403 logic
-    }
-
-    // Extract backend message or use status map
-    const backendMessage = data?.message || data?.error || null;
-    const userMessage =
-      backendMessage ||
-      STATUS_MESSAGES[response.status] ||
-      `Error ${response.status}`;
-
-    return {
-      success: false,
-      status: response.status,
-      userMessage,
-      error: data,
-    };
-  }
-
-  return {
-    success: true,
-    status: response.status,
-    userMessage: data?.message || STATUS_MESSAGES[response.status] || "Success",
-    data,
-  };
-}
-// === PostData Function ===
-// === Fixed PostData Function in crud.js ===
-
-// ─── Status Code Message Map ────────────────────────────────────────────────
-const STATUS_MESSAGES = {
-  // 2xx
+const SAFE_MESSAGES = {
   200: "Request successful.",
   201: "Resource created successfully.",
-  204: "No content returned.",
-
-  // 4xx Client Errors
-  400: "The request was invalid. Please check your input and try again.",
-  401: "You are not authenticated. Please log in and try again.",
-  403: "You do not have permission to perform this action.",
+  204: "Action completed.",
+  400: "Something looks off with that request. Please check your input.",
+  401: "Your session has expired. Please log in again.",
+  403: "You don't have permission to do that.",
   404: "The requested resource could not be found.",
   405: "This action is not allowed.",
   408: "The request timed out. Please try again.",
   409: "A conflict occurred. The resource may already exist.",
-  413: "The data you are sending is too large.",
-  422: "The submitted data could not be processed. Please review and correct it.",
+  413: "The file or data you're sending is too large.",
+  422: "Please review your input something couldn't be processed.",
   429: "Too many requests. Please slow down and try again shortly.",
-
-  // 5xx Server Errors
-  500: "A server error occurred. Please try again later.",
-  502: "The server received an invalid response. Please try again.",
-  503: "The service is temporarily unavailable. Please try again later.",
+  500: "Something went wrong on our end. Please try again later.",
+  502: "We received an unexpected response. Please try again.",
+  503: "Service is temporarily unavailable. Please try again shortly.",
   504: "The server took too long to respond. Please try again.",
 };
 
-// ─── 403 Forbidden Message Map ──────────────────────────────────────────────
-const FORBIDDEN_MESSAGES = {
+const SAFE_DEFAULT = "An unexpected error occurred. Please try again.";
+
+function safeMessage(status) {
+  return SAFE_MESSAGES[status] || SAFE_DEFAULT;
+}
+
+// ─── 403 Forbidden — structured action map ────────────────────────────────────
+// Keys match the exact `message` string your Flask backend sends for known gates.
+// The userMessage here is pre-written copy YOU control — never raw backend text.
+
+const FORBIDDEN_ACTIONS = {
   "Your subscription has expired": {
     userMessage:
       "Your subscription plan expired. Renew now to keep practicing!",
@@ -132,58 +78,12 @@ const FORBIDDEN_MESSAGES = {
   },
 };
 
-// ─── Network / CORS Error Classifier ────────────────────────────────────────
-function classifyNetworkError(error) {
-  const msg = error.message?.toLowerCase() ?? "";
+function handleForbidden(data, rawForLog) {
+  // Read the backend reason only to look it up in our safe map — never expose it raw
+  const backendReason = data?.message || data?.error || data?.detail || null;
+  const matched = backendReason ? FORBIDDEN_ACTIONS[backendReason] : null;
 
-  if (
-    msg.includes("failed to fetch") ||
-    msg.includes("networkerror") ||
-    msg.includes("network request failed")
-  ) {
-    return {
-      type: "NETWORK_ERROR",
-      userMessage:
-        "Unable to reach the server. This may be a network issue or a CORS misconfiguration. Please check your connection or contact support.",
-    };
-  }
-
-  if (msg.includes("cors")) {
-    return {
-      type: "CORS_ERROR",
-      userMessage:
-        "A cross-origin request was blocked. Please contact support if this continues.",
-    };
-  }
-
-  if (msg.includes("timeout") || msg.includes("timed out")) {
-    return {
-      type: "TIMEOUT_ERROR",
-      userMessage:
-        "The request timed out. Please check your connection and try again.",
-    };
-  }
-
-  if (msg.includes("aborted") || msg.includes("abort")) {
-    return {
-      type: "ABORTED",
-      userMessage: "The request was cancelled.",
-    };
-  }
-
-  return {
-    type: "UNKNOWN_ERROR",
-    userMessage: "An unexpected error occurred. Please try again.",
-  };
-}
-
-// ─── 403 Handler ────────────────────────────────────────────────────────────
-function handleForbidden(data) {
-  // Extract the specific reason from backend (message, error, or detail)
-  const backendMessage = data?.message || data?.error || data?.detail || null;
-
-  // Try to find a friendly mapping
-  const matched = FORBIDDEN_MESSAGES[backendMessage];
+  _devLog("warn", "403 backend reason (dev only):", backendReason, rawForLog);
 
   if (matched) {
     return {
@@ -191,25 +91,117 @@ function handleForbidden(data) {
       status: 403,
       type: "FORBIDDEN",
       action: matched.action,
-      userMessage: matched.userMessage,
-      error: data,
+      userMessage: matched.userMessage, // ← our copy, not the backend string
     };
   }
 
-  // Fallback for unknown 403 reasons
   return {
     success: false,
     status: 403,
     type: "FORBIDDEN",
     action: "GENERIC_FORBIDDEN",
-    userMessage:
-      backendMessage ||
-      "You don't have permission to access this resource. Please check your subscription status.",
-    error: data,
+    userMessage: SAFE_MESSAGES[403], // ← always the safe fallback
   };
 }
 
-// ─── Main FetchData Function ─────────────────────────────────────────────────
+// ─── Network / CORS error classifier ─────────────────────────────────────────
+
+const NETWORK_SAFE_MESSAGES = {
+  NETWORK_ERROR: "Unable to reach the server. Please check your connection.",
+  CORS_ERROR:
+    "A network issue occurred. Please contact support if this persists.",
+  TIMEOUT_ERROR:
+    "The request timed out. Please check your connection and try again.",
+  ABORTED: "The request was cancelled.",
+  UNKNOWN_ERROR: SAFE_DEFAULT,
+};
+
+function classifyNetworkError(error) {
+  const msg = error.message?.toLowerCase() ?? "";
+
+  let type;
+  if (
+    msg.includes("failed to fetch") ||
+    msg.includes("networkerror") ||
+    msg.includes("network request failed")
+  )
+    type = "NETWORK_ERROR";
+  else if (msg.includes("cors")) type = "CORS_ERROR";
+  else if (msg.includes("timeout") || msg.includes("timed out"))
+    type = "TIMEOUT_ERROR";
+  else if (msg.includes("aborted") || msg.includes("abort")) type = "ABORTED";
+  else type = "UNKNOWN_ERROR";
+
+  _devLog("error", `Network error [${type}] (dev only):`, error.message);
+
+  return {
+    type,
+    userMessage: NETWORK_SAFE_MESSAGES[type],
+  };
+}
+
+// ─── Response parser ──────────────────────────────────────────────────────────
+// Parses the raw fetch Response. Raw backend data is kept internal and only
+// used for dev logging — it never flows into userMessage.
+
+async function parseResponse(response) {
+  const contentType = response.headers.get("content-type");
+  let raw = null;
+
+  try {
+    if (contentType?.includes("application/json")) raw = await response.json();
+    else if (contentType?.includes("text/")) raw = await response.text();
+    else raw = await response.blob();
+  } catch {
+    raw = null;
+  }
+
+  return raw;
+}
+
+async function buildResult(response, storage) {
+  const raw = await parseResponse(response);
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      _devLog("warn", "401 — auto-logging out. Raw:", raw);
+      autoLogout(storage);
+      // Return anyway so callers don't break; the redirect will follow
+      return { success: false, status: 401, userMessage: SAFE_MESSAGES[401] };
+    }
+
+    if (response.status === 403) {
+      return handleForbidden(raw, raw);
+    }
+
+    // All other errors — log the raw detail for devs, send safe copy to UI
+    _devLog("warn", `HTTP ${response.status} (dev only):`, raw);
+
+    return {
+      success: false,
+      status: response.status,
+      userMessage: safeMessage(response.status),
+    };
+  }
+
+  // 2xx — data is safe to pass through; message comes from our map
+  return {
+    success: true,
+    status: response.status,
+    userMessage:
+      SAFE_MESSAGES[response.status] || "Request completed successfully.",
+    data: raw,
+  };
+}
+
+// ─── Dev-only logger (zero output in production) ──────────────────────────────
+
+function _devLog(level, ...args) {
+  if (window.__DEV__) console[level]("[crud.js]", ...args);
+}
+
+// ─── Public CRUD functions ────────────────────────────────────────────────────
+
 export async function FetchData(
   endpoint,
   requiresAuth = true,
@@ -217,7 +209,6 @@ export async function FetchData(
 ) {
   try {
     const headers = { "Content-Type": "application/json" };
-
     if (requiresAuth) {
       const token = getAuthToken(storage);
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -227,78 +218,10 @@ export async function FetchData(
       method: "GET",
       headers,
     });
-    console.log("Raw response:", response);
-    // ── Parse response body ──
-    const contentType = response.headers.get("content-type");
-    let data;
-    try {
-      if (contentType?.includes("application/json")) {
-        data = await response.json();
-      } else if (contentType?.includes("text/")) {
-        data = await response.text();
-      } else {
-        data = await response.blob();
-      }
-    } catch {
-      data = null; // Body parsing failed — body might be empty (e.g. 204)
-    }
-
-    // ── Handle error responses ──
-    if (!response.ok) {
-      if (response.status === 401) {
-        autoLogout(storage);
-      }
-
-      if (response.status === 403) {
-        return handleForbidden(data); // ← Dedicated 403 logic
-      }
-
-      // All other errors — prefer backend message, fall back to map
-      const backendMessage =
-        typeof data === "object" && data !== null
-          ? (data.message ?? data.error ?? null)
-          : typeof data === "string"
-            ? data
-            : null;
-
-      const userMessage =
-        backendMessage ||
-        STATUS_MESSAGES[response.status] ||
-        `Unexpected error (${response.status}).`;
-
-      return {
-        success: false,
-        status: response.status,
-        userMessage,
-        error: data,
-      };
-    }
-
-    // ── Success ──
-    const userMessage =
-      (typeof data === "object" && data?.message) ||
-      STATUS_MESSAGES[response.status] ||
-      "Request completed successfully.";
-
-    return {
-      success: true,
-      status: response.status,
-      userMessage,
-      data,
-    };
+    return await buildResult(response, storage);
   } catch (error) {
-    // ── Network / CORS / timeout errors land here ──
-    console.error("FetchData error:", error);
-
     const { type, userMessage } = classifyNetworkError(error);
-
-    return {
-      success: false,
-      status: null,
-      type,
-      userMessage,
-      error: error.message,
-    };
+    return { success: false, status: null, type, userMessage };
   }
 }
 
@@ -310,10 +233,8 @@ export async function PostData(
 ) {
   try {
     const headers = new Headers();
-    if (!(payload instanceof FormData)) {
+    if (!(payload instanceof FormData))
       headers.append("Content-Type", "application/json");
-    }
-
     if (requiresAuth) {
       const token = getAuthToken(storage);
       if (token) headers.append("Authorization", `Bearer ${token}`);
@@ -324,17 +245,10 @@ export async function PostData(
       headers,
       body: payload instanceof FormData ? payload : JSON.stringify(payload),
     });
-
-    return await handleResponse(response);
+    return await buildResult(response, storage);
   } catch (error) {
     const { type, userMessage } = classifyNetworkError(error);
-    return {
-      success: false,
-      status: null,
-      type,
-      userMessage,
-      error: error.message,
-    };
+    return { success: false, status: null, type, userMessage };
   }
 }
 
@@ -346,10 +260,8 @@ export async function UpdateData(
 ) {
   try {
     const headers = {};
-    if (!(payload instanceof FormData)) {
+    if (!(payload instanceof FormData))
       headers["Content-Type"] = "application/json";
-    }
-
     if (requiresAuth) {
       const token = getAuthToken(storage);
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -360,17 +272,10 @@ export async function UpdateData(
       headers,
       body: payload instanceof FormData ? payload : JSON.stringify(payload),
     });
-
-    return await handleResponse(response);
+    return await buildResult(response, storage);
   } catch (error) {
     const { type, userMessage } = classifyNetworkError(error);
-    return {
-      success: false,
-      status: null,
-      type,
-      userMessage,
-      error: error.message,
-    };
+    return { success: false, status: null, type, userMessage };
   }
 }
 
@@ -382,7 +287,6 @@ export async function DeleteData(
 ) {
   try {
     const headers = { "Content-Type": "application/json" };
-
     if (requiresAuth) {
       const token = getAuthToken(storage);
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -393,16 +297,9 @@ export async function DeleteData(
       headers,
       body: JSON.stringify(payload),
     });
-
-    return await handleResponse(response);
+    return await buildResult(response, storage);
   } catch (error) {
     const { type, userMessage } = classifyNetworkError(error);
-    return {
-      success: false,
-      status: null,
-      type,
-      userMessage,
-      error: error.message,
-    };
+    return { success: false, status: null, type, userMessage };
   }
 }
