@@ -8,6 +8,23 @@ from core.utils.decorators import role_required, rate_limit, APIResponse
 components_bp = Blueprint("components", __name__)
 
 
+def _normalize_item_data(item_data):
+  """Map different field names from frontend to standard backend fields."""
+  normalized = item_data.copy()
+
+  # Map caption (imageblock) to content for consistent storage
+  if "caption" in normalized and "content" not in normalized:
+    normalized["content"] = normalized.pop("caption")
+
+  # Map url (imageblock image field) to title if title is missing
+  # This ensures imageblock items have some identifying text
+  if "url" in normalized and normalized["url"]:
+    if not normalized.get("title") and not normalized.get("content"):
+      normalized["title"] = "Image"
+
+  return normalized
+
+
 def _serialize_item(item):
     image_b64 = (
         base64.b64encode(item.image_data).decode("utf-8") if item.image_data else None
@@ -82,8 +99,12 @@ def create_component():
         for idx, item in enumerate(data.get("items", [])):
             if not item:
                 continue
+
+            # Normalize field names (caption -> content, etc.)
+            item = _normalize_item_data(item)
+
             if not (
-                item.get("title") or item.get("content") or item.get("format_type")
+                item.get("title") or item.get("content")
             ):
                 continue
 
@@ -134,6 +155,9 @@ def update_component(component_id):
     try:
         data = request.form.to_dict()
         files = request.files
+        print("Received update for component_id:", component_id)
+        print("Form data:", data)
+        print("Files:", files)
 
         comp = Component.query.get(component_id)
         if not comp:
@@ -164,6 +188,9 @@ def update_component(component_id):
                 if not any(item_data.values()):
                     continue
 
+                # Normalize field names (caption -> content, etc.)
+                item_data = _normalize_item_data(item_data)
+
                 item_id = item_data.get("item_id")
                 if item_id:
                     item = ComponentItem.query.filter_by(
@@ -193,7 +220,7 @@ def update_component(component_id):
                     if (
                         item_data.get("title")
                         or item_data.get("content")
-                        or item_data.get("format_type")
+                        or item_data.get("image")
                     ):
                         new_item = ComponentItem(
                             component_id=comp.component_id,

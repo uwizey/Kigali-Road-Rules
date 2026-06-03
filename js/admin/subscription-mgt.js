@@ -42,6 +42,12 @@ function filterTable(tbodyId, query) {
   });
 }
 
+function extractData(response, key = null) {
+  if (!response.data) return null;
+  const raw = response.data.data ?? response.data;
+  return key ? raw[key] : raw;
+}
+
 // ── Render ────────────────────────────────────
 
 async function renderAll() {
@@ -55,7 +61,6 @@ async function renderAll() {
 }
 
 async function renderStats() {
-  // Fetch all three counts in parallel
   const [plansRes, requestsRes, subsRes, usersRes] = await Promise.all([
     FetchData("/allplans", true),
     FetchData("/allrequests", true),
@@ -63,21 +68,15 @@ async function renderStats() {
     FetchData("/users-subscriptions", true),
   ]);
 
-  $("stat-plans").textContent = plansRes.success
-    ? plansRes.data.plans.length
-    : "—";
+  const plans = plansRes.success ? (extractData(plansRes) ?? []) : [];
+  const requests = requestsRes.success ? (extractData(requestsRes) ?? []) : [];
+  const subs = subsRes.success ? (extractData(subsRes) ?? []) : [];
+  const users = usersRes.success ? (extractData(usersRes) ?? []) : [];
 
-  $("stat-requests").textContent = requestsRes.success
-    ? requestsRes.data.requests.filter((r) => r.status === "pending").length
-    : "—";
-
-  $("stat-active").textContent = subsRes.success
-    ? subsRes.data.subscriptions.filter((s) => s.active).length
-    : "—";
-
-  $("stat-users").textContent = usersRes.success
-    ? usersRes.data.users.length
-    : "—";
+  $("stat-plans").textContent = plans.length;
+  $("stat-requests").textContent = requests.filter((r) => r.status === "pending").length;
+  $("stat-active").textContent = subs.filter((s) => s.active).length;
+  $("stat-users").textContent = users.length;
 }
 
 async function renderPlans() {
@@ -85,11 +84,11 @@ async function renderPlans() {
   const response = await FetchData("/allplans", true);
 
   if (!response.success) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><i class="fa-solid fa-box-open"></i>${response.error?.message ?? "Failed to load plans."}</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><i class="fa-solid fa-box-open"></i>${response.userMessage}</div></td></tr>`;
     return;
   }
 
-  const plans = response.data.plans;
+  const plans = extractData(response) ?? [];
 
   if (!plans.length) {
     tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><i class="fa-solid fa-box-open"></i>No plans yet. Click "New Plan" to create one.</div></td></tr>`;
@@ -123,11 +122,11 @@ async function renderRequests() {
   const response = await FetchData("/allrequests", true);
 
   if (!response.success) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="fa-solid fa-inbox"></i>${response.error?.message ?? "Failed to load requests."}</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="fa-solid fa-inbox"></i>${response.userMessage}</div></td></tr>`;
     return;
   }
 
-  const requests = response.data.requests;
+  const requests = extractData(response) ?? [];
 
   if (!requests.length) {
     tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="fa-solid fa-inbox"></i>No requests found.</div></td></tr>`;
@@ -163,11 +162,11 @@ async function renderSubs() {
   const response = await FetchData("/all-subscriptions", true);
 
   if (!response.success) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><i class="fa-solid fa-circle-check"></i>${response.error?.message ?? "Failed to load subscriptions."}</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><i class="fa-solid fa-circle-check"></i>${response.userMessage}</div></td></tr>`;
     return;
   }
 
-  const subscriptions = response.data.subscriptions;
+  const subscriptions = extractData(response) ?? [];
 
   if (!subscriptions.length) {
     tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><i class="fa-solid fa-circle-check"></i>No subscriptions found.</div></td></tr>`;
@@ -198,11 +197,11 @@ async function renderUsers() {
   const response = await FetchData("/users-subscriptions", true);
 
   if (!response.success) {
-    tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><i class="fa-solid fa-users"></i>${response.error?.message ?? "Failed to load users."}</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><i class="fa-solid fa-users"></i>${response.userMessage}</div></td></tr>`;
     return;
   }
 
-  const users = response.data.users;
+  const users = extractData(response) ?? [];
 
   tbody.innerHTML = users
     .map(
@@ -245,7 +244,11 @@ async function openEditPlanModal(id) {
     return;
   }
 
-  const p = response.data.plans;
+  const p = extractData(response);
+  if (!p || typeof p !== "object") {
+    notify("Invalid plan data");
+    return;
+  }
 
   $("plan-modal-title").textContent = "Edit Plan";
   $("plan-id").value = p.id;
@@ -287,10 +290,10 @@ async function savePlan() {
 
   if (id) {
     const response = await UpdateData(`/plans/${id}`, payload, true);
-    notify(response.data?.status ? "Plan updated ✓" : "Plan update failed");
+    notify(response.success ? "Plan updated ✓" : response.userMessage);
   } else {
     const response = await PostData("/plans", payload, true);
-    notify(response.data?.status ? "Plan created ✓" : "Plan creation failed");
+    notify(response.success ? "Plan created ✓" : response.userMessage);
   }
 
   closeModal("modal-plan");
@@ -299,8 +302,8 @@ async function savePlan() {
 
 async function deletePlan(id) {
   if (!confirm("Delete this plan?")) return;
-  const response = await DeleteData(`/plans/${id}`, true);
-  notify(response.success ? "Plan deleted" : "Delete failed");
+  const response = await DeleteData(`/plans/${id}`, {}, true);
+  notify(response.success ? "Plan deleted ✓" : response.userMessage);
   await renderAll();
 }
 
@@ -312,17 +315,13 @@ async function resolveRequest(id, action) {
 
   const response = await UpdateData(endpoint, {}, true);
 
-  if (response.success) {
-    notify(
-      action === "approved"
+  notify(
+    response.success
+      ? action === "approved"
         ? "Request approved — subscription created ✓"
-        : "Request rejected",
-    );
-  } else {
-    notify(
-      `Request ${action === "approved" ? "approval" : "rejection"} failed`,
-    );
-  }
+        : "Request rejected ✓"
+      : response.userMessage,
+  );
 
   await renderAll();
 }
@@ -333,11 +332,15 @@ async function showSubDetail(id) {
   const response = await FetchData(`/subscription/${id}`, true);
 
   if (!response.success) {
-    notify("Failed to load subscription details");
+    notify(response.userMessage);
     return;
   }
 
-  const s = response.data.subscription;
+  const s = extractData(response);
+  if (!s || typeof s !== "object") {
+    notify("Invalid subscription data");
+    return;
+  }
 
   $("sub-detail-content").innerHTML = `
     <div class="detail-grid">
@@ -377,8 +380,8 @@ async function toggleSubStatus(id, action) {
 
   notify(
     response.success
-      ? `Subscription ${action === "activate" ? "activated" : "deactivated"} successfully`
-      : `Subscription ${action === "activate" ? "activation" : "deactivation"} failed`,
+      ? `Subscription ${action === "activate" ? "activated" : "deactivated"} ✓`
+      : response.userMessage,
   );
 
   closeModal("modal-sub-detail");
@@ -391,17 +394,22 @@ async function showUserHistory(userId) {
   const response = await FetchData(`/user/${userId}/history`, true);
 
   if (!response.success) {
-    notify("Failed to load user history");
+    notify(response.userMessage);
     return;
   }
 
-  const data = response.data;
-  const userSubs = data.subscriptions || [];
-  const userReqs = data.requests || [];
+  const data = extractData(response);
+  if (!data || typeof data !== "object") {
+    notify("Invalid history data");
+    return;
+  }
+
+  const userSubs = data.subscriptions ?? [];
+  const userReqs = data.requests ?? [];
 
   $("history-modal-title").textContent = `History — User #${data.user_id}`;
 
-  let html = `<div class="card-title">Subscriptions (${data.subscription_count})</div>`;
+  let html = `<div class="card-title">Subscriptions (${data.subscription_count ?? userSubs.length})</div>`;
 
   if (userSubs.length) {
     html += userSubs
@@ -448,7 +456,7 @@ async function showUserHistory(userId) {
     html += '<div class="empty">No subscriptions</div>';
   }
 
-  html += `<hr class="section-divider" /><div class="card-title">Requests (${data.request_count})</div>`;
+  html += `<hr class="section-divider" /><div class="card-title">Requests (${data.request_count ?? userReqs.length})</div>`;
 
   if (userReqs.length) {
     html += userReqs

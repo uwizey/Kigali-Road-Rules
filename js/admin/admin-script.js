@@ -30,7 +30,7 @@ function createBasePopup({
       <h3>${title}</h3>
       <div class="pw-message-content">${message}</div>
       <div class="pw-actions">
-        ${showCancel ? `<button class="pw-btn pw-btn-cancel"  style="${cancelBtnStyle}">${cancelText}</button>` : ""}
+        ${showCancel ? `<button class="pw-btn pw-btn-cancel" style="${cancelBtnStyle}">${cancelText}</button>` : ""}
         ${showConfirm ? `<button class="pw-btn pw-btn-confirm" style="${confirmBtnStyle}">${confirmText}</button>` : ""}
       </div>
     </div>
@@ -78,19 +78,71 @@ function showInfoPopup(
   });
 }
 
-// Replaces all alert() for success feedback
 function showSuccessPopup(message) {
   showInfoPopup("Success", message, "fas fa-check-circle", "#27ae60");
 }
 
+function showConfirmPopup(message, onConfirm) {
+  createBasePopup({
+    title: "Are you sure?",
+    message,
+    icon: "fas fa-exclamation-triangle",
+    iconColor: "#e67e22",
+    confirmText: "Confirm",
+    cancelText: "Cancel",
+    showCancel: true,
+    showConfirm: true,
+    confirmBtnStyle: "background: #e67e22; color: #fff; border: none;",
+    onConfirm,
+  });
+}
+
 // ─── API response handler ─────────────────────────────────────────────────────
-// Returns true if an error was shown (caller should return/stop).
-// Returns false if response is successful (caller continues normally).
+// crud.js already classifies every error and prepares a safe userMessage.
+// All we do here is pick an icon/color for the popup and display it.
+// Returns true if an error was shown (caller should stop), false on success.
 
 function handleApiResponse(response) {
   if (response?.success === true) return false;
 
-  const STATUS_CONFIG = {
+  // Icon/color/title keyed by the type/action/status crud.js already resolved for us
+  const ICON = {
+    NETWORK_ERROR: {
+      title: "No Connection",
+      icon: "fas fa-wifi",
+      color: "#95a5a6",
+    },
+    CORS_ERROR: {
+      title: "Network Error",
+      icon: "fas fa-wifi",
+      color: "#95a5a6",
+    },
+    TIMEOUT_ERROR: {
+      title: "Timed Out",
+      icon: "fas fa-hourglass-end",
+      color: "#95a5a6",
+    },
+    ABORTED: { title: "Cancelled", icon: "fas fa-ban", color: "#95a5a6" },
+    RENEW_SUBSCRIPTION: {
+      title: "Subscription Expired",
+      icon: "fas fa-calendar-times",
+      color: "#f39c12",
+    },
+    UPGRADE_PLAN: {
+      title: "Upgrade Required",
+      icon: "fas fa-arrow-circle-up",
+      color: "#f39c12",
+    },
+    VERIFY_EMAIL: {
+      title: "Verify Email",
+      icon: "fas fa-envelope",
+      color: "#3498db",
+    },
+    GENERIC_FORBIDDEN: {
+      title: "Access Restricted",
+      icon: "fas fa-lock",
+      color: "#f39c12",
+    },
     400: {
       title: "Invalid Request",
       icon: "fas fa-exclamation-circle",
@@ -103,11 +155,7 @@ function handleApiResponse(response) {
     },
     403: { title: "Access Restricted", icon: "fas fa-lock", color: "#f39c12" },
     404: { title: "Not Found", icon: "fas fa-search", color: "#95a5a6" },
-    408: {
-      title: "Request Timeout",
-      icon: "fas fa-hourglass-end",
-      color: "#95a5a6",
-    },
+    408: { title: "Timed Out", icon: "fas fa-hourglass-end", color: "#95a5a6" },
     409: {
       title: "Conflict",
       icon: "fas fa-exclamation-triangle",
@@ -126,80 +174,15 @@ function handleApiResponse(response) {
     504: { title: "Timeout", icon: "fas fa-hourglass-end", color: "#c0392b" },
   };
 
-  const NETWORK_CONFIG = {
-    NETWORK_ERROR: {
-      title: "No Connection",
-      icon: "fas fa-wifi",
-      color: "#95a5a6",
-    },
-    CORS_ERROR: {
-      title: "Network Error",
-      icon: "fas fa-wifi",
-      color: "#95a5a6",
-    },
-    TIMEOUT_ERROR: {
-      title: "Timed Out",
-      icon: "fas fa-hourglass-end",
-      color: "#95a5a6",
-    },
-    ABORTED: { title: "Cancelled", icon: "fas fa-ban", color: "#95a5a6" },
-    UNKNOWN_ERROR: {
-      title: "Error",
-      icon: "fas fa-exclamation-circle",
-      color: "#e74c3c",
-    },
-  };
-
-  // 403 with a known action — userMessage is pre-written safe copy from crud.js
-  const FORBIDDEN_ACTION_CONFIG = {
-    RENEW_SUBSCRIPTION: {
-      title: "Subscription Expired",
-      icon: "fas fa-calendar-times",
-      color: "#f39c12",
-    },
-    UPGRADE_PLAN: {
-      title: "Upgrade Required",
-      icon: "fas fa-arrow-circle-up",
-      color: "#f39c12",
-    },
-    VERIFY_EMAIL: {
-      title: "Email Not Verified",
-      icon: "fas fa-envelope",
-      color: "#3498db",
-    },
-    GENERIC_FORBIDDEN: {
-      title: "Access Restricted",
-      icon: "fas fa-lock",
-      color: "#f39c12",
-    },
-  };
-
-  let config;
-
-  if (response.type && NETWORK_CONFIG[response.type]) {
-    config = NETWORK_CONFIG[response.type];
-  } else if (response.status === 403 && response.action) {
-    config =
-      FORBIDDEN_ACTION_CONFIG[response.action] ??
-      FORBIDDEN_ACTION_CONFIG.GENERIC_FORBIDDEN;
-  } else if (response.status && STATUS_CONFIG[response.status]) {
-    config = STATUS_CONFIG[response.status];
-  } else if (response.status >= 400 && response.status < 500) {
-    config = {
-      title: "Request Error",
-      icon: "fas fa-exclamation-circle",
-      color: "#e74c3c",
-    };
-  } else {
-    config = {
+  const { title, icon, color } = ICON[response.type] ??
+    ICON[response.action] ??
+    ICON[response.status] ?? {
       title: "Error",
       icon: "fas fa-exclamation-circle",
       color: "#e74c3c",
     };
-  }
 
-  // userMessage is always safe copy from crud.js — never raw backend text
-  showInfoPopup(config.title, response.userMessage, config.icon, config.color);
+  showInfoPopup(title, response.userMessage, icon, color);
   return true;
 }
 
@@ -267,11 +250,11 @@ async function initializeCharts() {
   new Chart(document.getElementById("questionsChart").getContext("2d"), {
     type: "doughnut",
     data: {
-      labels: response.data.labels,
+      labels: response.data.data.labels,
       datasets: [
         {
-          data: response.data.data,
-          backgroundColor: response.data.colors,
+          data: response.data.data.data,
+          backgroundColor: response.data.data.colors,
           borderWidth: 0,
         },
       ],
@@ -358,9 +341,10 @@ async function loadTopics() {
   const topicsList = document.getElementById("topicsList");
   topicsList.innerHTML = "";
   const response = await FetchData("/topic", true);
+  console.log("Topics API response:", response);  
   if (handleApiResponse(response)) return;
 
-  const data = response.data.topics || [];
+  const data = response.data.data || [];
   document.getElementById("totalTopics").textContent = data.length;
 
   data.forEach((topic) => {
@@ -404,7 +388,6 @@ async function loadTopics() {
 async function openTopicModal(topicId) {
   const modal = document.getElementById("topicModal");
   const form = document.getElementById("topicForm");
-  const title = document.getElementById("topicModalTitle");
   const subtopicsSection = document.getElementById("subtopicsSection");
 
   form.reset();
@@ -414,18 +397,18 @@ async function openTopicModal(topicId) {
   if (topicId) {
     const response = await FetchData(`/topic/${topicId}`, true);
     if (handleApiResponse(response)) return;
-    const topic = response.data.topic;
+    console.log("Single Topic API response:", response);
+    const topic = response.data.data;
     if (topic) {
-      title.textContent = "Edit Topic";
+      document.getElementById("topicModalTitle").textContent = "Edit Topic";
       document.getElementById("topicId").value = topic.id;
       document.getElementById("topicName").value = topic.name;
-      document.getElementById("topicDescription").value =
-        topic.description || "";
+      
       subtopicsSection.style.display = "block";
       loadSubtopicsForEdit(topic);
     }
   } else {
-    title.textContent = "Add New Topic";
+    document.getElementById("topicModalTitle").textContent = "Add New Topic";
   }
   modal.classList.add("active");
 }
@@ -458,8 +441,9 @@ function addSubtopicField() {
 
 function removeSubtopicField(button, subtopicId) {
   if (subtopicId) {
-    if (confirm("Are you sure you want to delete this subtopic?"))
-      button.parentElement.remove();
+    showConfirmPopup("Are you sure you want to delete this subtopic?", () =>
+      button.parentElement.remove(),
+    );
   } else {
     button.parentElement.remove();
   }
@@ -483,39 +467,26 @@ async function handleTopicSubmit(event) {
     if (handleApiResponse(response)) return;
     showSuccessPopup("Topic created successfully.");
   }
-  loadTopics();
-  loadTopicOptions();
   closeTopicModal();
-}
-
-function editTopic(topicId) {
-  openTopicModal(topicId);
+  loadTopics();
+  populateTopicSelects();
 }
 
 async function deleteTopic(topicId) {
-  if (
-    confirm(
-      "Are you sure you want to delete this topic? This will also delete all associated subtopics.",
-    )
-  ) {
-    const response = await DeleteData("/topic", { id: topicId }, true);
-    if (handleApiResponse(response)) return;
-    loadTopics();
-    loadTopicOptions();
-  }
-}
-
-function addSubtopic(topicId) {
-  openSubtopicModal(topicId);
-}
-function editSubtopic(topicId, subtopicId) {
-  openSubtopicModal(topicId, subtopicId);
+  showConfirmPopup(
+    "Are you sure you want to delete this topic? This will also delete all associated subtopics.",
+    async () => {
+      const response = await DeleteData("/topic", { id: topicId }, true);
+      if (handleApiResponse(response)) return;
+      loadTopics();
+      populateTopicSelects();
+    },
+  );
 }
 
 async function openSubtopicModal(topicId, subtopicId) {
   const modal = document.getElementById("subtopicModal");
   const form = document.getElementById("subtopicForm");
-  const title = document.getElementById("subtopicModalTitle");
 
   form.reset();
   document.getElementById("subtopicTopicId").value = topicId;
@@ -523,14 +494,16 @@ async function openSubtopicModal(topicId, subtopicId) {
   if (subtopicId) {
     const response = await FetchData(`/topic/${subtopicId}`, true);
     if (handleApiResponse(response)) return;
-    const subtopic = response.data.topic;
+    const subtopic = response.data.data;
     if (subtopic) {
-      title.textContent = "Edit Subtopic";
+      document.getElementById("subtopicModalTitle").textContent =
+        "Edit Subtopic";
       document.getElementById("subtopicId").value = subtopic.id;
       document.getElementById("subtopicName").value = subtopic.name;
     }
   } else {
-    title.textContent = "Add New Subtopic";
+    document.getElementById("subtopicModalTitle").textContent =
+      "Add New Subtopic";
     document.getElementById("subtopicId").value = "";
   }
   modal.classList.add("active");
@@ -563,17 +536,20 @@ async function handleSubtopicSubmit(event) {
     if (handleApiResponse(response)) return;
     showSuccessPopup("Subtopic created successfully.");
   }
-  loadTopics();
   closeSubtopicModal();
+  loadTopics();
 }
 
-async function deleteSubtopic(topicId, subtopicId) {
-  if (confirm("Are you sure you want to delete this subtopic?")) {
-    const response = await DeleteData("/topic", { id: subtopicId }, true);
-    if (handleApiResponse(response)) return;
-    loadTopics();
-    loadTopicOptions();
-  }
+async function deleteSubtopic(subtopicId) {
+  showConfirmPopup(
+    "Are you sure you want to delete this subtopic?",
+    async () => {
+      const response = await DeleteData("/topic", { id: subtopicId }, true);
+      if (handleApiResponse(response)) return;
+      loadTopics();
+      populateTopicSelects();
+    },
+  );
 }
 
 // ─── Questions ────────────────────────────────────────────────────────────────
@@ -582,9 +558,10 @@ async function loadQuestions() {
   const tbody = document.getElementById("questionsTableBody");
   tbody.innerHTML = "";
   const response = await FetchData("/questions", true);
+  console.log("Questions API response:", response);
   if (handleApiResponse(response)) return;
 
-  const qs = response.data.questions;
+  const qs = response.data.data;
   document.getElementById("totalQuestions").textContent = qs.length;
 
   qs.forEach((question) => {
@@ -606,7 +583,6 @@ async function loadQuestions() {
 async function openQuestionModal(questionId) {
   const modal = document.getElementById("questionModal");
   const form = document.getElementById("questionForm");
-  const title = document.getElementById("questionModalTitle");
   const imagePreview = document.getElementById("imagePreview");
 
   form.reset();
@@ -616,20 +592,20 @@ async function openQuestionModal(questionId) {
 
   if (questionId) {
     const response = await FetchData(`/question/${questionId}`, true);
+    console.log("Single Question API response:", response);
     if (handleApiResponse(response)) return;
-    const question = response.data.question;
+    const question = response.data.data;
     if (question) {
-      title.textContent = "Edit Question";
+      document.getElementById("questionModalTitle").textContent =
+        "Edit Question";
       document.getElementById("questionId").value = questionId;
       document.getElementById("questionStatement").value = question.statement;
       document.getElementById("questionTopic").value = question.topicId;
 
-      const opts = ["A", "B", "C", "D"];
-      opts.forEach((k) => {
-        document.getElementById(`option${k}`).value = question.options[k].text;
-        document
-          .getElementById(`option${k}`)
-          .setAttribute("option-id", question.options[k].id);
+      ["A", "B", "C", "D"].forEach((k) => {
+        const input = document.getElementById(`option${k}`);
+        input.value = question.options[k].text;
+        input.setAttribute("option-id", question.options[k].id);
       });
       document.querySelector(
         `input[value="${question.correctAnswer}"]`,
@@ -645,7 +621,8 @@ async function openQuestionModal(questionId) {
       }
     }
   } else {
-    title.textContent = "Add New Question";
+    document.getElementById("questionModalTitle").textContent =
+      "Add New Question";
   }
   modal.classList.add("active");
 }
@@ -671,36 +648,40 @@ function previewImage(event) {
   }
 }
 
-async function populateTopicSelects() {
-  const modalTopicSelect = document.getElementById("questionTopic");
-  const filterTopic = document.getElementById("filterTopic");
-  const response = await FetchData("/topic", true);
-  if (handleApiResponse(response)) return;
-
-  const optionsHtml = buildTopicOptionsHtml(response.data.topics || []);
-  filterTopic.innerHTML = '<option value="">All Topics</option>' + optionsHtml;
-  modalTopicSelect.innerHTML =
-    '<option value="">Select topic</option>' + optionsHtml;
-}
-
-async function populateTopicSelects_2(select) {
-  const response = await FetchData("/topic", true);
-  if (handleApiResponse(response)) return;
-  select.innerHTML =
-    '<option value="">Select topic</option>' +
-    buildTopicOptionsHtml(response.data.topics || []);
-}
-
 function buildTopicOptionsHtml(topics) {
   return topics
     .map(
-      (cat) =>
-        `<optgroup label="${cat.name}">
+      (cat) => `
+    <optgroup label="${cat.name}">
       <option value="${cat.id}">${cat.name}</option>
       ${cat.subtopics.map((sub) => `<option value="${sub.id}">${sub.name}</option>`).join("")}
     </optgroup>`,
     )
     .join("");
+}
+
+async function populateTopicSelects(...selects) {
+  const response = await FetchData("/topic", true);
+  if (handleApiResponse(response)) return;
+  const optionsHtml = buildTopicOptionsHtml(response.data.data || []);
+
+  // Default: populate the question modal select and question filter select
+  if (!selects.length) {
+    const filterTopic = document.getElementById("filterTopic");
+    const modalTopicSelect = document.getElementById("questionTopic");
+    if (filterTopic)
+      filterTopic.innerHTML =
+        '<option value="">All Topics</option>' + optionsHtml;
+    if (modalTopicSelect)
+      modalTopicSelect.innerHTML =
+        '<option value="">Select topic</option>' + optionsHtml;
+  }
+
+  // Populate any explicitly passed <select> elements
+  for (const select of selects) {
+    if (select)
+      select.innerHTML = '<option value="">Select topic</option>' + optionsHtml;
+  }
 }
 
 async function handleQuestionSubmit(event) {
@@ -765,20 +746,19 @@ async function handleQuestionSubmit(event) {
     if (handleApiResponse(response)) return;
     showSuccessPopup("Question created successfully.");
   }
-  loadQuestions();
   closeQuestionModal();
-}
-
-function editQuestion(questionId) {
-  openQuestionModal(questionId);
+  loadQuestions();
 }
 
 async function deleteQuestion(questionId) {
-  if (confirm("Are you sure you want to delete this question?")) {
-    const response = await DeleteData("/question", { id: questionId }, true);
-    if (handleApiResponse(response)) return;
-    loadQuestions();
-  }
+  showConfirmPopup(
+    "Are you sure you want to delete this question?",
+    async () => {
+      const response = await DeleteData("/question", { id: questionId }, true);
+      if (handleApiResponse(response)) return;
+      loadQuestions();
+    },
+  );
 }
 
 function filterQuestions() {
@@ -792,25 +772,25 @@ function filterQuestions() {
   });
 }
 
-function searchQuestions() {
-  filterQuestions();
-}
-function loadTopicOptions() {
-  populateTopicSelects();
-}
-
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 async function loadUsers() {
   const tbody = document.getElementById("usersTableBody");
   tbody.innerHTML = "";
   const response = await FetchData("/users", true);
+  console.log("Users API response:", response);
   if (handleApiResponse(response)) return;
 
-  users = response.data.users;
+  users = response.data.data;
   document.getElementById("totalUsers").textContent = users.length;
 
-  users.forEach((user) => {
+  renderUsersTable(users);
+}
+
+function renderUsersTable(data) {
+  const tbody = document.getElementById("usersTableBody");
+  tbody.innerHTML = "";
+  data.forEach((user) => {
     const isDeactivated = !user.is_active || user.deleted_at !== null;
     const row = document.createElement("tr");
     row.innerHTML = `
@@ -835,7 +815,6 @@ async function loadUsers() {
 function openUserModal(userId) {
   const modal = document.getElementById("userModal");
   const form = document.getElementById("userForm");
-  const title = document.getElementById("userModalTitle");
   const passwordHelp = document.getElementById("passwordHelp");
   const passwordInput = document.getElementById("userPassword");
 
@@ -845,13 +824,13 @@ function openUserModal(userId) {
   if (userId) {
     const user = users.find((u) => u.id === userId);
     if (user) {
-      title.textContent = "Edit User";
+      document.getElementById("userModalTitle").textContent = "Edit User";
       document.getElementById("userId").value = user.id;
       passwordInput.required = false;
       passwordHelp.style.display = "block";
     }
   } else {
-    title.textContent = "Add New User";
+    document.getElementById("userModalTitle").textContent = "Add New User";
     passwordInput.required = true;
     passwordHelp.style.display = "none";
   }
@@ -876,28 +855,27 @@ async function handleUserSubmit(event) {
     if (handleApiResponse(response)) return;
     showSuccessPopup("Password reset successfully.");
   }
-  loadUsers();
   closeUserModal();
-}
-
-function editUser(userId) {
-  openUserModal(userId);
+  loadUsers();
 }
 
 async function deleteUser(userId) {
-  if (confirm("Are you sure you want to deactivate this user?")) {
-    const response = await UpdateData(
-      `/admin/deactivate-user/${userId}`,
-      { id: userId },
-      true,
-    );
-    if (handleApiResponse(response)) return;
-    loadUsers();
-  }
+  showConfirmPopup(
+    "Are you sure you want to deactivate this user?",
+    async () => {
+      const response = await UpdateData(
+        `/admin/deactivate-user/${userId}`,
+        { id: userId },
+        true,
+      );
+      if (handleApiResponse(response)) return;
+      loadUsers();
+    },
+  );
 }
 
 async function activateUser(userId) {
-  if (confirm("Are you sure you want to activate this user?")) {
+  showConfirmPopup("Are you sure you want to activate this user?", async () => {
     const response = await UpdateData(
       `/admin/activate-user/${userId}`,
       { id: userId },
@@ -905,7 +883,7 @@ async function activateUser(userId) {
     );
     if (handleApiResponse(response)) return;
     loadUsers();
-  }
+  });
 }
 
 function filterUsers() {
@@ -915,37 +893,11 @@ function filterUsers() {
     const matchesRole = !filterRole || u.role === filterRole;
     const matchesSearch =
       !searchTerm ||
-      u.name.toLowerCase().includes(searchTerm) ||
+      u.name?.toLowerCase().includes(searchTerm) ||
       u.email.toLowerCase().includes(searchTerm);
     return matchesRole && matchesSearch;
   });
-  displayFilteredUsers(filtered);
-}
-
-function searchUsers() {
-  filterUsers();
-}
-
-function displayFilteredUsers(filtered) {
-  const tbody = document.getElementById("usersTableBody");
-  tbody.innerHTML = "";
-  filtered.forEach((user) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${user.id}</td>
-      <td>${user.name}</td>
-      <td>${user.email}</td>
-      <td>${user.role.toUpperCase()}</td>
-      <td>${user.joined}</td>
-      <td><span class="status-badge status-${user.status}">${user.status.toUpperCase()}</span></td>
-      <td>
-        <div class="table-actions">
-          <button class="btn-edit"   data-action="edit-user"   data-id="${user.id}">Edit</button>
-          <button class="btn-delete" data-action="delete-user" data-id="${user.id}">Delete</button>
-        </div>
-      </td>`;
-    tbody.appendChild(row);
-  });
+  renderUsersTable(filtered);
 }
 
 // ─── Exams ────────────────────────────────────────────────────────────────────
@@ -954,9 +906,10 @@ async function loadExams() {
   const examsList = document.getElementById("examsList");
   examsList.innerHTML = "";
   const response = await FetchData("/quizzes", true);
+  console.log("Exams API response:", response); 
   if (handleApiResponse(response)) return;
 
-  const exams = response.data.quizzes;
+  const exams = response.data.data;
   if (!exams.length) {
     examsList.innerHTML =
       '<p style="text-align:center;color:var(--gray);padding:40px;">No exams created yet. Click "Add New Exam" to get started.</p>';
@@ -988,7 +941,6 @@ async function loadExams() {
 async function openExamModal(examId) {
   const modal = document.getElementById("examModal");
   const form = document.getElementById("examForm");
-  const title = document.getElementById("examModalTitle");
 
   form.reset();
   document.getElementById("examId").value = "";
@@ -996,23 +948,23 @@ async function openExamModal(examId) {
 
   const topicFilter = document.getElementById("examQuestionTopicFilter");
   topicFilter.innerHTML = '<option value="">All Topics</option>';
-  populateTopicSelects_2(topicFilter);
+  await populateTopicSelects(topicFilter);
 
   if (examId) {
     const response = await FetchData(`/quiz-admin/${examId}`, true);
     if (handleApiResponse(response)) return;
-    const exam = response.data;
+    const exam = response.data.data;
     if (exam) {
-      title.textContent = "Edit Exam";
+      document.getElementById("examModalTitle").textContent = "Edit Exam";
       document.getElementById("examId").value = exam.quiz_id;
       document.getElementById("examName").value = exam.title;
       document.getElementById("examDescription").value = exam.description || "";
       selectedQuestionIds = exam.questions.slice();
     }
   } else {
-    title.textContent = "Add New Exam";
+    document.getElementById("examModalTitle").textContent = "Add New Exam";
   }
-  loadAvailableQuestions();
+  await loadAvailableQuestions();
   updateSelectedQuestionsDisplay();
   modal.classList.add("active");
 }
@@ -1024,12 +976,26 @@ function closeExamModal() {
 
 async function loadAvailableQuestions() {
   const container = document.getElementById("availableQuestions");
+  const topicFilter = document.getElementById("examQuestionTopicFilter").value;
+  const searchTerm = document
+    .getElementById("examQuestionSearch")
+    .value.toLowerCase()
+    .trim();
+
   const response = await FetchData("/questions", true);
   if (handleApiResponse(response)) return;
 
-  questions = response.data.questions;
+  questions = response.data.data;
+
+  const filtered = questions.filter((q) => {
+    const matchesTopic = !topicFilter || String(q.topic_id) === topicFilter;
+    const matchesSearch =
+      !searchTerm || q.content.toLowerCase().includes(searchTerm);
+    return matchesTopic && matchesSearch;
+  });
+
   container.innerHTML = "";
-  questions.forEach((question) => {
+  filtered.forEach((question) => {
     const isSelected = selectedQuestionIds.indexOf(question.question_id) > -1;
     const item = document.createElement("div");
     item.className = "question-checkbox-item";
@@ -1038,10 +1004,6 @@ async function loadAvailableQuestions() {
       <div class="question-checkbox-content"><strong>${question.content}</strong></div>`;
     container.appendChild(item);
   });
-}
-
-function filterAvailableQuestions() {
-  loadAvailableQuestions();
 }
 
 function toggleQuestionSelection(questionId) {
@@ -1053,8 +1015,8 @@ function toggleQuestionSelection(questionId) {
 
 function updateSelectedQuestionsDisplay() {
   const container = document.getElementById("selectedQuestions");
-  const countSpan = document.getElementById("selectedCount");
-  countSpan.textContent = selectedQuestionIds.length;
+  document.getElementById("selectedCount").textContent =
+    selectedQuestionIds.length;
 
   if (!selectedQuestionIds.length) {
     container.innerHTML =
@@ -1095,7 +1057,7 @@ async function handleExamSubmit(event) {
     return;
   }
   const examId = document.getElementById("examId").value;
-  const name = document.getElementById("examName").value;
+  const title = document.getElementById("examName").value;
   const description = document.getElementById("examDescription").value;
 
   if (examId) {
@@ -1103,7 +1065,7 @@ async function handleExamSubmit(event) {
       "/quiz",
       {
         quiz_id: examId,
-        title: name,
+        title,
         description,
         questions: selectedQuestionIds.slice(),
       },
@@ -1114,26 +1076,22 @@ async function handleExamSubmit(event) {
   } else {
     const response = await PostData(
       "/quiz",
-      { title: name, description, questions: selectedQuestionIds.slice() },
+      { title, description, questions: selectedQuestionIds.slice() },
       true,
     );
     if (handleApiResponse(response)) return;
     showSuccessPopup("Exam created successfully.");
   }
-  loadExams();
   closeExamModal();
-}
-
-function editExam(examId) {
-  openExamModal(examId);
+  loadExams();
 }
 
 async function deleteExam(examId) {
-  if (confirm("Are you sure you want to delete this exam?")) {
+  showConfirmPopup("Are you sure you want to delete this exam?", async () => {
     const response = await DeleteData("/quiz", { id: examId }, true);
     if (handleApiResponse(response)) return;
     loadExams();
-  }
+  });
 }
 
 // ─── Event listeners ──────────────────────────────────────────────────────────
@@ -1144,7 +1102,7 @@ document.addEventListener("DOMContentLoaded", function () {
   loadQuestions();
   loadUsers();
   loadExams();
-  loadTopicOptions();
+  populateTopicSelects();
 
   document.getElementById("btn-logout").addEventListener("click", async () => {
     const response = await FetchData("/logout", true);
@@ -1153,15 +1111,15 @@ document.addEventListener("DOMContentLoaded", function () {
     window.location.href = "../auth/login.html";
   });
 
-  const sidebarToggle = document.getElementById("sidebar-toggle");
-  if (sidebarToggle) sidebarToggle.addEventListener("click", toggleSidebar);
-
-  const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
-  if (mobileMenuToggle)
-    mobileMenuToggle.addEventListener("click", toggleMobileMenu);
-
-  const sidebarOverlay = document.getElementById("sidebar-overlay");
-  if (sidebarOverlay) sidebarOverlay.addEventListener("click", closeSidebar);
+  document
+    .getElementById("sidebar-toggle")
+    ?.addEventListener("click", toggleSidebar);
+  document
+    .getElementById("mobile-menu-toggle")
+    ?.addEventListener("click", toggleMobileMenu);
+  document
+    .getElementById("sidebar-overlay")
+    ?.addEventListener("click", closeSidebar);
 
   document.querySelectorAll(".links a[data-section]").forEach((link) => {
     link.addEventListener("click", (e) => {
@@ -1176,77 +1134,74 @@ document.addEventListener("DOMContentLoaded", function () {
     );
   });
 
-  const btnAddTopic = document.getElementById("btn-add-topic");
-  const btnAddQuestion = document.getElementById("btn-add-question");
-  const btnAddUser = document.getElementById("btn-add-user");
-  const btnAddExam = document.getElementById("btn-add-exam");
-  if (btnAddTopic)
-    btnAddTopic.addEventListener("click", () => openTopicModal(null));
-  if (btnAddQuestion)
-    btnAddQuestion.addEventListener("click", () => openQuestionModal(null));
-  if (btnAddUser)
-    btnAddUser.addEventListener("click", () => openUserModal(null));
-  if (btnAddExam)
-    btnAddExam.addEventListener("click", () => openExamModal(null));
+  document
+    .getElementById("btn-add-topic")
+    ?.addEventListener("click", () => openTopicModal(null));
+  document
+    .getElementById("btn-add-question")
+    ?.addEventListener("click", () => openQuestionModal(null));
+  document
+    .getElementById("btn-add-user")
+    ?.addEventListener("click", () => openUserModal(null));
+  document
+    .getElementById("btn-add-exam")
+    ?.addEventListener("click", () => openExamModal(null));
+  document
+    .getElementById("btn-add-subtopic-field")
+    ?.addEventListener("click", addSubtopicField);
 
-  const btnAddSubtopicField = document.getElementById("btn-add-subtopic-field");
-  if (btnAddSubtopicField)
-    btnAddSubtopicField.addEventListener("click", addSubtopicField);
+  document
+    .getElementById("topicForm")
+    ?.addEventListener("submit", handleTopicSubmit);
+  document
+    .getElementById("questionForm")
+    ?.addEventListener("submit", handleQuestionSubmit);
+  document
+    .getElementById("userForm")
+    ?.addEventListener("submit", handleUserSubmit);
+  document
+    .getElementById("subtopicForm")
+    ?.addEventListener("submit", handleSubtopicSubmit);
+  document
+    .getElementById("examForm")
+    ?.addEventListener("submit", handleExamSubmit);
 
-  const topicForm = document.getElementById("topicForm");
-  const questionForm = document.getElementById("questionForm");
-  const userForm = document.getElementById("userForm");
-  const subtopicForm = document.getElementById("subtopicForm");
-  const examForm = document.getElementById("examForm");
-  if (topicForm) topicForm.addEventListener("submit", handleTopicSubmit);
-  if (questionForm)
-    questionForm.addEventListener("submit", handleQuestionSubmit);
-  if (userForm) userForm.addEventListener("submit", handleUserSubmit);
-  if (subtopicForm)
-    subtopicForm.addEventListener("submit", handleSubtopicSubmit);
-  if (examForm) examForm.addEventListener("submit", handleExamSubmit);
+  document
+    .getElementById("filterTopic")
+    ?.addEventListener("change", filterQuestions);
 
-  const filterTopic = document.getElementById("filterTopic");
-  if (filterTopic) filterTopic.addEventListener("change", filterQuestions);
-
-  const searchQuestion = document.getElementById("searchQuestion");
-  if (searchQuestion) {
-    searchQuestion.addEventListener("input", (e) => {
-      const searchText = e.target.value.toLowerCase().trim();
-      document.querySelectorAll("#questionsTable tbody tr").forEach((row) => {
-        const qt = row.querySelector(".question-text");
-        if (qt)
-          row.style.display = qt.textContent.toLowerCase().includes(searchText)
-            ? ""
-            : "none";
-      });
+  document.getElementById("searchQuestion")?.addEventListener("input", (e) => {
+    const searchText = e.target.value.toLowerCase().trim();
+    document.querySelectorAll("#questionsTable tbody tr").forEach((row) => {
+      const qt = row.querySelector(".question-text");
+      if (qt)
+        row.style.display = qt.textContent.toLowerCase().includes(searchText)
+          ? ""
+          : "none";
     });
-  }
+  });
 
-  const filterUserRole = document.getElementById("filterUserRole");
-  if (filterUserRole) filterUserRole.addEventListener("change", filterUsers);
-  const searchUser = document.getElementById("searchUser");
-  if (searchUser) searchUser.addEventListener("keyup", searchUsers);
+  document
+    .getElementById("filterUserRole")
+    ?.addEventListener("change", filterUsers);
+  document.getElementById("searchUser")?.addEventListener("input", filterUsers);
 
-  const examQuestionTopicFilter = document.getElementById(
-    "examQuestionTopicFilter",
-  );
-  if (examQuestionTopicFilter)
-    examQuestionTopicFilter.addEventListener(
-      "change",
-      filterAvailableQuestions,
-    );
-  const examQuestionSearch = document.getElementById("examQuestionSearch");
-  if (examQuestionSearch)
-    examQuestionSearch.addEventListener("keyup", filterAvailableQuestions);
+  document
+    .getElementById("examQuestionTopicFilter")
+    ?.addEventListener("change", loadAvailableQuestions);
+  document
+    .getElementById("examQuestionSearch")
+    ?.addEventListener("input", loadAvailableQuestions);
 
-  const questionImage = document.getElementById("questionImage");
-  if (questionImage) questionImage.addEventListener("change", previewImage);
+  document
+    .getElementById("questionImage")
+    ?.addEventListener("change", previewImage);
 
   document.querySelectorAll("[data-modal]").forEach((button) => {
     button.addEventListener("click", () => {
-      const modal = document.getElementById(button.getAttribute("data-modal"));
-      if (modal) modal.classList.remove("active");
+      document
+        .getElementById(button.getAttribute("data-modal"))
+        ?.classList.remove("active");
     });
   });
 
@@ -1260,19 +1215,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const topicId = parseInt(target.getAttribute("data-topic-id"));
     switch (action) {
       case "edit-topic":
-        editTopic(id);
+        openTopicModal(id);
         break;
       case "delete-topic":
         deleteTopic(id);
         break;
       case "add-subtopic":
-        addSubtopic(topicId);
+        openSubtopicModal(topicId);
         break;
       case "edit-subtopic":
-        editSubtopic(topicId, id);
+        openSubtopicModal(topicId, id);
         break;
       case "delete-subtopic":
-        deleteSubtopic(topicId, id);
+        deleteSubtopic(id);
         break;
     }
   });
@@ -1298,7 +1253,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const id = parseInt(target.getAttribute("data-id"));
       switch (target.getAttribute("data-action")) {
         case "edit-question":
-          editQuestion(id);
+          openQuestionModal(id);
           break;
         case "delete-question":
           deleteQuestion(id);
@@ -1312,7 +1267,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const id = parseInt(target.getAttribute("data-id"));
     switch (target.getAttribute("data-action")) {
       case "edit-user":
-        editUser(id);
+        openUserModal(id);
         break;
       case "delete-user":
         deleteUser(id);
@@ -1329,7 +1284,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const id = parseInt(target.getAttribute("data-id"));
     switch (target.getAttribute("data-action")) {
       case "edit-exam":
-        editExam(id);
+        openExamModal(id);
         break;
       case "delete-exam":
         deleteExam(id);

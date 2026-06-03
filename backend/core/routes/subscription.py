@@ -76,7 +76,7 @@ def _auto_deactivate(sub):
 
 @subscription_bp.route("/allplans", methods=["GET"])
 @role_required(["admin", "client"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def get_all_subscription_plans():
     try:
         plans = SubscriptionPlan.query.all()

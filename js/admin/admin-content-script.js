@@ -3,10 +3,10 @@
 // ════════════════════════════════════════════════════════════════════════════
 import { FetchData, PostData, DeleteData, UpdateData } from "../api/crud.js";
 
-/**
- * The core engine for all modals and popups.
- * Handles DOM creation, styling, and event cleanup.
- */
+// ════════════════════════════════════════════════════════════════════════════
+// POPUP / MODAL ENGINE
+// ════════════════════════════════════════════════════════════════════════════
+
 function createBasePopup({
   title = "",
   message = "",
@@ -21,68 +21,39 @@ function createBasePopup({
   confirmBtnStyle = "",
   cancelBtnStyle = "",
 }) {
-  // 1. Prevent duplicate popups by removing any existing ones
-  const existingOverlay = document.getElementById("progressWarningOverlay");
-  if (existingOverlay) existingOverlay.remove();
+  const existing = document.getElementById("progressWarningOverlay");
+  if (existing) existing.remove();
 
-  // 2. Create the overlay container
   const overlay = document.createElement("div");
   overlay.id = "progressWarningOverlay";
-
-  // 3. Build the inner HTML structure
   overlay.innerHTML = `
     <div id="progressWarningBox">
-      <div class="pw-icon" style="color: ${iconColor}">
+      <div class="pw-icon" style="color:${iconColor}">
         <i class="${icon}"></i>
       </div>
       <h3>${title}</h3>
       <div class="pw-message-content">${message}</div>
       <div class="pw-actions">
-        ${
-          showCancel
-            ? `<button class="pw-btn pw-btn-cancel" style="${cancelBtnStyle}">
-            ${cancelText}
-          </button>`
-            : ""
-        }
-        ${
-          showConfirm
-            ? `<button class="pw-btn pw-btn-confirm" style="${confirmBtnStyle}">
-            ${confirmText}
-          </button>`
-            : ""
-        }
+        ${showCancel ? `<button class="pw-btn pw-btn-cancel" style="${cancelBtnStyle}">${cancelText}</button>` : ""}
+        ${showConfirm ? `<button class="pw-btn pw-btn-confirm" style="${confirmBtnStyle}">${confirmText}</button>` : ""}
       </div>
-    </div>
-  `;
-
-  // 4. Append to the document body
+    </div>`;
   document.body.appendChild(overlay);
 
-  // 5. Helper function to close and cleanup
-  const closePopup = () => {
-    overlay.remove();
-  };
+  const closePopup = () => overlay.remove();
 
-  // 6. Event Listeners
-
-  // Cancel/Close Button
   if (showCancel) {
     overlay.querySelector(".pw-btn-cancel").addEventListener("click", () => {
       closePopup();
       onCancel();
     });
   }
-
-  // Confirm Button
   if (showConfirm) {
     overlay.querySelector(".pw-btn-confirm").addEventListener("click", () => {
       closePopup();
       onConfirm();
     });
   }
-
-  // Click outside the box (on the overlay) to close
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) {
       closePopup();
@@ -91,10 +62,6 @@ function createBasePopup({
   });
 }
 
-/**
- * A standardized informational popup for the UI.
- * Used for errors, warnings, and success messages.
- */
 function showInfoPopup(
   title,
   message,
@@ -109,62 +76,45 @@ function showInfoPopup(
     showConfirm: false,
     cancelText: "OK",
     showCancel: true,
-    cancelBtnStyle: `background: ${iconColor}; color: #fff; border: none;`,
-    onCancel: () => {
-      console.log(`Popup "${title}" dismissed.`);
-    },
+    cancelBtnStyle: `background:${iconColor};color:#fff;border:none;`,
   });
 }
 
 /**
- * Processes any API response and shows the appropriate popup for errors.
- * @param {Object} response - The object returned by FetchData/PostData/etc.
- * @returns {boolean} - Returns true if an error was handled, false if successful.
+ * Inspects an API result object and shows an error popup when the call failed.
+ * Returns true if an error was shown (caller should abort), false if all is well.
  */
-function handleApiResponse(response) {
-  console.log("API Response:", response);
-  if (response?.success !== false && response?.status < 400) {
-    return false;
+function handleApiError(res) {
+  if (res.success) return false;
+
+  let title = "Error";
+  let icon = "fas fa-exclamation-circle";
+  let color = "#e74c3c";
+
+  if (!res.status) {
+    title = "Network Issue";
+    icon = "fas fa-wifi";
+    color = "#95a5a6";
+  } else if (res.status === 401) {
+    return true;
+  } else if (res.status === 403) {
+    title = "Access Restricted";
+    icon = "fas fa-lock";
+    color = "#f39c12";
+  } else if (res.status >= 500) {
+    title = "Server Error";
+    icon = "fas fa-server";
+    color = "#c0392b";
   }
 
-  let config = {
-    title: "Error",
-    icon: "fas fa-exclamation-circle",
-    color: "#e74c3c",
-  };
-
-  if (response.status === 403) {
-    config = {
-      title: "Access Restricted",
-      icon: "fas fa-lock",
-      color: "#f39c12",
-    };
-  } else if (response.status === 401) {
-    config = {
-      title: "Session Expired",
-      icon: "fas fa-user-shield",
-      color: "#3498db",
-    };
-  } else if (response.status >= 500) {
-    config = { title: "Server Error", icon: "fas fa-server", color: "#c0392b" };
-  } else if (!response.status) {
-    config = { title: "Network Issue", icon: "fas fa-wifi", color: "#95a5a6" };
-  }
-
-  showInfoPopup(
-    config.title,
-    response.userMessage || "An unexpected error occurred.",
-    config.icon,
-    config.color,
-  );
-
+  showInfoPopup(title, res.userMessage, icon, color);
   return true;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// FORMAT TYPES — all supported component format types.
-// Key = format_type value stored on the server.
+// FORMAT TYPES
 // ════════════════════════════════════════════════════════════════════════════
+
 const FORMAT_TYPES = {
   flipcards: { icon: "🃏", label: "Flip Cards" },
   timeline: { icon: "📅", label: "Timeline" },
@@ -177,7 +127,6 @@ const FORMAT_TYPES = {
   exercise: { icon: "✏️", label: "Exercise" },
 };
 
-// Groups for the <select> optgroups
 const FORMAT_GROUPS = [
   {
     label: "Content Formats",
@@ -190,7 +139,6 @@ const FORMAT_GROUPS = [
   { label: "Other", types: ["exercise"] },
 ];
 
-// Fields inside each item row, keyed by format_type.
 const FORMAT_ITEM_FIELDS = {
   flipcards: [
     {
@@ -306,10 +254,9 @@ const FORMAT_ITEM_FIELDS = {
       placeholder: "Caption...",
     },
   ],
-  exercise: [], // No fields — exercise is a placeholder component
+  exercise: [],
 };
 
-// Format types that only have ONE item row (no "Add Item" button)
 const SINGLE_ITEM_FORMATS = new Set([
   "image_right",
   "image_left",
@@ -319,30 +266,32 @@ const SINGLE_ITEM_FORMATS = new Set([
 ]);
 
 // ════════════════════════════════════════════════════════════════════════════
-// IN-MEMORY DATA STORE
-// All data is fetched from the API on demand and cached here.
+// IN-MEMORY CACHE
 // ════════════════════════════════════════════════════════════════════════════
+
 const DB = {
-  topics: [], // Array<Topic>  — loaded once on page load
+  topics: [], // Topic[]
   sections: {}, // { [subtopicId]: Section[] }
-  components: {}, // { [section_id]: Component[] }
+  components: {}, // { [sectionId]: Component[] }
 };
 
 // ════════════════════════════════════════════════════════════════════════════
 // UI STATE
 // ════════════════════════════════════════════════════════════════════════════
+
 let state = {
   activeTopic: null,
   activeSection: null,
   expandedTopics: new Set(),
 };
 
-let dragSecId = null; // section being dragged
-let dragCompId = null; // component being dragged
+let dragSecId = null;
+let dragCompId = null;
 
 // ════════════════════════════════════════════════════════════════════════════
 // DOM REFS
 // ════════════════════════════════════════════════════════════════════════════
+
 const topicsTree = document.getElementById("topicsTree");
 const sectionsList = document.getElementById("sectionsList");
 const builderBody = document.getElementById("builderBody");
@@ -351,14 +300,16 @@ const btnAddSection = document.getElementById("btnAddSection");
 // ════════════════════════════════════════════════════════════════════════════
 // BOOT
 // ════════════════════════════════════════════════════════════════════════════
+
 document.addEventListener("DOMContentLoaded", () => {
   fetchTopics();
   bindEvents();
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// EVENTS — all delegated to stable parent nodes
+// EVENT BINDING
 // ════════════════════════════════════════════════════════════════════════════
+
 function bindEvents() {
   // Left panel — topic tree
   topicsTree.addEventListener("click", handleTopicClick);
@@ -384,18 +335,8 @@ function bindEvents() {
   builderBody.addEventListener("click", handleBuilderClick);
   builderBody.addEventListener("input", handleBuilderInput);
   builderBody.addEventListener("change", handleBuilderChange);
-  builderBody.addEventListener("dragstart", onCompDragStart);
-  builderBody.addEventListener("dragend", onCompDragEnd);
-  builderBody.addEventListener("dragover", onCompDragOver);
-  builderBody.addEventListener("drop", onCompDrop);
-  // Tab drag-drop — item reordering within a component
-  builderBody.addEventListener("dragstart", onTabDragStart);
-  builderBody.addEventListener("dragover", onTabDragOver);
-  builderBody.addEventListener("dragleave", onTabDragLeave);
-  builderBody.addEventListener("drop", onTabDrop);
-  builderBody.addEventListener("dragend", onTabDragEnd);
 
-  // The drag handle makes the card draggable on mousedown
+  // Component card drag-drop — only start when handle is held
   builderBody.addEventListener("mousedown", (e) => {
     if (e.target.closest(".comp-drag")) {
       const card = e.target.closest(".component-card");
@@ -408,12 +349,17 @@ function bindEvents() {
       .forEach((c) => c.removeAttribute("draggable"));
   });
 
-  // "Add Component" — creates a blank card immediately, no modal
+  // Component drag-drop listeners
+  builderBody.addEventListener("dragstart", onDragStart);
+  builderBody.addEventListener("dragend", onDragEnd);
+  builderBody.addEventListener("dragover", onDragOver);
+  builderBody.addEventListener("dragleave", onDragLeave);
+  builderBody.addEventListener("drop", onDrop);
+
   document
     .getElementById("btnOpenCompModal")
     .addEventListener("click", createComponent);
 
-  // Collapse all
   document.getElementById("btnCollapseAll").addEventListener("click", () => {
     const sid = state.activeSection?.section_id;
     if (!sid) return;
@@ -429,21 +375,51 @@ function bindEvents() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// API — TOPICS
-// GET /topic
+// OBJECT URL MANAGEMENT
+// Centralised so every revocation path goes through one function.
 // ════════════════════════════════════════════════════════════════════════════
-async function fetchTopics() {
-  try {
-    const res = await FetchData("/topic", true);
-    if (handleApiResponse(res)) {
-      renderTopics();
-      return;
+
+/**
+ * Revoke all blob URLs stored on a single item object.
+ */
+function revokeItemObjectUrls(item) {
+  if (!item) return;
+  Object.keys(item).forEach((k) => {
+    if (k.startsWith("_objectUrl_") && item[k]) {
+      URL.revokeObjectURL(item[k]);
+      item[k] = null;
     }
-    DB.topics = res.data.topics || [];
-  } catch (err) {
-    console.error("[fetchTopics]", err);
+  });
+}
+
+/**
+ * Revoke all blob URLs for every item in a component.
+ */
+function revokeCompObjectUrls(comp) {
+  if (!comp || !Array.isArray(comp.items)) return;
+  comp.items.forEach(revokeItemObjectUrls);
+}
+
+/**
+ * Revoke all blob URLs for every component in a section.
+ */
+function revokeSectionObjectUrls(sectionId) {
+  (DB.components[sectionId] || []).forEach(revokeCompObjectUrls);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// API — TOPICS  GET /topic
+// ════════════════════════════════════════════════════════════════════════════
+
+async function fetchTopics() {
+  const res = await FetchData("/topic", true);
+  if (handleApiError(res)) {
+    // FIX #9: Render empty state so the panel isn't left blank with no feedback.
     DB.topics = [];
+    renderTopics();
+    return;
   }
+  DB.topics = toArray(res.data?.data);
   renderTopics();
 }
 
@@ -451,69 +427,72 @@ async function fetchTopics() {
 // API — SECTIONS
 // ════════════════════════════════════════════════════════════════════════════
 
-// GET /sections/:subtopicId
-// Cached after first load — won't re-fetch on repeated section clicks.
+// GET /sections/:subtopicId  — cached after first successful load
 async function fetchSections(subtopicId) {
-  if (DB.sections[subtopicId] !== undefined) return;
-  try {
-    const res = await FetchData(`/sections/${subtopicId}`, true);
-    if (handleApiResponse(res)) {
-      DB.sections[subtopicId] = [];
-      return;
-    }
-    DB.sections[subtopicId] = res.data.sections || [];
-  } catch (err) {
-    console.error("[fetchSections]", err);
-    DB.sections[subtopicId] = [];
+  // FIX #4: Only skip the fetch if the cache key holds a real array that came
+  // from a *successful* response.  We no longer populate the cache on error,
+  // so a failed request leaves the key undefined and the next call retries.
+  if (Array.isArray(DB.sections[subtopicId])) return;
+
+  const res = await FetchData(`/sections/${subtopicId}`, true);
+  if (handleApiError(res)) {
+    // Do NOT set DB.sections[subtopicId] — leave it undefined so the user
+    // can retry by clicking the subtopic again.
+    return;
   }
+  DB.sections[subtopicId] = toArray(res.data?.data);
 }
 
 // POST /section
-// Creates a new section on the server. On success, adds it to the cache
-// and immediately opens it in rename mode (same UX as "Add Section").
 async function createSection() {
   if (!state.activeTopic) return;
   const tid = state.activeTopic.id;
 
-  try {
-    const res = await PostData(
-      "/section",
-      {
-        topic_id: tid,
-        title: "New Section",
-        order_index: (DB.sections[tid] || []).length,
-      },
-      true,
-    );
+  const res = await PostData(
+    "/section",
+    {
+      topic_id: tid,
+      title: "New Section",
+      order_index: (DB.sections[tid] || []).length,
+    },
+    true,
+  );
 
-    if (res.success) {
-      const newSec = res.data.section;
-      if (!DB.sections[tid]) DB.sections[tid] = [];
-      DB.sections[tid].push(newSec);
-      DB.components[newSec.section_id] = [];
-      renderSections();
-      triggerSave();
-      setTimeout(() => {
-        selectSection(newSec.section_id);
-        startRename(newSec.section_id);
-      }, 80);
-    } else {
-      handleApiResponse(res);
-    }
-  } catch (err) {
-    console.error("[createSection]", err);
+  if (handleApiError(res)) return;
+
+  // FIX #1: Guard against a missing / malformed response body before touching
+  // DB or DOM.  Also use optional-chaining throughout to avoid TypeErrors if
+  // the shape is unexpected.
+  const newSec = res.data?.data;
+  if (!newSec || typeof newSec.section_id === "undefined") {
+    showInfoPopup(
+      "Unexpected Response",
+      "The section was created but the server returned an unexpected format. Please refresh.",
+      "fas fa-exclamation-triangle",
+      "#f39c12",
+    );
+    return;
   }
+
+  if (!DB.sections[tid]) DB.sections[tid] = [];
+  DB.sections[tid].push(newSec);
+  DB.components[newSec.section_id] = [];
+  renderSections();
+  triggerSave();
+  setTimeout(() => {
+    selectSection(newSec.section_id);
+    startRename(newSec.section_id);
+  }, 80);
 }
 
-// PUT /sections/:sectionId
-// Saves a renamed section title to the server.
-// Optimistically updates local state before the response arrives.
+// PUT /sections/:sectionId — optimistic rename
 async function saveRenameSection(sectionId, newTitle) {
   const tid = state.activeTopic?.id;
   if (!tid) return;
   const sec = (DB.sections[tid] || []).find((s) => s.section_id === sectionId);
   if (!sec) return;
 
+  const previousTitle = sec.title;
   sec.title = newTitle;
   if (state.activeSection?.section_id === sectionId) {
     state.activeSection.title = newTitle;
@@ -521,70 +500,72 @@ async function saveRenameSection(sectionId, newTitle) {
     if (el) el.textContent = newTitle;
   }
 
-  try {
-    await UpdateData(
-      `/sections/${sectionId}`,
-      {
-        title: newTitle,
-        order_index: sec.order_index,
-        is_locked: sec.is_locked || false,
-      },
-      true,
-    );
-    triggerSave();
-  } catch (err) {
-    console.error("[saveRenameSection]", err);
+  const res = await UpdateData(
+    `/sections/${sectionId}`,
+    {
+      title: newTitle,
+      order_index: sec.order_index,
+      is_locked: sec.is_locked || false,
+    },
+    true,
+  );
+  if (handleApiError(res)) {
+    // Roll back the optimistic title change.
+    sec.title = previousTitle;
+    if (state.activeSection?.section_id === sectionId) {
+      state.activeSection.title = previousTitle;
+      const el = document.getElementById("builderSectionName");
+      if (el) el.textContent = previousTitle;
+    }
+    renderSections();
+    return;
   }
+  triggerSave();
 }
 
-// PUT /sections/:sectionId (order_index)
-// Syncs the new order_index for every section after a drag-drop reorder.
+// PUT /sections/:sectionId — re-sync order after drag-drop
 async function saveSectionOrder(secs) {
-  try {
-    await Promise.all(
-      secs.map((s) =>
-        UpdateData(
-          `/sections/${s.section_id}`,
-          {
-            title: s.title,
-            order_index: s.order_index,
-            is_locked: s.is_locked || false,
-          },
-          true,
-        ),
+  const results = await Promise.all(
+    secs.map((s) =>
+      UpdateData(
+        `/sections/${s.section_id}`,
+        {
+          title: s.title,
+          order_index: s.order_index,
+          is_locked: s.is_locked || false,
+        },
+        true,
       ),
-    );
-    triggerSave();
-  } catch (err) {
-    console.error("[saveSectionOrder]", err);
+    ),
+  );
+  const failed = results.find((r) => !r.success);
+  if (failed) {
+    handleApiError(failed);
+    return;
   }
+  triggerSave();
 }
 
 // DELETE /sections/:sectionId
-// Shows a confirmation modal before deleting.
 async function deleteSection(id) {
   showConfirmModal(
     "Delete this section?",
     "All its components will be lost.",
     async () => {
-      try {
-        const res = await DeleteData(`/sections/${id}`, true);
-        if (handleApiResponse(res)) return;
-        if (res.data?.status) {
-          const tid = state.activeTopic.id;
-          DB.sections[tid] = (DB.sections[tid] || []).filter(
-            (s) => s.section_id !== id,
-          );
-          delete DB.components[id];
-          if (state.activeSection?.section_id === id)
-            state.activeSection = null;
-          renderSections();
-          renderBuilder();
-          triggerSave();
-        }
-      } catch (err) {
-        console.error("[deleteSection]", err);
-      }
+      const res = await DeleteData(`/sections/${id}`, {}, true);
+      if (handleApiError(res)) return;
+
+      const tid = state.activeTopic.id;
+      // Revoke any blob URLs before wiping the component cache.
+      revokeSectionObjectUrls(id);
+      DB.sections[tid] = (DB.sections[tid] || []).filter(
+        (s) => s.section_id !== id,
+      );
+      delete DB.components[id];
+      if (state.activeSection?.section_id === id) state.activeSection = null;
+      renderSections();
+      renderBuilder();
+      triggerSave();
     },
   );
 }
@@ -593,40 +574,39 @@ async function deleteSection(id) {
 // API — COMPONENTS
 // ════════════════════════════════════════════════════════════════════════════
 
-// GET /sections/:sectionId/components
-// Normalized on arrival so id / format_type always exist regardless of server shape.
+// GET /sections/:sectionId/components — cached after first successful load
 async function fetchComponents(sectionId) {
-  if (DB.components[sectionId] !== undefined) return;
-  try {
-    const res = await FetchData(`/sections/${sectionId}/components`, true);
-    if (handleApiResponse(res)) {
-      DB.components[sectionId] = [];
-      return;
-    }
-    DB.components[sectionId] = (res.data.components || []).map(normalizeComp);
-  } catch (err) {
-    console.error("[fetchComponents]", err);
-    DB.components[sectionId] = [];
+  // FIX #4: Same as fetchSections — only skip if we have a real successful
+  // result; a previous error leaves the key undefined so the user can retry.
+  if (Array.isArray(DB.components[sectionId])) return;
+
+  const res = await FetchData(`/sections/${sectionId}/components`, true);
+  console.log(`Components API response for section ${sectionId}:`, res);
+  if (handleApiError(res)) {
+    // Do NOT cache an empty array here — leave undefined so retries work.
+    return;
   }
+  DB.components[sectionId] = toArray(res.data?.data).map(normalizeComp);
 }
 
 // POST /component
-// Creates a blank component immediately (no modal).
-// The format_type selector lives inside the card — user picks it there.
 async function createComponent() {
   if (!state.activeSection) return;
   const sid = state.activeSection.section_id;
   if (!DB.components[sid]) DB.components[sid] = [];
 
-  // Collapse existing cards so the new one is in focus
+  // Collapse all existing cards so the new one has focus.
   DB.components[sid].forEach((c) => (c._expanded = false));
 
   const tempId = Date.now();
   const order = DB.components[sid].length;
 
-  // Build locally first — card renders instantly without waiting for the server
+  // Optimistic local insert — card appears instantly.
   const newComp = normalizeComp({
     id: tempId,
+    // FIX #8: Store section_id on the optimistic object so it is available
+    // when saveOneComponent is called later (e.g. from onCompDrop).
+    section_id: sid,
     format_type: "",
     title: "New Component",
     order_index: order,
@@ -639,105 +619,94 @@ async function createComponent() {
     builderBody.scrollTop = builderBody.scrollHeight;
   }, 80);
 
-  // POST in the background; swap temp id for the real server-assigned id
-  try {
-    const res = await PostData(
-      "/component",
-      {
-        section_id: sid,
-        format_type: "",
-        title: "New Component",
-        order_index: order,
-        items: [],
-      },
-      true,
-    );
-    const serverData = res?.data?.component || res?.data || {};
-    const realId = serverData.component_id ?? serverData.id;
-    if (realId) {
-      newComp.id = newComp.component_id = realId;
-      const card = builderBody.querySelector(
-        `.component-card[data-id="${tempId}"]`,
-      );
-      if (card) card.dataset.id = String(realId);
-    }
-    triggerSave();
-  } catch (err) {
-    console.warn("[createComponent] POST failed — using local temp id:", err);
+  // Background POST — swap temp id for the real server id.
+  const res = await PostData(
+    "/component",
+    {
+      section_id: sid,
+      format_type: "",
+      title: "New Component",
+      order_index: order,
+      items: [],
+    },
+    true,
+  );
+  console.log("Create Component API response:", res); 
+  // FIX #2: Roll back the optimistic insert on failure.
+  if (handleApiError(res)) {
+    DB.components[sid] = DB.components[sid].filter((c) => c.id !== tempId);
+    renderBuilder();
+    return;
   }
+
+  const serverComp = res.data?.data;
+  const realId = serverComp?.component_id ?? serverComp?.id;
+  if (realId) {
+    newComp.id = newComp.component_id = realId;
+    const card = builderBody.querySelector(
+      `.component-card[data-id="${tempId}"]`,
+    );
+    if (card) card.dataset.id = String(realId);
+  }
+  triggerSave();
 }
 
-// PUT /component/:componentId  (one request per component)
+// PUT /component/:componentId
 //
-// Each component is saved individually so the backend only ever handles
-// one component + its items in a single request — no section-wide payload.
-//
-// FormData structure per component:
-//   title        → string
-//   format_type  → string
-//   order_index  → string (FormData values are always strings)
-//   section_id   → string
-//   items        → JSON string of the items array, with each image field set to
-//                  the file key it corresponds to e.g. "image_0", "image_1"
-//                  so the backend knows exactly which file belongs to which item
-//   image_0      → raw File binary for items[0] image  (any format — always image_N)
-//   image_1      → raw File binary for items[1] image
-//
-// ALL image files use the key image_N regardless of whether the item field is
-// named "image" (flipcards, timeline etc.) or "url" (imageblock).
-// The backend always looks for image_0, image_1 etc. — never url_0.
+// FormData structure:
+//   title, format_type, order_index, section_id  — strings
+//   items       — JSON string; image fields set to "image_N" key or null/"__keep__"
+//   image_N     — raw File binary for items[N]
+//   deleted_item_ids — JSON string of item IDs to delete (optional)
 
-const IMAGE_FIELDS = ["image", "url"]; // field names that carry image data
+const IMAGE_FIELDS = ["image", "url"];
 
-// Builds and sends a FormData for a single component.
 async function saveOneComponent(comp) {
   const form = new FormData();
-
   form.append("title", comp.title || "");
   form.append("format_type", comp.format_type || "");
   form.append("order_index", String(comp.order_index ?? 0));
-  form.append("section_id", String(comp.section_id || ""));
 
-  // Deleted item IDs — backend must DELETE these rows
+  // FIX #8: Resolve section_id reliably.  The server shape from createComponent
+  // may not include it, so we fall back to state.activeSection.
+  const resolvedSectionId =
+    comp.section_id ||
+    comp._section_id ||
+    state.activeSection?.section_id ||
+    "";
+  form.append("section_id", String(resolvedSectionId));
+
   if (comp._deletedItemIds?.length) {
     form.append("deleted_item_ids", JSON.stringify(comp._deletedItemIds));
     comp._deletedItemIds = [];
   }
 
+  const formatFields = FORMAT_ITEM_FIELDS[comp.format_type] || [];
+  const activeImageFields = IMAGE_FIELDS.filter((f) =>
+    formatFields.some((fd) => fd.key === f),
+  );
+
   const itemsForJson = (comp.items || []).map((item, idx) => {
-    const { _localId, _dragOver, ...rest } = item;
-    const jsonItem = Object.fromEntries(
-      Object.entries(rest).filter(
-        ([k]) =>
-          !k.startsWith("_objectUrl_") &&
-          !k.startsWith("_clearImage_") &&
-          !k.startsWith("_hasImage_"),
-      ),
-    );
+    // Strip internal-only keys and keep all field values
+    const { _localId, _dragOver, _objectUrl_image, _objectUrl_url, _clearImage_image, _clearImage_url, _hasImage_image, _hasImage_url, ...rest } = item;
+
+    // Create jsonItem with all remaining field values
+    const jsonItem = { ...rest };
 
     jsonItem.order_index = idx;
 
-    const formatFields = FORMAT_ITEM_FIELDS[comp.format_type] || [];
-    const activeImageFields = IMAGE_FIELDS.filter((field) =>
-      formatFields.some((f) => f.key === field),
-    );
-
-    IMAGE_FIELDS.forEach((field) => {
-      if (!activeImageFields.includes(field)) delete jsonItem[field];
+    // Remove image fields that don't belong to this format type.
+    IMAGE_FIELDS.forEach((f) => {
+      if (!activeImageFields.includes(f)) delete jsonItem[f];
     });
-
-    delete jsonItem.url;
+    delete jsonItem.url; // backend always uses "image" key
 
     const imageValue = activeImageFields.reduce(
-      (val, field) => val ?? item[field] ?? null,
+      (v, f) => v ?? item[f] ?? null,
       null,
     );
-    const clearFlag = activeImageFields.some(
-      (field) => item[`_clearImage_${field}`],
-    );
-    const keepFlag = activeImageFields.some(
-      (field) => item[`_hasImage_${field}`],
-    );
+    const clearFlag = activeImageFields.some((f) => item[`_clearImage_${f}`]);
+    const keepFlag = activeImageFields.some((f) => item[`_hasImage_${f}`]);
 
     if (imageValue instanceof File) {
       const fileKey = `image_${idx}`;
@@ -757,38 +726,45 @@ async function saveOneComponent(comp) {
       jsonItem.image = null;
     }
 
-    activeImageFields.forEach((field) => {
-      delete jsonItem[`_hasImage_${field}`];
-      delete jsonItem[`_clearImage_${field}`];
+    activeImageFields.forEach((f) => {
+      delete jsonItem[`_hasImage_${f}`];
+      delete jsonItem[`_clearImage_${f}`];
     });
 
     return jsonItem;
   });
+
   form.append("items", JSON.stringify(itemsForJson));
+  console.log("Saving component with items:", itemsForJson);
 
   const res = await UpdateData(`/component/${comp.id}`, form, true);
-  handleApiResponse(res);
+  handleApiError(res);
+  return res;
 }
 
 // DELETE /component/:componentId
-// Shows a confirmation modal before deleting. Removes optimistically.
 async function deleteComponent(compId) {
   const sid = state.activeSection?.section_id;
   if (!sid) return;
+
   showConfirmModal(
     "Delete this component?",
     "This cannot be undone.",
     async () => {
+      // FIX #3: Do NOT remove from DB optimistically.  Only update the cache
+      // after the server confirms deletion.
+      const res = await DeleteData(`/component/${compId}`, {}, true);
+      if (handleApiError(res)) return;
+
+      // Revoke blob URLs before dropping the component from the cache.
+      const deleted = (DB.components[sid] || []).find((c) => c.id === compId);
+      if (deleted) revokeCompObjectUrls(deleted);
+
       DB.components[sid] = (DB.components[sid] || []).filter(
         (c) => c.id !== compId,
       );
       renderBuilder();
       triggerSave();
-      try {
-        await DeleteData(`/component/${compId}`, true);
-      } catch (err) {
-        console.error("[deleteComponent]", err);
-      }
     },
   );
 }
@@ -796,26 +772,27 @@ async function deleteComponent(compId) {
 // ════════════════════════════════════════════════════════════════════════════
 // RENDER — TOPICS TREE
 // ════════════════════════════════════════════════════════════════════════════
+
 function renderTopics() {
   topicsTree.innerHTML = DB.topics
     .map(
       (t) => `
-    <div class="topic-group ${state.expandedTopics.has(t.id) ? "open" : ""}" data-id="${t.id}">
-      <div class="topic-row ${state.expandedTopics.has(t.id) ? "expanded" : ""}">
-        <span class="topic-chevron">&#9658;</span>
-        <span class="topic-name">${t.name}</span>
-      </div>
-      <div class="subtopics">
-        ${(t.subtopics || [])
-          .map(
-            (s) => `
-          <div class="subtopic-row ${state.activeTopic?.id === s.id ? "active" : ""}" data-id="${s.id}">
-            <span class="subtopic-dot"></span>${s.name}
-          </div>`,
-          )
-          .join("")}
-      </div>
-    </div>`,
+      <div class="topic-group ${state.expandedTopics.has(t.id) ? "open" : ""}" data-id="${t.id}">
+        <div class="topic-row ${state.expandedTopics.has(t.id) ? "expanded" : ""}">
+          <span class="topic-chevron">&#9658;</span>
+          <span class="topic-name">${t.name}</span>
+        </div>
+        <div class="subtopics">
+          ${(t.subtopics || [])
+            .map(
+              (s) => `
+              <div class="subtopic-row ${state.activeTopic?.id === s.id ? "active" : ""}" data-id="${s.id}">
+                <span class="subtopic-dot"></span>${s.name}
+              </div>`,
+            )
+            .join("")}
+        </div>
+      </div>`,
     )
     .join("");
 }
@@ -823,9 +800,14 @@ function renderTopics() {
 // ════════════════════════════════════════════════════════════════════════════
 // RENDER — SECTIONS LIST
 // ════════════════════════════════════════════════════════════════════════════
+
 function renderSections() {
   if (!state.activeTopic) return;
   const tid = state.activeTopic.id;
+
+  // FIX #1 (console TypeError): DB.sections[tid] may not exist yet if the
+  // fetch hasn't completed or failed.  Guard with a fallback array so .slice()
+  // never throws.
   const secs = (DB.sections[tid] || [])
     .slice()
     .sort((a, b) => a.order_index - b.order_index);
@@ -837,16 +819,16 @@ function renderSections() {
   sectionsList.innerHTML = secs
     .map(
       (sec, i) => `
-    <div class="section-item ${state.activeSection?.section_id === sec.section_id ? "active" : ""}"
-         data-id="${sec.section_id}" draggable="true">
-      <span class="drag-handle">&#10775;</span>
-      <span class="section-order-badge">${i + 1}</span>
-      <span class="section-title" id="stitle-${sec.section_id}">${sec.title}</span>
-      <div class="section-actions">
-        <button class="section-btn btn-rename" title="Rename">&#9999;&#65039;</button>
-        <button class="section-btn btn-delete" title="Delete">&#128465;&#65039;</button>
-      </div>
-    </div>`,
+      <div class="section-item ${state.activeSection?.section_id === sec.section_id ? "active" : ""}"
+           data-id="${sec.section_id}" draggable="true">
+        <span class="drag-handle">&#10775;</span>
+        <span class="section-order-badge">${i + 1}</span>
+        <span class="section-title" id="stitle-${sec.section_id}">${sec.title}</span>
+        <div class="section-actions">
+          <button class="section-btn btn-rename" title="Rename">&#9999;&#65039;</button>
+          <button class="section-btn btn-delete" title="Delete">&#128465;&#65039;</button>
+        </div>
+      </div>`,
     )
     .join("");
 }
@@ -854,6 +836,7 @@ function renderSections() {
 // ════════════════════════════════════════════════════════════════════════════
 // RENDER — BUILDER
 // ════════════════════════════════════════════════════════════════════════════
+
 function renderBuilder() {
   const header = document.getElementById("builderHeader");
   const footer = document.getElementById("builderFooter");
@@ -896,6 +879,7 @@ function renderBuilder() {
 }
 
 // ── Component card ─────────────────────────────────────────────────────────
+
 function renderComponentCard(comp) {
   const fmt = FORMAT_TYPES[comp.format_type] || null;
 
@@ -923,18 +907,18 @@ function renderComponentCard(comp) {
 
   let itemsSection = "";
   if (hasType) {
-    if (isSingle) {
+    if (comp.format_type === "exercise") {
+      itemsSection = `
+        <div class="items-section">
+          <div class="exercise-block">&#9999;&#65039; Exercise — content managed externally</div>
+        </div>`;
+    } else if (isSingle) {
       itemsSection = `
         <div class="items-section">
           <div class="items-section-header"><span>Content</span></div>
           <div class="items-list" data-comp-id="${comp.id}">
             ${renderItemFields(comp, comp.items[0], 0, fields)}
           </div>
-        </div>`;
-    } else if (comp.format_type === "exercise") {
-      itemsSection = `
-        <div class="items-section">
-          <div class="exercise-block">&#9999;&#65039; Exercise — content managed externally</div>
         </div>`;
     } else {
       const tabBar = comp.items
@@ -944,8 +928,8 @@ function renderComponentCard(comp) {
           const removeBtn =
             isActive && comp.items.length > 1
               ? `<span class="item-tab-remove btn-remove-item"
-               data-comp-id="${comp.id}" data-item-idx="${idx}"
-               title="Remove this item">&#10005;</span>`
+                 data-comp-id="${comp.id}" data-item-idx="${idx}"
+                 title="Remove this item">&#10005;</span>`
               : "";
           return `<button class="item-tab-btn ${isActive ? "active" : ""}"
             draggable="true"
@@ -955,13 +939,6 @@ function renderComponentCard(comp) {
         })
         .join("");
 
-      const activeFields = renderItemFields(
-        comp,
-        comp.items[comp._activeItem],
-        comp._activeItem,
-        fields,
-      );
-
       itemsSection = `
         <div class="items-section">
           <div class="item-tabs-bar">
@@ -970,7 +947,7 @@ function renderComponentCard(comp) {
               data-comp-id="${comp.id}" title="Add item">&#65291;</button>
           </div>
           <div class="items-list" data-comp-id="${comp.id}">
-            ${activeFields}
+            ${renderItemFields(comp, comp.items[comp._activeItem], comp._activeItem, fields)}
           </div>
         </div>`;
     }
@@ -980,7 +957,6 @@ function renderComponentCard(comp) {
 
   return `
     <div class="component-card ${comp._expanded ? "expanded" : ""}" data-id="${comp.id}">
-
       <div class="component-header">
         <span class="comp-drag" title="Drag to reorder">&#10775;</span>
         <span class="comp-type-badge">
@@ -995,7 +971,6 @@ function renderComponentCard(comp) {
       </div>
 
       <div class="component-body">
-
         <div class="comp-form-group">
           <label>Component Title</label>
           <input class="comp-input" data-field="title"
@@ -1021,12 +996,12 @@ function renderComponentCard(comp) {
         </div>`
             : ""
         }
-
       </div>
     </div>`;
 }
 
 // ── Item fields ────────────────────────────────────────────────────────────
+
 function renderItemFields(comp, item, idx, fields) {
   if (!item) return "";
   return fields
@@ -1044,47 +1019,46 @@ function renderItemFields(comp, item, idx, fields) {
         }
 
         const showThumb = (previewSrc || hasExisting) && !isCleared;
-
         const thumbContent = showThumb
           ? previewSrc
             ? `<img src="${escHtml(previewSrc)}" alt="preview">`
             : `<div class="image-stored-indicator">&#128247; Image stored on server</div>`
           : "";
-
         const removeImageBtn = showThumb
           ? `<button class="btn-remove-image" type="button"
-              data-comp-id="${comp.id}" data-item-idx="${idx}" data-field="${f.key}"
-              title="Remove image">&#10005; Remove image</button>`
+               data-comp-id="${comp.id}" data-item-idx="${idx}" data-field="${f.key}"
+               title="Remove image">&#10005; Remove image</button>`
           : "";
 
         return `
-        <div class="item-field-group">
-          <label class="item-field-label">${f.label}</label>
-          <input type="file" class="item-file-input" accept="image/*"
-            data-comp-id="${comp.id}" data-item-idx="${idx}" data-field="${f.key}">
-          <div class="image-preview-thumb ${showThumb ? "show" : ""}">
-            ${thumbContent}
-          </div>
-          ${removeImageBtn}
-        </div>`;
+          <div class="item-field-group">
+            <label class="item-field-label">${f.label}</label>
+            <input type="file" class="item-file-input" accept="image/*"
+              data-comp-id="${comp.id}" data-item-idx="${idx}" data-field="${f.key}">
+            <div class="image-preview-thumb ${showThumb ? "show" : ""}">
+              ${thumbContent}
+            </div>
+            ${removeImageBtn}
+          </div>`;
       }
+
       const val = escHtml(item[f.key] || "");
       if (f.tag === "textarea") {
         return `
-        <div class="item-field-group">
-          <label class="item-field-label">${f.label}</label>
-          <textarea class="item-textarea item-input" rows="3"
-            data-comp-id="${comp.id}" data-item-idx="${idx}" data-field="${f.key}"
-            placeholder="${f.placeholder || ""}">${val}</textarea>
-        </div>`;
+          <div class="item-field-group">
+            <label class="item-field-label">${f.label}</label>
+            <textarea class="item-textarea item-input" rows="3"
+              data-comp-id="${comp.id}" data-item-idx="${idx}" data-field="${f.key}"
+              placeholder="${f.placeholder || ""}">${val}</textarea>
+          </div>`;
       }
       return `
-      <div class="item-field-group">
-        <label class="item-field-label">${f.label}</label>
-        <input type="text" class="item-input" value="${val}"
-          data-comp-id="${comp.id}" data-item-idx="${idx}" data-field="${f.key}"
-          placeholder="${f.placeholder || ""}">
-      </div>`;
+        <div class="item-field-group">
+          <label class="item-field-label">${f.label}</label>
+          <input type="text" class="item-input" value="${val}"
+            data-comp-id="${comp.id}" data-item-idx="${idx}" data-field="${f.key}"
+            placeholder="${f.placeholder || ""}">
+        </div>`;
     })
     .join("");
 }
@@ -1147,25 +1121,71 @@ async function selectSection(id) {
 function startRename(id) {
   const span = document.getElementById(`stitle-${id}`);
   if (!span) return;
+
+  const originalTitle = span.textContent;
   const input = document.createElement("input");
   input.className = "section-title-input";
-  input.value = span.textContent;
+  input.value = originalTitle;
   span.replaceWith(input);
   input.focus();
   input.select();
+
+  // FIX #6: Track whether the commit was triggered intentionally (Enter key
+  // or an explicit click elsewhere in the document) vs. an unintentional
+  // focus loss (switching tabs, browser notification, window blur).
+  // We listen on the document's visibilitychange and window blur events;
+  // if either fires while the input is active we cancel instead of saving.
+  let committed = false;
+
+  const cancel = () => {
+    if (committed) return;
+    committed = true;
+    // Restore original title without saving.
+    const titleSpan = document.createElement("span");
+    titleSpan.className = "section-title";
+    titleSpan.id = `stitle-${id}`;
+    titleSpan.textContent = originalTitle;
+    input.replaceWith(titleSpan);
+  };
+
   const commit = () => {
+    if (committed) return;
+    committed = true;
     const val = input.value.trim() || "Untitled Section";
     saveRenameSection(id, val);
     renderSections();
   };
-  input.addEventListener("blur", commit);
+
+  const onVisibilityChange = () => {
+    if (document.hidden) cancel();
+  };
+  const onWindowBlur = () => cancel();
+
+  document.addEventListener("visibilitychange", onVisibilityChange, {
+    once: true,
+  });
+  window.addEventListener("blur", onWindowBlur, { once: true });
+
+  input.addEventListener("blur", () => {
+    // Remove the safety listeners since focus is gone.
+    document.removeEventListener("visibilitychange", onVisibilityChange);
+    window.removeEventListener("blur", onWindowBlur);
+    // Only commit on a genuine blur (i.e. not already cancelled by window/tab switch).
+    if (!committed) commit();
+  });
+
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("blur", onWindowBlur);
+      commit();
       input.blur();
     }
     if (e.key === "Escape") {
-      input.value = span.textContent;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("blur", onWindowBlur);
+      cancel();
       input.blur();
     }
   });
@@ -1194,7 +1214,7 @@ function handleBuilderClick(e) {
   if (!sid) return;
   const comps = DB.components[sid] || [];
 
-  // ── Remove image button ──────────────────────────────────────────────────
+  // Remove image
   const removeImageBtn = e.target.closest(".btn-remove-image");
   if (removeImageBtn) {
     e.stopPropagation();
@@ -1203,6 +1223,8 @@ function handleBuilderClick(e) {
     if (!comp) return;
     const idx = parseInt(itemIdx);
     if (!comp.items[idx]) return;
+    // Revoke blob URL if one exists for this field.
+    revokeItemObjectUrls(comp.items[idx]);
     comp.items[idx][field] = null;
     comp.items[idx][`_hasImage_${field}`] = false;
     comp.items[idx][`_clearImage_${field}`] = true;
@@ -1211,7 +1233,7 @@ function handleBuilderClick(e) {
     return;
   }
 
-  // ── Save Changes button ──────────────────────────────────────────────────
+  // Save Changes
   const saveBtn = e.target.closest(".btn-save-comp");
   if (saveBtn) {
     e.stopPropagation();
@@ -1220,10 +1242,13 @@ function handleBuilderClick(e) {
     const card = saveBtn.closest(".component-card");
     saveBtn.disabled = true;
     saveBtn.innerHTML = "&#8987; Saving...";
-    const { _expanded, _activeItem, ...compToSave } = comp;
+
+    // FIX #11: Strip all internal UI flags (_expanded, _activeItem, _dirty)
+    // so they never reach saveOneComponent or leak into FormData.
+    const { _expanded, _activeItem, _dirty, ...compToSave } = comp;
     saveOneComponent(compToSave)
-      .then(() => {
-        markClean(comp, card);
+      .then((res) => {
+        if (res?.success) markClean(comp, card);
         triggerSave();
       })
       .catch((err) => {
@@ -1237,7 +1262,7 @@ function handleBuilderClick(e) {
     return;
   }
 
-  // ── Remove item tab ──────────────────────────────────────────────────────
+  // Remove item tab
   const removeItemBtn = e.target.closest(".btn-remove-item");
   if (removeItemBtn) {
     e.stopPropagation();
@@ -1247,6 +1272,8 @@ function handleBuilderClick(e) {
     if (comp && comp.items.length > 1) {
       const idx = parseInt(removeItemBtn.dataset.itemIdx);
       const removedItem = comp.items[idx];
+      // FIX #10: Revoke any blob URL held by the tab being removed.
+      revokeItemObjectUrls(removedItem);
       if (removedItem?.item_id) {
         if (!comp._deletedItemIds) comp._deletedItemIds = [];
         comp._deletedItemIds.push(removedItem.item_id);
@@ -1260,9 +1287,9 @@ function handleBuilderClick(e) {
     return;
   }
 
-  // ── Select an item tab ───────────────────────────────────────────────────
+  // Select item tab
   const tabBtn = e.target.closest(".item-tab-btn");
-  if (tabBtn) {
+  if (tabBtn && !e.target.closest(".btn-remove-item")) {
     e.stopPropagation();
     const comp = comps.find((c) => c.id === parseInt(tabBtn.dataset.compId));
     if (comp) {
@@ -1272,7 +1299,7 @@ function handleBuilderClick(e) {
     return;
   }
 
-  // ── Add new item ─────────────────────────────────────────────────────────
+  // Add new item
   const addItemBtn = e.target.closest(".btn-add-comp-item");
   if (addItemBtn) {
     e.stopPropagation();
@@ -1287,6 +1314,7 @@ function handleBuilderClick(e) {
     return;
   }
 
+  // Delete component
   const delBtn = e.target.closest(".comp-btn-delete");
   if (delBtn) {
     e.stopPropagation();
@@ -1294,6 +1322,7 @@ function handleBuilderClick(e) {
     return;
   }
 
+  // Preview component
   const previewBtn = e.target.closest(".btn-comp-preview");
   if (previewBtn) {
     e.stopPropagation();
@@ -1355,6 +1384,7 @@ function handleBuilderChange(e) {
   const sid = state.activeSection?.section_id;
   if (!sid) return;
 
+  // Format type selector
   if (e.target.classList.contains("comp-type-select")) {
     const card = e.target.closest(".component-card");
     const cardId = card
@@ -1362,19 +1392,64 @@ function handleBuilderChange(e) {
       : parseInt(e.target.dataset.compId);
     const comp = (DB.components[sid] || []).find((c) => c.id === cardId);
     if (!comp) return;
-    comp.format_type = e.target.value;
-    comp.type = e.target.value;
-    comp.items = [{ _localId: Date.now() }];
-    comp._dirty = false;
-    comp._expanded = true;
-    renderBuilder();
-    const { _expanded, _activeItem, _dirty, ...compToSave } = comp;
-    saveOneComponent(compToSave)
-      .then(() => triggerSave())
-      .catch((err) => console.error("[format_type save]", err));
+
+    // FIX #7: Only wipe items if there is no meaningful content to lose, or
+    // the user explicitly confirms.  "Meaningful" = at least one item has a
+    // non-empty title, content, or image field.
+    const hasContent = (comp.items || []).some(
+      (item) =>
+        (item.title && item.title.trim()) ||
+        (item.content && item.content.trim()) ||
+        item.image instanceof File ||
+        item.url instanceof File ||
+        item._hasImage_image ||
+        item._hasImage_url,
+    );
+
+    const applyFormatChange = () => {
+      // FIX #10: Revoke all blob URLs before replacing items.
+      revokeCompObjectUrls(comp);
+
+      comp.format_type = e.target.value;
+      comp.type = e.target.value;
+      comp.items = [{ _localId: Date.now() }];
+      comp._activeItem = 0;
+      comp._dirty = false;
+      comp._expanded = true;
+      renderBuilder();
+
+      // FIX #11: Strip all UI flags before sending to server.
+      const { _expanded, _activeItem, _dirty, ...compToSave } = comp;
+      saveOneComponent(compToSave)
+        .then((res) => {
+          if (res?.success) triggerSave();
+        })
+        .catch((err) => console.error("[format_type save]", err));
+    };
+
+    if (hasContent) {
+      // Capture the newly chosen value BEFORE resetting the select visually.
+      const intendedType = e.target.value;
+      // Reset the select back to the old value so nothing changes until confirmed.
+      e.target.value = comp.format_type;
+
+      showConfirmModal(
+        "Change Format Type?",
+        "Changing the format type will erase all existing content in this component. This cannot be undone.",
+        () => {
+          // Confirmed — apply the intended type.
+          comp.format_type = intendedType;
+          e.target.value = intendedType;
+          applyFormatChange();
+        },
+      );
+    } else {
+      applyFormatChange();
+    }
     return;
   }
 
+  // File input
   if (e.target.classList.contains("item-file-input")) {
     const { compId, itemIdx, field } = e.target.dataset;
     const comp = (DB.components[sid] || []).find(
@@ -1386,6 +1461,7 @@ function handleBuilderChange(e) {
     const idx = parseInt(itemIdx);
     if (!comp.items[idx]) comp.items[idx] = { _localId: Date.now() };
 
+    // FIX #10: Revoke previous blob URL for this specific field slot.
     if (comp.items[idx][`_objectUrl_${field}`]) {
       URL.revokeObjectURL(comp.items[idx][`_objectUrl_${field}`]);
     }
@@ -1408,84 +1484,181 @@ function handleBuilderChange(e) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// DRAG & DROP — ITEM TABS  (reordering items within a component)
+// UNIFIED DRAG & DROP DISPATCHER
+// FIX #12: Previously both component-card drag-drop and item-tab drag-drop
+// shared the same builderBody listeners, causing onTabDragEnd to run on every
+// component drag (and vice-versa).  We now route via a single set of
+// listeners that check which drag type is active.
 // ════════════════════════════════════════════════════════════════════════════
+
 let _dragTabCompId = null;
 let _dragTabFromIdx = null;
 
-function onTabDragStart(e) {
+function onDragStart(e) {
   const tab = e.target.closest(".item-tab-btn");
-  if (!tab) return;
-  e.stopPropagation();
-  _dragTabCompId = parseInt(tab.dataset.compId);
-  _dragTabFromIdx = parseInt(tab.dataset.itemIdx);
-  e.dataTransfer.effectAllowed = "move";
-  e.dataTransfer.setData("text/plain", "tab");
-  tab.classList.add("tab-dragging");
+  if (tab) {
+    // Item-tab drag
+    e.stopPropagation();
+    _dragTabCompId = parseInt(tab.dataset.compId);
+    _dragTabFromIdx = parseInt(tab.dataset.itemIdx);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", "tab");
+    tab.classList.add("tab-dragging");
+    return;
+  }
+
+  const card = e.target.closest(".component-card");
+  if (card) {
+    // Component card drag
+    dragCompId = parseInt(card.dataset.id);
+    card.style.opacity = "0.4";
+    e.dataTransfer.effectAllowed = "move";
+  }
 }
 
-function onTabDragOver(e) {
-  const tab = e.target.closest(".item-tab-btn");
-  if (!tab || _dragTabCompId === null) return;
-  if (parseInt(tab.dataset.compId) !== _dragTabCompId) return;
-  if (parseInt(tab.dataset.itemIdx) === _dragTabFromIdx) return;
+function onDragEnd(e) {
+  // Item-tab cleanup
+  if (_dragTabCompId !== null) {
+    builderBody
+      .querySelectorAll(
+        ".item-tab-btn.tab-dragging, .item-tab-btn.tab-drop-target",
+      )
+      .forEach((t) => {
+        t.classList.remove("tab-dragging", "tab-drop-target");
+      });
+    _dragTabCompId = null;
+    _dragTabFromIdx = null;
+    return; // Do not run component card cleanup for a tab drag.
+  }
+
+  // Component card cleanup
+  const card = e.target.closest(".component-card");
+  if (card) card.style.opacity = "1";
+  builderBody
+    .querySelectorAll(".component-card.drag-over")
+    .forEach((el) => el.classList.remove("drag-over"));
+  dragCompId = null;
+}
+
+function onDragOver(e) {
+  if (_dragTabCompId !== null) {
+    // Item-tab drag-over
+    const tab = e.target.closest(".item-tab-btn");
+    if (!tab) return;
+    if (parseInt(tab.dataset.compId) !== _dragTabCompId) return;
+    if (parseInt(tab.dataset.itemIdx) === _dragTabFromIdx) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    builderBody
+      .querySelectorAll(".item-tab-btn.tab-drop-target")
+      .forEach((t) => t.classList.remove("tab-drop-target"));
+    tab.classList.add("tab-drop-target");
+    return;
+  }
+
+  // Component card drag-over
   e.preventDefault();
   e.dataTransfer.dropEffect = "move";
-  builderBody
-    .querySelectorAll(".item-tab-btn.tab-drop-target")
-    .forEach((t) => t.classList.remove("tab-drop-target"));
-  tab.classList.add("tab-drop-target");
+  const card = e.target.closest(".component-card");
+  if (card && parseInt(card.dataset.id) !== dragCompId) {
+    builderBody
+      .querySelectorAll(".component-card.drag-over")
+      .forEach((el) => el.classList.remove("drag-over"));
+    card.classList.add("drag-over");
+  }
 }
 
-function onTabDragLeave(e) {
-  const tab = e.target.closest(".item-tab-btn");
-  if (tab) tab.classList.remove("tab-drop-target");
+function onDragLeave(e) {
+  if (_dragTabCompId !== null) {
+    const tab = e.target.closest(".item-tab-btn");
+    if (tab) tab.classList.remove("tab-drop-target");
+  }
 }
 
-function onTabDrop(e) {
-  const tab = e.target.closest(".item-tab-btn");
-  if (!tab || _dragTabCompId === null) return;
-  const toIdx = parseInt(tab.dataset.itemIdx);
-  const compId = parseInt(tab.dataset.compId);
-  if (compId !== _dragTabCompId) return;
-  if (toIdx === _dragTabFromIdx) return;
+function onDrop(e) {
+  if (_dragTabCompId !== null) {
+    // Item-tab drop
+    const tab = e.target.closest(".item-tab-btn");
+    if (!tab) return;
+    const toIdx = parseInt(tab.dataset.itemIdx);
+    const compId = parseInt(tab.dataset.compId);
+    if (compId !== _dragTabCompId) return;
+    if (toIdx === _dragTabFromIdx) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const sid = state.activeSection?.section_id;
+    const comp = (DB.components[sid] || []).find((c) => c.id === compId);
+    if (!comp) return;
+
+    const [moved] = comp.items.splice(_dragTabFromIdx, 1);
+    comp.items.splice(toIdx, 0, moved);
+    comp.items.forEach((item, i) => {
+      item.order_index = i;
+    });
+    comp._activeItem = toIdx;
+
+    markDirty(
+      comp,
+      builderBody.querySelector(`.component-card[data-id="${compId}"]`),
+    );
+    renderBuilder();
+    return;
+  }
+
+  // Component card drop
   e.preventDefault();
-  e.stopPropagation();
+  const target = e.target.closest(".component-card");
+  if (!target || !dragCompId) return;
+  const targetId = parseInt(target.dataset.id);
+  if (targetId === dragCompId) return;
 
   const sid = state.activeSection?.section_id;
-  const comp = (DB.components[sid] || []).find((c) => c.id === compId);
-  if (!comp) return;
+  if (!sid) return;
+  const comps = DB.components[sid] || [];
+  const from = comps.findIndex((c) => c.id === dragCompId);
+  const to = comps.findIndex((c) => c.id === targetId);
+  if (from === -1 || to === -1) return;
 
-  const [moved] = comp.items.splice(_dragTabFromIdx, 1);
-  comp.items.splice(toIdx, 0, moved);
-  comp.items.forEach((item, i) => {
-    item.order_index = i;
-  });
-  comp._activeItem = toIdx;
-
-  markDirty(
-    comp,
-    builderBody.querySelector(`.component-card[data-id="${compId}"]`),
-  );
+  comps.splice(to, 0, comps.splice(from, 1)[0]);
+  comps.forEach((c, i) => (c.order_index = i));
+  dragCompId = null;
   renderBuilder();
-}
 
-function onTabDragEnd(e) {
-  builderBody
-    .querySelectorAll(
-      ".item-tab-btn.tab-dragging, .item-tab-btn.tab-drop-target",
-    )
-    .forEach((t) => {
-      t.classList.remove("tab-dragging");
-      t.classList.remove("tab-drop-target");
-    });
-  _dragTabCompId = null;
-  _dragTabFromIdx = null;
+  // FIX #5: Persist new order sequentially (one at a time) to avoid flooding
+  // the server with N simultaneous PUT requests on every reorder.
+  // Only send the components that have a format_type (server only persists
+  // typed components), and only send the fields the server needs for ordering
+  // (title, format_type, order_index, section_id) — not the full FormData.
+  (async () => {
+    for (const c of comps.filter((c) => c.format_type)) {
+      const orderPayload = {
+        title: c.title || "",
+        format_type: c.format_type || "",
+        order_index: c.order_index,
+        section_id: String(
+          c.section_id ||
+            c._section_id ||
+            state.activeSection?.section_id ||
+            "",
+        ),
+        items: JSON.stringify([]),
+      };
+      try {
+        const res = await UpdateData(`/component/${c.id}`, orderPayload, true);
+        if (handleApiError(res)) break; // Stop on first error, show the popup once.
+      } catch (err) {
+        console.error("[reorder save]", err);
+        break;
+      }
+    }
+  })();
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 // DRAG & DROP — SECTIONS
 // ════════════════════════════════════════════════════════════════════════════
+
 async function onSectionDrop(e) {
   e.preventDefault();
   const target = e.target.closest(".section-item");
@@ -1506,64 +1679,9 @@ async function onSectionDrop(e) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// DRAG & DROP — COMPONENTS
-// ════════════════════════════════════════════════════════════════════════════
-function onCompDragStart(e) {
-  const card = e.target.closest(".component-card");
-  if (!card) return;
-  dragCompId = parseInt(card.dataset.id);
-  card.style.opacity = "0.4";
-  e.dataTransfer.effectAllowed = "move";
-}
-function onCompDragEnd(e) {
-  const card = e.target.closest(".component-card");
-  if (card) card.style.opacity = "1";
-  builderBody
-    .querySelectorAll(".component-card.drag-over")
-    .forEach((el) => el.classList.remove("drag-over"));
-}
-function onCompDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = "move";
-  const card = e.target.closest(".component-card");
-  if (card && parseInt(card.dataset.id) !== dragCompId) {
-    builderBody
-      .querySelectorAll(".component-card.drag-over")
-      .forEach((el) => el.classList.remove("drag-over"));
-    card.classList.add("drag-over");
-  }
-}
-function onCompDrop(e) {
-  e.preventDefault();
-  const target = e.target.closest(".component-card");
-  if (!target || !dragCompId) return;
-  const targetId = parseInt(target.dataset.id);
-  if (targetId === dragCompId) return;
-
-  const sid = state.activeSection?.section_id;
-  if (!sid) return;
-  const comps = DB.components[sid] || [];
-  const from = comps.findIndex((c) => c.id === dragCompId);
-  const to = comps.findIndex((c) => c.id === targetId);
-  if (from === -1 || to === -1) return;
-
-  comps.splice(to, 0, comps.splice(from, 1)[0]);
-  comps.forEach((c, i) => (c.order_index = i));
-  dragCompId = null;
-  renderBuilder();
-  comps
-    .filter((c) => c.format_type)
-    .forEach((c) => {
-      const { _expanded, _activeItem, _dirty, ...compToSave } = c;
-      saveOneComponent(compToSave).catch((err) =>
-        console.error("[reorder save]", err),
-      );
-    });
-}
-
-// ════════════════════════════════════════════════════════════════════════════
 // PREVIEW MODAL
 // ════════════════════════════════════════════════════════════════════════════
+
 async function openPreviewModal(comp) {
   let modal = document.getElementById("compPreviewModal");
   if (!modal) {
@@ -1572,7 +1690,8 @@ async function openPreviewModal(comp) {
     modal.className = "modal";
     modal.innerHTML = `
       <div class="modal-box" style="max-width:760px;width:95vw;">
-        <div class="modal-head"><h3>Preview</h3>
+        <div class="modal-head">
+          <h3>Preview</h3>
           <button class="modal-close" onclick="document.getElementById('compPreviewModal').classList.remove('active')">&#215;</button>
         </div>
         <div class="modal-body" id="compPreviewBody" style="overflow-y:auto;max-height:70vh;padding:20px;"></div>
@@ -1585,14 +1704,12 @@ async function openPreviewModal(comp) {
   modal.classList.add("active");
 
   const res = await FetchData(`/component/${comp.id}`, true);
-  console.log("[Preview fetch]", handleApiResponse(res), res);
-
-  if (handleApiResponse(res)) {
+  if (handleApiError(res)) {
     modal.classList.remove("active");
     return;
   }
 
-  const freshComp = normalizeComp(res.data.component || res.data);
+  const freshComp = normalizeComp(res.data.data);
   const items = (freshComp.items || []).filter(
     (i) => i.title || i.content || i.url || i.image,
   );
@@ -1619,86 +1736,100 @@ function buildPreviewHtml(type, items) {
   switch (type) {
     case "flipcards":
       return `
-      <style>.fp{width:200px;height:280px;perspective:1000px;cursor:pointer;display:inline-block}
-        .fpi{position:relative;width:100%;height:100%;transition:.6s;transform-style:preserve-3d}
-        .fp.f .fpi{transform:rotateY(180deg)}
-        .fpf,.fpb{position:absolute;inset:0;backface-visibility:hidden;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center}
-        .fpf{background:#f3f4f6} .fpb{background:linear-gradient(135deg,#0097b2,#1e40af);color:#fff;transform:rotateY(180deg)}</style>
-      <div style="display:flex;flex-wrap:wrap;gap:12px">
-        ${items
-          .map(
-            (
-              it,
-            ) => `<div class="fp" onclick="this.classList.toggle('f')"><div class="fpi">
-          <div class="fpf">${it.image ? `<img src="${it.image}" style="width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px">` : `<div style="font-size:36px;opacity:.3;margin-bottom:8px">&#127183;</div>`}
-            <strong>${esc(it.title)}</strong><small style="opacity:.5;margin-top:4px">Click to flip</small></div>
-          <div class="fpb"><strong style="margin-bottom:8px">${esc(it.title)}</strong><p style="font-size:13px;line-height:1.5">${esc(it.content)}</p></div>
-        </div></div>`,
-          )
-          .join("")}</div>`;
+        <style>
+          .fp{width:200px;height:280px;perspective:1000px;cursor:pointer;display:inline-block}
+          .fpi{position:relative;width:100%;height:100%;transition:.6s;transform-style:preserve-3d}
+          .fp.f .fpi{transform:rotateY(180deg)}
+          .fpf,.fpb{position:absolute;inset:0;backface-visibility:hidden;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center}
+          .fpf{background:#f3f4f6}
+          .fpb{background:linear-gradient(135deg,#0097b2,#1e40af);color:#fff;transform:rotateY(180deg)}
+        </style>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          ${items
+            .map(
+              (it) => `
+            <div class="fp" onclick="this.classList.toggle('f')"><div class="fpi">
+              <div class="fpf">
+                ${
+                  it.image
+                    ? `<img src="${it.image}" style="width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px">`
+                    : `<div style="font-size:36px;opacity:.3;margin-bottom:8px">&#127183;</div>`
+                }
+                <strong>${esc(it.title)}</strong>
+                <small style="opacity:.5;margin-top:4px">Click to flip</small>
+              </div>
+              <div class="fpb">
+                <strong style="margin-bottom:8px">${esc(it.title)}</strong>
+                <p style="font-size:13px;line-height:1.5">${esc(it.content)}</p>
+              </div>
+            </div></div>`,
+            )
+            .join("")}
+        </div>`;
 
     case "accordion":
       return `
-      <div style="display:flex;flex-direction:column;gap:8px">
-        ${items
-          .map(
-            (
-              it,
-              i,
-            ) => `<div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
-          <div style="padding:12px 16px;background:#f9fafb;font-weight:600;color:#0097b2;cursor:pointer"
-            onclick="const b=this.nextElementSibling;b.style.display=b.style.display==='none'?'block':'none'">
-            ${i + 1}. ${esc(it.title)} &#9660;</div>
-          <div style="padding:12px 16px;display:${i === 0 ? "block" : "none"}">
-            <p style="color:#4b5563;line-height:1.6">${esc(it.content)}</p>
-            ${it.image ? `<img src="${it.image}" style="max-width:100%;border-radius:6px;margin-top:8px">` : ""}
-          </div></div>`,
-          )
-          .join("")}</div>`;
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${items
+            .map(
+              (it, i) => `
+            <div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+              <div style="padding:12px 16px;background:#f9fafb;font-weight:600;color:#0097b2;cursor:pointer"
+                onclick="const b=this.nextElementSibling;b.style.display=b.style.display==='none'?'block':'none'">
+                ${i + 1}. ${esc(it.title)} &#9660;
+              </div>
+              <div style="padding:12px 16px;display:${i === 0 ? "block" : "none"}">
+                <p style="color:#4b5563;line-height:1.6">${esc(it.content)}</p>
+                ${it.image ? `<img src="${it.image}" style="max-width:100%;border-radius:6px;margin-top:8px">` : ""}
+              </div>
+            </div>`,
+            )
+            .join("")}
+        </div>`;
 
     case "tabs":
       return `
-      <div><div style="display:flex;gap:4px;border-bottom:2px solid #e5e7eb;margin-bottom:12px" id="ptabs">
-        ${items
-          .map(
-            (
-              it,
-              i,
-            ) => `<button style="padding:8px 16px;border:none;background:${i === 0 ? "#0097b2" : "#f3f4f6"};color:${i === 0 ? "#fff" : "#4b5563"};cursor:pointer;border-radius:6px 6px 0 0;font-weight:600"
-          onclick="document.querySelectorAll('.ptb').forEach(t=>t.style.display='none');document.getElementById('pt${i}').style.display='block';document.querySelectorAll('#ptabs button').forEach(b=>{b.style.background='#f3f4f6';b.style.color='#4b5563'});this.style.background='#0097b2';this.style.color='#fff'">${esc(it.title)}</button>`,
-          )
-          .join("")}
-      </div>
-      ${items
-        .map(
-          (
-            it,
-            i,
-          ) => `<div id="pt${i}" class="ptb" style="display:${i === 0 ? "block" : "none"}">
-        <h3 style="color:#0097b2;margin-bottom:8px">${esc(it.title)}</h3>
-        <p style="color:#4b5563;line-height:1.6">${esc(it.content)}</p>
-        ${it.image ? `<img src="${it.image}" style="max-width:100%;border-radius:6px;margin-top:10px">` : ""}
-      </div>`,
-        )
-        .join("")}</div>`;
+        <div>
+          <div style="display:flex;gap:4px;border-bottom:2px solid #e5e7eb;margin-bottom:12px" id="ptabs">
+            ${items
+              .map(
+                (it, i) => `
+              <button style="padding:8px 16px;border:none;background:${i === 0 ? "#0097b2" : "#f3f4f6"};color:${i === 0 ? "#fff" : "#4b5563"};cursor:pointer;border-radius:6px 6px 0 0;font-weight:600"
+                onclick="document.querySelectorAll('.ptb').forEach(t=>t.style.display='none');document.getElementById('pt${i}').style.display='block';document.querySelectorAll('#ptabs button').forEach(b=>{b.style.background='#f3f4f6';b.style.color='#4b5563'});this.style.background='#0097b2';this.style.color='#fff'">
+                ${esc(it.title)}
+              </button>`,
+              )
+              .join("")}
+          </div>
+          ${items
+            .map(
+              (it, i) => `
+            <div id="pt${i}" class="ptb" style="display:${i === 0 ? "block" : "none"}">
+              <h3 style="color:#0097b2;margin-bottom:8px">${esc(it.title)}</h3>
+              <p style="color:#4b5563;line-height:1.6">${esc(it.content)}</p>
+              ${it.image ? `<img src="${it.image}" style="max-width:100%;border-radius:6px;margin-top:10px">` : ""}
+            </div>`,
+            )
+            .join("")}
+        </div>`;
 
     case "timeline":
       return `
-      <div style="display:flex;flex-direction:column;gap:20px">
-        ${items
-          .map(
-            (
-              it,
-              i,
-            ) => `<div style="display:grid;grid-template-columns:52px 1fr;gap:14px;align-items:start">
-          <div style="width:52px;height:52px;background:linear-gradient(135deg,#0097b2,#1e40af);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700">${i + 1}</div>
-          <div style="background:#fff;padding:14px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.07)">
-            <h4 style="color:#0097b2;margin-bottom:6px">${esc(it.title)}</h4>
-            <p style="color:#4b5563;font-size:13px;line-height:1.5">${esc(it.content)}</p>
-            ${it.image ? `<img src="${it.image}" style="max-width:100%;border-radius:6px;margin-top:8px">` : ""}
-          </div></div>`,
-          )
-          .join("")}</div>`;
+        <div style="display:flex;flex-direction:column;gap:20px">
+          ${items
+            .map(
+              (it, i) => `
+            <div style="display:grid;grid-template-columns:52px 1fr;gap:14px;align-items:start">
+              <div style="width:52px;height:52px;background:linear-gradient(135deg,#0097b2,#1e40af);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700">${i + 1}</div>
+              <div style="background:#fff;padding:14px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.07)">
+                <h4 style="color:#0097b2;margin-bottom:6px">${esc(it.title)}</h4>
+                <p style="color:#4b5563;font-size:13px;line-height:1.5">${esc(it.content)}</p>
+                ${it.image ? `<img src="${it.image}" style="max-width:100%;border-radius:6px;margin-top:8px">` : ""}
+              </div>
+            </div>`,
+            )
+            .join("")}
+        </div>`;
 
     case "image_right":
     case "image_left": {
@@ -1710,23 +1841,38 @@ function buildPreviewHtml(type, items) {
 
     case "image_overlay": {
       const it = items[0];
-      return `<div style="position:relative;border-radius:10px;overflow:hidden">
-        ${it.image ? `<img src="${it.image}" style="width:100%;height:280px;object-fit:cover">` : `<div style="height:280px;background:linear-gradient(135deg,#0097b2,#1e40af)"></div>`}
-        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,.8),transparent);padding:28px;color:#fff">
-          <h2 style="margin-bottom:8px">${esc(it.title)}</h2><p style="font-size:14px;opacity:.9">${esc(it.content)}</p>
-        </div></div>`;
+      return `
+        <div style="position:relative;border-radius:10px;overflow:hidden">
+          ${
+            it.image
+              ? `<img src="${it.image}" style="width:100%;height:280px;object-fit:cover">`
+              : `<div style="height:280px;background:linear-gradient(135deg,#0097b2,#1e40af)"></div>`
+          }
+          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,.8),transparent);padding:28px;color:#fff">
+            <h2 style="margin-bottom:8px">${esc(it.title)}</h2>
+            <p style="font-size:14px;opacity:.9">${esc(it.content)}</p>
+          </div>
+        </div>`;
     }
 
     case "imageblock": {
       const it = items[0];
-      return `<div style="text-align:center">
-        ${it.url ? `<img src="${it.url}" style="max-width:100%;border-radius:8px">` : `<div style="height:160px;background:#e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#9ca3af">No image</div>`}
-        ${it.caption ? `<p style="margin-top:8px;font-size:13px;color:#6b7280;font-style:italic">${esc(it.caption)}</p>` : ""}</div>`;
+      return `
+        <div style="text-align:center">
+          ${
+            it.url
+              ? `<img src="${it.url}" style="max-width:100%;border-radius:8px">`
+              : `<div style="height:160px;background:#e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#9ca3af">No image</div>`
+          }
+          ${it.caption ? `<p style="margin-top:8px;font-size:13px;color:#6b7280;font-style:italic">${esc(it.caption)}</p>` : ""}
+        </div>`;
     }
 
     case "exercise":
-      return `<div style="display:flex;align-items:center;justify-content:center;min-height:100px;background:#f9fafb;border-radius:8px;border:2px dashed #e5e7eb">
-        <p style="color:#9ca3af;font-weight:600">&#9999;&#65039; Exercise Component</p></div>`;
+      return `
+        <div style="display:flex;align-items:center;justify-content:center;min-height:100px;background:#f9fafb;border-radius:8px;border:2px dashed #e5e7eb">
+          <p style="color:#9ca3af;font-weight:600">&#9999;&#65039; Exercise Component</p>
+        </div>`;
 
     default:
       return `<p style="color:#9ca3af;text-align:center;padding:32px">No preview available.</p>`;
@@ -1735,11 +1881,21 @@ function buildPreviewHtml(type, items) {
 
 // ════════════════════════════════════════════════════════════════════════════
 // CONFIRM MODAL
+// FIX #15: Guard against concurrent showConfirmModal calls by closing any
+// existing open modal before creating a new one.
 // ════════════════════════════════════════════════════════════════════════════
+
 function showConfirmModal(title, message, onConfirm) {
+  // Close any currently open confirm modal to avoid orphaned callbacks.
+  const existing = document.getElementById("modalConfirm");
+  if (existing?.classList.contains("active")) {
+    existing.classList.remove("active");
+  }
+
   document.getElementById("confirmTitle").textContent = title;
   document.getElementById("confirmMsg").textContent = message;
   document.getElementById("modalConfirm").classList.add("active");
+
   const old = document.getElementById("confirmBtn");
   const btn = old.cloneNode(true);
   old.parentNode.replaceChild(btn, old);
@@ -1759,8 +1915,8 @@ function closeModal(id) {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * normalizeComp — converts any server or local component shape into the
- * consistent internal shape used throughout this file.
+ * Normalises any server or local component shape into the consistent internal
+ * shape used throughout this file.
  */
 function normalizeComp(c) {
   const id =
@@ -1777,6 +1933,9 @@ function normalizeComp(c) {
   return Object.assign({}, c, {
     id,
     component_id: id,
+    // FIX #8: Preserve section_id through normalisation so saveOneComponent
+    // can always find it, even for components created optimistically.
+    section_id: c.section_id ?? c._section_id ?? null,
     format_type: ft,
     type: ft,
     title: c.title || "",
@@ -1793,7 +1952,6 @@ function normalizeComp(c) {
                 order_index: it.order_index ?? i,
                 ...it,
               };
-              // Convert image_data (base64) + mimetype → data: URL
               IMAGE_FIELDS.forEach((field) => {
                 if (it.image_data && it.mimetype) {
                   item[field] = `data:${it.mimetype};base64,${it.image_data}`;
@@ -1814,6 +1972,41 @@ function normalizeComp(c) {
   });
 }
 
+/**
+ * Safely coerce any server response value into a plain array.
+ *
+ * Handles the shapes this backend actually returns:
+ *   1. Bare array                    -> [ {...}, ... ]
+ *   2. Envelope object with known key -> { sections: [...], topic_id: 31 }
+ *                                        { components: [...] }
+ *                                        { data: [...] } etc.
+ *   3. null / undefined              -> []
+ *   4. Anything else                 -> [] + console.warn (visible in DevTools)
+ *
+ * Add keys to ENVELOPE_KEYS if the backend introduces new wrapper shapes.
+ */
+const ENVELOPE_KEYS = [
+  "sections",
+  "components",
+  "topics",
+  "data",
+  "items",
+  "results",
+];
+
+function toArray(value) {
+  if (Array.isArray(value)) return value.slice();
+  if (value == null) return [];
+
+  if (typeof value === "object") {
+    for (const key of ENVELOPE_KEYS) {
+      if (Array.isArray(value[key])) return value[key].slice();
+    }
+  }
+
+  console.warn("[toArray] Could not extract array from response:", value);
+  return [];
+}
 /** Escape a string for safe HTML insertion. */
 function escHtml(str) {
   return String(str)
@@ -1823,7 +2016,7 @@ function escHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
-/** Flash the "Saved" indicator for 2 seconds. */
+/** Flash the global "Saved" indicator for 2 seconds. */
 function triggerSave() {
   const el = document.getElementById("saveIndicator");
   if (!el) return;

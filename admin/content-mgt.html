@@ -1,102 +1,108 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Content Admin — Builder</title>
-<link rel="icon" href="../assets/logo.png" type="image/png">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-
-<link rel="stylesheet" href="../css/admin/content-mgt.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Content Builder</title>
+  <link rel="icon" href="../assets/logo.png" type="image/png" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+   <link rel="stylesheet" href="../css/admin/content-mgt.css">
 </head>
 <body>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════ -->
 <header class="header">
-  <div class="header-inner">
-    <div class="brand">
-         <button class="back-btn" type="button" onclick="history.back()">
-            <i class="fa-solid fa-arrow-left"></i> Back to main board
-          </button>
-    </div>
+  <a class="header-logo" href="admin.html">
+    <i class="fas fa-layer-group"></i>
+    Admin Panel
+  </a>
 
-    <div class="header-right">
-      <div class="save-indicator" id="saveIndicator">✓ Saved</div>
-      <button class="btn-icon" id="btnShortcuts" title="Keyboard shortcuts">⌨️</button>
-      <div class="avatar">AD</div>
-    </div>
+  <div id="headerBreadcrumb" class="header-breadcrumb" data-sub=""></div>
 
-    
-  </div>
+  <span class="save-indicator" id="saveIndicator">
+    <i class="fas fa-check-circle"></i> Saved
+  </span>
+
+  <nav class="header-nav">
+    <a href="analytic.html">Analytics</a>
+    <a href="subscription.html">Subscription</a>
+    <a href="content-mgt.html" class="active">Content</a>
+    <a href="#" class="btn-logout" id="btn-logout">Logout</a>
+  </nav>
 </header>
 
+<!-- ═══ THREE-PANEL WORKSPACE ════════════════════════════════ -->
+<div class="workspace">
 
-<div class="app-body">
-  <div class="panel-topics">
-    <div class="panel-label">Topics <span class="readonly-badge">READ ONLY</span></div>
-    <div class="topics-tree" id="topicsTree"></div>
-  </div>
-
-  <div class="panel-sections">
-    <div class="panel-label">Sections</div>
-    <div class="sections-topic-title" id="sectionsTopic">
-      <span style="opacity:.5">← Select a topic</span>
+  <!-- LEFT — Topics tree -->
+  <aside class="panel-left">
+    <div class="panel-head">
+      <h3>Topics</h3>
     </div>
-    <div class="sections-list" id="sectionsList"></div>
-    <div class="sections-footer">
-      <button class="btn-add-section" id="btnAddSection" style="display:none">＋ Add Section</button>
+    <div class="panel-scroll">
+      <div id="topicsTree"></div>
     </div>
-  </div>
+  </aside>
 
-  <div class="panel-builder">
-    <div class="builder-header" id="builderHeader" style="display:none">
-      <div class="builder-section-name" id="builderSectionName"></div>
+  <!-- MIDDLE — Sections -->
+  <aside class="panel-mid">
+    <div class="panel-head">
+      <div id="sectionsTopic" class="mid-topic-label">—</div>
+    </div>
+    <button class="btn-add-section" id="btnAddSection">
+      <i class="fas fa-plus"></i> New Section
+    </button>
+    <div class="sections-scroll">
+      <div id="sectionsList"></div>
+    </div>
+  </aside>
+
+  <!-- RIGHT — Builder -->
+  <main class="panel-right">
+
+    <div class="builder-header" id="builderHeader">
+      <span class="builder-section-name" id="builderSectionName">Section</span>
       <div class="builder-header-actions">
-        <button class="btn-icon" id="btnCollapseAll" title="Collapse all components">⊟</button>
+        <button class="btn-icon" id="btnCollapseAll">
+          <i class="fas fa-compress-alt"></i> Collapse all
+        </button>
       </div>
     </div>
-    <div class="builder-body" id="builderBody">
+
+    <div id="builderBody">
       <div class="empty-state">
-        <div class="icon">🏗️</div>
+        <div class="es-icon">🏗️</div>
         <h3>Section Builder</h3>
-        <p>Select a section from the middle panel<br>to start building its content.</p>
+        <p>Select a subtopic on the left, then pick a section to start building.</p>
       </div>
     </div>
-    <div class="builder-footer" id="builderFooter" style="display:none">
-      <button class="btn-add-component" id="btnOpenCompModal">＋ Add Component</button>
+
+    <div class="builder-footer" id="builderFooter">
+      <button class="btn-add-comp" id="btnOpenCompModal">
+        <i class="fas fa-plus"></i> Add Component
+      </button>
     </div>
-  </div>
+
+  </main>
 </div>
 
-<div class="modal" id="modalAddComponent">
+<!-- ═══ CONFIRM MODAL ════════════════════════════════════════ -->
+<div id="modalConfirm" class="modal">
   <div class="modal-box">
     <div class="modal-head">
-      <h3>Add Component</h3>
-      <button class="modal-close" data-close="modalAddComponent">×</button>
+      <h3 id="confirmTitle">Confirm</h3>
+      <button class="modal-close" data-close="modalConfirm">&#215;</button>
     </div>
     <div class="modal-body">
-      <p style="margin-bottom:14px;font-size:13px;color:var(--gray);">Select a component type to add to this section:</p>
-      <div class="comp-type-grid" id="compTypeGrid"></div>
+      <p id="confirmMsg"></p>
     </div>
-  </div>
-</div>
-
-<div class="modal confirm-modal" id="modalConfirm">
-  <div class="modal-box">
-    <div class="confirm-body">
-      <div class="confirm-icon">🗑️</div>
-      <h4 id="confirmTitle">Delete this item?</h4>
-      <p id="confirmMsg">This action cannot be undone.</p>
-      <div class="confirm-actions">
-        <button class="btn-cancel" data-close="modalConfirm">Cancel</button>
-        <button class="btn-danger" id="confirmBtn">Delete</button>
-      </div>
+    <div class="modal-actions">
+      <button class="btn-cancel-modal" data-close="modalConfirm">Cancel</button>
+      <button class="btn-confirm-modal" id="confirmBtn">Confirm</button>
     </div>
   </div>
 </div>
 
 <script src="../js/admin/admin-content-script.js" type="module"></script>
-
 </body>
 </html>

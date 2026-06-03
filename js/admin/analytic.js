@@ -2,6 +2,12 @@ import { FetchData } from "../api/crud.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+function extractData(response, key = null) {
+  if (!response.success || !response.data) return null;
+  const raw = response.data.data ?? response.data;
+  return key ? raw[key] : raw;
+}
+
 function getRetentionClass(value) {
   if (value >= 0.6) return "ret-high";
   if (value >= 0.3) return "ret-med";
@@ -27,13 +33,19 @@ function transformDeviceData(dist) {
 async function renderHeatmap() {
   const tbody = document.querySelector("#retentionTable tbody");
   const response = await FetchData("/analytics/retention", true);
-  if (!response?.status) {
+  if (!response.success) {
     tbody.innerHTML = `<tr><td colspan="6">Error fetching data</td></tr>`;
     return;
   }
-  const data = response.data;
-  document.getElementById("startDate").textContent = data.period.start;
-  document.getElementById("endDate").textContent = data.period.end;
+  const data = extractData(response);
+  console.log("Retention data:", data ,"Response  ",response);
+  if (!data || !data.cohorts) {
+    tbody.innerHTML = `<tr><td colspan="6">No data available</td></tr>`;
+    return;
+  }
+
+  document.getElementById("startDate").textContent = data.period?.start || "—";
+  document.getElementById("endDate").textContent = data.period?.end || "—";
 
   data.cohorts.forEach((cohort) => {
     const row = document.createElement("tr");
@@ -55,9 +67,13 @@ async function renderHeatmap() {
 // ─── Stepped / Cumulative Chart ──────────────────────────────────────────────
 
 async function renderSteppedChart(response) {
-  if (!response?.status || !response.data?.engagement?.length) return;
+  console.log("Engagement response:", response);
+  if (!response.success) return;
 
-  const data = response.data.engagement;
+  const data = extractData(response);
+  if (!data?.engagement?.length) return;
+
+  const engagementData = data.engagement;
   const pad = { top: 20, right: 20, bottom: 40, left: 50 };
   const W = 450,
     H = 220;
@@ -65,7 +81,7 @@ async function renderSteppedChart(response) {
   const cH = H - pad.top - pad.bottom;
 
   let total = 0;
-  const points = data.map((item) => {
+  const points = engagementData.map((item) => {
     total += item.total_events;
     return {
       time: new Date(item.registration_date).getTime(),
@@ -116,9 +132,12 @@ async function renderSteppedChart(response) {
 
 async function renderDAUChart() {
   const response = await FetchData("/analytics/dau", true);
-  if (!response?.status || !response.data?.dau) return;
+  if (!response.success) return;
 
-  const data = response.data.dau;
+  const data = extractData(response);
+  if (!data?.dau?.length) return;
+
+  const dauData = data.dau;
   const barG = document.getElementById("dauBars");
   const labelG = document.getElementById("dauLabels");
   const gridG = document.getElementById("dauGrid");
@@ -129,8 +148,8 @@ async function renderDAUChart() {
   const cW = W - pad.left - pad.right;
   const cH = H - pad.top - pad.bottom;
 
-  const maxVal = Math.max(...data.map((d) => d.active_users)) * 1.2;
-  const slotW = cW / data.length;
+  const maxVal = Math.max(...dauData.map((d) => d.active_users)) * 1.2;
+  const slotW = cW / dauData.length;
   const barWidth = slotW * 0.6;
 
   let barHTML = "";
@@ -146,7 +165,7 @@ async function renderDAUChart() {
     `;
   }
 
-  data.forEach((d, i) => {
+  dauData.forEach((d, i) => {
     const x = pad.left + i * slotW + (slotW - barWidth) / 2;
     const returning = d.active_users - d.new_users;
     const hReturning = (returning / maxVal) * cH;
@@ -174,13 +193,16 @@ async function renderDAUChart() {
 
 async function renderPlatformBreakdown() {
   const response = await FetchData("/analytics/device-distribution", true);
-  if (!response?.status || !response.data?.distribution) return;
+  if (!response.success) return;
 
-  const data = transformDeviceData(response.data.distribution);
+  const data = extractData(response);
+  if (!data?.distribution?.length) return;
+
+  const deviceData = transformDeviceData(data.distribution);
 
   ["desktop", "mobile", "tablet", "other"].forEach((key) => {
-    document.getElementById("bar-" + key).style.width = data[key] + "%";
-    document.getElementById("val-" + key).innerText = data[key] + "%";
+    document.getElementById("bar-" + key).style.width = deviceData[key] + "%";
+    document.getElementById("val-" + key).innerText = deviceData[key] + "%";
   });
 }
 
@@ -188,9 +210,12 @@ async function renderPlatformBreakdown() {
 
 async function renderServiceDonut() {
   const response = await FetchData("/analytics/service-usage", true);
-  if (!response?.status || !response.data?.services) return;
+  if (!response.success) return;
 
-  const services = response.data.services;
+  const data = extractData(response);
+  if (!data?.services?.length) return;
+
+  const services = data.services;
   const colors = ["#0097b2", "#4dd0e1", "#b2ebf2", "#e0f7fa"];
   const segmentG = document.getElementById("donutSegments");
   const legend = document.getElementById("donutLegend");
@@ -239,9 +264,12 @@ async function renderServiceDonut() {
 
 async function renderLearningFunnel() {
   const response = await FetchData("/analytics/conversion-rate", true);
-  if (!response?.status || !response.data?.conversion) return;
+  if (!response.success) return;
 
-  const c = response.data.conversion;
+  const data = extractData(response);
+  if (!data?.conversion) return;
+
+  const c = data.conversion;
   const servicePct = ((c.service_users / c.login_users) * 100).toFixed(0);
   const ratePct = c.conversion_rate.toFixed(0);
 
@@ -259,9 +287,12 @@ async function renderLearningFunnel() {
 // ─── Engagement Radar ────────────────────────────────────────────────────────
 
 async function renderEngagementRadar(response) {
-  if (!response?.status || !response.data?.engagement?.length) return;
+  if (!response.success) return;
 
-  const users = response.data.engagement;
+  const data = extractData(response);
+  if (!data?.engagement?.length) return;
+
+  const users = data.engagement;
   const shapeG = document.getElementById("radarShapes");
   const gridG = document.getElementById("radarGrid");
   const labelG = document.getElementById("radarLabels");
