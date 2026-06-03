@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint, request
 from sqlalchemy import func
-from datetime import datetime, timedelta
+from datetime import datetime, date, time, timedelta
 from core.models import db, User, AnalyticsEvent
 from core.utils.decorators import role_required, rate_limit, APIResponse
 
@@ -43,9 +43,13 @@ def _resolve_dates(start_param, end_param, default_days=30):
 
 def _period(start_date, end_date):
     """Return a serialized period dict for response payloads."""
+
+    def to_date(d):
+        return d.date() if isinstance(d, datetime) else d
+
     return {
-        "start": start_date.date().isoformat(),
-        "end": end_date.date().isoformat(),
+        "start": to_date(start_date).isoformat(),
+        "end": to_date(end_date).isoformat(),
     }
 
 
@@ -57,12 +61,27 @@ def _period(start_date, end_date):
 @rate_limit(capacity=40, refill_rate=2)
 def cohort_retention():
     try:
-        try:
-            start_date, end_date = _resolve_dates(
-                request.args.get("start"), request.args.get("end")
-            )
-        except ValueError as ve:
-            return APIResponse.bad_request(str(ve))
+        now = datetime.utcnow()
+
+        # Resolve date range — default to first recorded user → now
+        raw_start = request.args.get("start")
+        raw_end = request.args.get("end")
+
+        if raw_start or raw_end:
+            try:
+                start_date, end_date = _resolve_dates(raw_start, raw_end)
+            except ValueError as ve:
+                return APIResponse.bad_request(str(ve))
+        else:
+            earliest = db.session.query(func.min(User.created_at)).scalar()
+            if not earliest:
+                return APIResponse.success(
+                    data={"cohorts": []},
+                    message="No users recorded yet.",
+                    meta=_period(now.date(), now.date()),
+                )
+            start_date = earliest.date()
+            end_date = now.date()
 
         cohorts = (
             db.session.query(
@@ -82,23 +101,29 @@ def cohort_retention():
                 meta=_period(start_date, end_date),
             )
 
-        now = datetime.utcnow()
-
         def calculate_retention(reg_date, user_count, target_day, tolerance):
+            """
+            reg_date  : datetime.date  (already normalised below)
+            user_count: int
+            Returns float [0,1], None (window not yet elapsed), or 0.0
+            """
             if user_count == 0:
                 return 0.0
-            reg_dt = datetime.combine(reg_date, datetime.min.time())
+
+            reg_dt = datetime.combine(reg_date, time.min)
             window_start = reg_dt + timedelta(days=target_day - tolerance)
             window_end = reg_dt + timedelta(days=target_day + tolerance)
+
             if now < window_end:
-                return None
+                return None  # window hasn't closed yet
+
             try:
                 retained = (
                     db.session.query(func.count(func.distinct(AnalyticsEvent.user_id)))
                     .join(User, User.id == AnalyticsEvent.user_id)
                     .filter(
                         AnalyticsEvent.user_id.isnot(None),
-                        func.date(User.created_at) == reg_date,
+                        func.date(User.created_at) == reg_date,  # date obj — safe
                         AnalyticsEvent.event_type.in_(MEANINGFUL_EVENTS),
                         AnalyticsEvent.created_at >= window_start,
                         AnalyticsEvent.created_at < window_end,
@@ -108,24 +133,33 @@ def cohort_retention():
                 )
             except Exception as query_err:
                 logging.warning(
-                    f"Retention query failed — cohort {reg_date}, day_{target_day}: {query_err}"
+                    f"Retention query failed — cohort {reg_date}, "
+                    f"day_{target_day}: {query_err}"
                 )
                 return None
+
             return round(retained / user_count, 4)
 
-        results = [
-            {
-                "registration_date": reg_date.isoformat(),
-                "new_users": user_count,
-                "retention": {
-                    key: calculate_retention(
-                        reg_date, user_count, target_day, tolerance
-                    )
-                    for key, (target_day, tolerance) in RETENTION_WINDOWS.items()
-                },
-            }
-            for reg_date, user_count in cohorts
-        ]
+        results = []
+        for raw_reg_date, user_count in cohorts:
+            # func.date() returns a string ("YYYY-MM-DD") on most DB backends
+            if isinstance(raw_reg_date, str):
+                reg_date = date.fromisoformat(raw_reg_date)
+            else:
+                reg_date = raw_reg_date  # already a date object (some backends)
+
+            results.append(
+                {
+                    "registration_date": reg_date.isoformat(),
+                    "new_users": user_count,
+                    "retention": {
+                        key: calculate_retention(
+                            reg_date, user_count, target_day, tolerance
+                        )
+                        for key, (target_day, tolerance) in RETENTION_WINDOWS.items()
+                    },
+                }
+            )
 
         return APIResponse.success(
             data={"cohorts": results},
@@ -152,41 +186,58 @@ def cumulative_engagement():
         except ValueError as ve:
             return APIResponse.bad_request(str(ve))
 
+        # Fetch ALL active users — not just those registered in the window
         users = (
-            db.session.query(User.id, func.date(User.created_at))
-            .filter(User.created_at >= start_date, User.created_at <= end_date)
+            db.session.query(User.id, User.created_at)
+            .filter(User.is_active == True)
             .all()
         )
 
+        if not users:
+            return APIResponse.success(
+                data={"engagement": []},
+                message="No users found.",
+                meta=_period(start_date, end_date),
+            )
+
         results = []
-        for user_id, reg_date in users:
+        for user_id, created_at in users:
+            # Use the later of (registration date, window start) so we don't
+            # count events before the user existed or before the query window
+            event_start = max(created_at, start_date)
+
             distinct_events = (
                 db.session.query(func.count(func.distinct(AnalyticsEvent.event_type)))
                 .filter(
                     AnalyticsEvent.user_id == user_id,
-                    AnalyticsEvent.created_at >= reg_date,
+                    AnalyticsEvent.created_at >= event_start,
                     AnalyticsEvent.created_at <= end_date,
                 )
                 .scalar()
+                or 0
             )
             total_events = (
                 db.session.query(func.count(AnalyticsEvent.id))
                 .filter(
                     AnalyticsEvent.user_id == user_id,
-                    AnalyticsEvent.created_at >= reg_date,
+                    AnalyticsEvent.created_at >= event_start,
                     AnalyticsEvent.created_at <= end_date,
                 )
                 .scalar()
+                or 0
             )
+
+            # Skip users with zero activity in the window
+            if total_events == 0:
+                continue
+
             results.append(
                 {
                     "user_id": user_id,
-                    "registration_date": reg_date.isoformat(),
+                    "registration_date": created_at.date().isoformat(),
                     "distinct_event_types": distinct_events,
                     "total_events": total_events,
-                    "depth_score": (
-                        round(distinct_events / total_events, 2) if total_events else 0
-                    ),
+                    "depth_score": round(distinct_events / total_events, 2),
                 }
             )
 
