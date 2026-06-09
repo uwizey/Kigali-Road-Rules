@@ -1,4 +1,5 @@
 // ── Swap stubs for your real API calls ────────────────────────────────────
+//settings.js - Handles user account settings, including updating email and password. Implements form validation, password strength indication, and displays success/error messages based on API responses.
 import { UpdateData } from "../api/crud.js";
 const apiUpdateEmail    = p => UpdateData("/user/email",    p, true);
 const apiUpdatePassword = p => UpdateData("/user/password", p, true);

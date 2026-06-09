@@ -1,414 +1,627 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../css/user/user.css">
-    <link rel="icon" href="../assets/logo.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../css/user/user.css" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
     <title>User Dashboard - Kigali RoadRules</title>
-</head>
-<body>
+  </head>
+  <body>
     <!-- HEADER -->
-        <header class="header">
-    
-    <!-- LOGO -->
-    <a class="logo-group" href="user-dashboard.html">
+
+    <header class="header">
+      <!-- LOGO -->
+      <a class="logo-group" href="user-dashboard.html">
         <div class="logo-mark">
-        
-            <img src="../assets/logo.png" alt="logo" height="45px" onerror="this.style.display='none'"> 
-        
-            
+          <img
+            src="../assets/logo.png"
+            alt="logo"
+            height="45px"
+            onerror="this.style.display = 'none'"
+          />
         </div>
         <div class="logo-text">
-        <span class="top">Kigali</span>
-        <span class="bottom">RoadRules</span>
+          <span class="top">Kigali</span>
+          <span class="bottom">RoadRules</span>
         </div>
-    </a>
-    
-    <!-- NAV -->
-    
-    
-    <!-- RIGHT: avatar + dropdown -->
-    <div class="header-right">
-        <nav class="links">
-        <a href="settings.html">Settings</a>
-        <a href="market.html">Market Place</a>
-        <!-- <a href="modeselection.html#about">Who are we</a>
-        <a href="modeselection.html#contact">Contact Us</a> -->
-    </nav>
-        <button class="avatar-btn" id="avatarBtn" aria-label="Account menu" aria-expanded="false">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-        </svg>
+      </a>
+
+      <div class="header-right">
+        <!-- Hamburger — mobile only -->
+        <button class="menu-btn" id="menuBtn">
+          <i class="fas fa-bars"></i>
         </button>
-    
+
+        <!-- Mode selector moved into header -->
+        <div class="mode-selector-container">
+          <button class="mode-btn active" id="contentModeBtn">
+            <i class="fas fa-book-open"></i>
+            <span>Content Mode</span>
+          </button>
+          <button class="mode-btn" id="qaModeBtn">
+            <i class="fas fa-question-circle"></i>
+            <span>Q&A Mode</span>
+          </button>
+        </div>
+
+        <!-- Avatar -->
+        <button
+          class="avatar-btn"
+          id="avatarBtn"
+          aria-label="Account menu"
+          aria-expanded="false"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </button>
+
         <div class="avatar-dropdown" id="avatarDropdown">
-    
-        <!-- Profile row -->
-        <div class="dropdown-profile">
+          <!-- Profile row -->
+          <div class="dropdown-profile">
             <div class="dropdown-avatar-circle">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="8" r="4"/>
-                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-            </svg>
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+              </svg>
             </div>
             <div class="dropdown-profile-info">
-            <div class="dropdown-label">Signed in as</div>
-            <div class="dropdown-email" id="userEmail">user@email.com</div>
+              <div class="dropdown-label">Signed in as</div>
+              <div class="dropdown-email" id="userEmail">user@email.com</div>
             </div>
-        </div>
-    
-        <div class="dropdown-body">
-    
-            <a href="settings.html" class="dropdown-item">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
-            </svg>
-            Settings
-            </a>
-    
+          </div>
+
+          <div class="dropdown-body">
+            <!-- <a href="user-dashboard.html" class="dropdown-item">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"
+                />
+              </svg>
+                My Account
+            </a> -->
+
             <!-- mobile-only nav items -->
             <div class="dropdown-sep mobile-only"></div>
-            <a href="market.html" class="dropdown-item mobile-only">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/>
-            </svg>
-            Market Place
+            <!-- <a href="" class="dropdown-item mobile-only active">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+              </svg>
+              Academdy
             </a>
-            <a href="#about" class="dropdown-item mobile-only">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            Who are we
-            </a>
-            <a href="#contact" class="dropdown-item mobile-only">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
-            </svg>
-            Contact Us
-            </a>
-    
-            <div class="dropdown-sep"></div>
-    
-            <button id="btn-logout" class="dropdown-item logout">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            Log out
+            <a href="user-dashboard.html" class="dropdown-item mobile-only">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              Control Center
+            </a> -->
+            <span class="dropdown-sep"></span>
+            <button class="dropdown-item active" id="dropdown-academy-btn">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
+              </svg>
+              Academy
             </button>
-    
-        </div>
-        </div>
-    </div>
-    
-    </header>
-        
 
-    <!-- MODE SELECTOR BAR -->
-    <div class="dash-topbar">
-        <button class="menu-btn" id="menuBtn">
-            <i class="fas fa-bars"></i>
-        </button>
-        <h3 class="dash-title" id="dashTitle">Dashboard - Content Mode</h3>
-        
-        <div class="mode-selector-container">
-            <button class="mode-btn active" id="contentModeBtn">
-                <i class="fas fa-book-open"></i>
-                <span>Content Mode</span>
+            <button class="dropdown-item" id="dropdown-control-btn">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="3" width="7" height="9" />
+                <rect x="14" y="3" width="7" height="5" />
+                <rect x="14" y="12" width="7" height="9" />
+                <rect x="3" y="16" width="7" height="5" />
+              </svg>
+              Control Center
             </button>
-            <button class="mode-btn" id="qaModeBtn">
-                <i class="fas fa-question-circle"></i>
-                <span>Q&A Mode</span>
+
+            <div class="dropdown-sep"></div>
+
+            <button id="btn-logout" class="dropdown-item logout">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              Log out
             </button>
+          </div>
         </div>
-    </div>
+      </div>
+    </header>
 
     <!-- MAIN LAYOUT -->
     <div class="dash-layout">
-        <!-- SIDEBAR -->
-        <aside class="sidebar" id="sidebar">
-            <!-- CONTENT MODE SIDEBAR -->
-            <div id="contentSidebar" class="sidebar-content active">
-                <div class="sidebar-header">
-                    <i class="fas fa-book"></i>
-                    <h3>Learning Content</h3>
+      <!-- SIDEBAR -->
+      <aside class="sidebar" id="sidebar">
+        <!-- CONTENT MODE SIDEBAR -->
+        <div id="contentSidebar" class="sidebar-content active">
+          <div class="sidebar-header">
+            <i class="fas fa-book"></i>
+            <h3>Learning Content</h3>
+          </div>
+          <nav id="topicsNav"></nav>
+        </div>
+
+        <!-- Q&A MODE SIDEBAR -->
+        <div id="qaSidebar" class="sidebar-content">
+          <div class="sidebar-header">
+            <i class="fas fa-clipboard-list"></i>
+            <h3>Practice Quizzes</h3>
+          </div>
+          <nav id="quizTopicsNav"></nav>
+
+          <!-- <div class="quiz-stats">
+            <h4>Your Stats</h4>
+            <div class="stat-row">
+              <span>Tests Taken:</span>
+              <strong id="statTestsTaken">24</strong>
+            </div>
+            <div class="stat-row">
+              <span>Average Score:</span>
+              <strong id="statAvgScore">85%</strong>
+            </div>
+            <div class="stat-row">
+              <span>Best Score:</span>
+              <strong id="statBestScore">95%</strong>
+            </div>
+          </div> -->
+        </div>
+      </aside>
+
+      <!-- OVERLAY -->
+      <div class="overlay" id="overlay"></div>
+
+      <!-- MAIN CONTENT AREA -->
+      <main class="dash-content" id="mainContent">
+        <!-- CONTENT MODE VIEW -->
+        <div id="contentModeView" class="mode-view active">
+          <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-icon">
+              <i class="fas fa-book-reader"></i>
+            </div>
+            <h1>Welcome to Kigali RoadRules</h1>
+            <p>
+              Your comprehensive guide to mastering Rwandan traffic laws, road
+              signs, and safe driving practices. Select a topic from the sidebar
+              to begin learning.
+            </p>
+
+            <div class="quick-stats">
+              <div class="quick-stat-card">
+                <i class="fas fa-road"></i>
+                <div>
+                  <h3>3</h3>
+                  <p>Core Categories</p>
                 </div>
-                <nav id="topicsNav"></nav>
+              </div>
+              <div class="quick-stat-card">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                  <h3>150+</h3>
+                  <p>Traffic Signs</p>
+                </div>
+              </div>
+              <div class="quick-stat-card">
+                <i class="fas fa-file-alt"></i>
+                <div>
+                  <h3>Official</h3>
+                  <p>Traffic Decree</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONTENT DISPLAY AREA -->
+          <div
+            id="contentDisplay"
+            class="content-display"
+            style="display: none"
+          >
+            <div class="content-header">
+              <button class="back-btn" id="backBtn">
+                <i class="fas fa-arrow-left"></i> Back
+              </button>
+              <h2 id="contentTitle">Loading...</h2>
+              <div class="content-actions">
+                <button class="action-btn" id="bookmarkBtn">
+                  <i class="fas fa-bookmark"></i>
+                </button>
+                <button class="action-btn" id="printBtn">
+                  <i class="fas fa-print"></i>
+                </button>
+              </div>
             </div>
 
-            <!-- Q&A MODE SIDEBAR -->
-            <div id="qaSidebar" class="sidebar-content">
-                <div class="sidebar-header">
-                    <i class="fas fa-clipboard-list"></i>
-                    <h3>Practice Quizzes</h3>
-                </div>
-                <nav id="quizTopicsNav"></nav>
+            <div id="contentContainer" class="content-container"></div>
 
-                <div class="quiz-stats">
-                    <h4>Your Stats</h4>
-                    <div class="stat-row">
-                        <span>Tests Taken:</span>
-                        <strong id="statTestsTaken">24</strong>
-                    </div>
-                    <div class="stat-row">
-                        <span>Average Score:</span>
-                        <strong id="statAvgScore">85%</strong>
-                    </div>
-                    <div class="stat-row">
-                        <span>Best Score:</span>
-                        <strong id="statBestScore">95%</strong>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- OVERLAY -->
-        <div class="overlay" id="overlay"></div>
-
-        <!-- MAIN CONTENT AREA -->
-        <main class="dash-content" id="mainContent">
-            <!-- CONTENT MODE VIEW -->
-            <div id="contentModeView" class="mode-view active">
-                <div class="welcome-screen" id="welcomeScreen">
-                    <div class="welcome-icon">
-                        <i class="fas fa-book-reader"></i>
-                    </div>
-                    <h1>Welcome to Kigali RoadRules</h1>
-                    <p>Select a topic from the sidebar to begin learning about road safety and traffic rules.</p>
-                    <div class="quick-stats">
-                        <div class="quick-stat-card">
-                            <i class="fas fa-bookmark"></i>
-                            <div>
-                                <h3>12</h3>
-                                <p>Bookmarks</p>
-                            </div>
-                        </div>
-                        <div class="quick-stat-card">
-                            <i class="fas fa-clock"></i>
-                            <div>
-                                <h3>4.5h</h3>
-                                <p>Study Time</p>
-                            </div>
-                        </div>
-                        <div class="quick-stat-card">
-                            <i class="fas fa-check-circle"></i>
-                            <div>
-                                <h3>8/12</h3>
-                                <p>Completed</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CONTENT DISPLAY AREA -->
-                <div id="contentDisplay" class="content-display" style="display: none;">
-                    <div class="content-header">
-                        <button class="back-btn" id="backBtn">
-                            <i class="fas fa-arrow-left"></i> Back
-                        </button>
-                        <h2 id="contentTitle">Loading...</h2>
-                        <div class="content-actions">
-                            <button class="action-btn" id="bookmarkBtn">
-                                <i class="fas fa-bookmark"></i>
-                            </button>
-                            <button class="action-btn" id="printBtn">
-                                <i class="fas fa-print"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="contentContainer" class="content-container"></div>
-
-                    <!-- EXERCISE SECTION -->
-                    <div id="exerciseSection" class="exercise-section" style="display: none;">
-                        <div class="exercise-header">
-                            <i class="fas fa-dumbbell"></i>
-                            <h3>Practice Exercise</h3>
-                        </div>
-                        <div id="exerciseQuestions"></div>
-                        <button class="submit-exercise-btn" id="submitExerciseBtn">
-                            <i class="fas fa-check"></i> Submit Exercise
-                        </button>
-                        <div id="exerciseResults" class="exercise-results" style="display: none;"></div>
-                    </div>
-
-                    <!-- TOPIC NAVIGATION -->
-                    <div class="topic-navigation">
-                        <button class="topic-nav-btn" id="prevTopicBtn" style="display: none;">
-                            <i class="fas fa-arrow-left"></i> Previous Topic
-                        </button>
-                        <button class="topic-nav-btn" id="nextTopicBtn" style="display: none;">
-                            Next Topic <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
+            <!-- EXERCISE SECTION -->
+            <div
+              id="exerciseSection"
+              class="exercise-section"
+              style="display: none"
+            >
+              <div class="exercise-header">
+                <i class="fas fa-dumbbell"></i>
+                <h3>Practice Exercise</h3>
+              </div>
+              <div id="exerciseQuestions"></div>
+              <button class="submit-exercise-btn" id="submitExerciseBtn">
+                <i class="fas fa-check"></i> Submit Exercise
+              </button>
+              <div
+                id="exerciseResults"
+                class="exercise-results"
+                style="display: none"
+              ></div>
             </div>
 
-            <!-- Q&A MODE VIEW -->
-            <div id="qaModeView" class="mode-view">
+            <!-- TOPIC NAVIGATION -->
+            <div class="topic-navigation">
+              <button
+                class="topic-nav-btn"
+                id="prevTopicBtn"
+                style="display: none"
+              >
+                <i class="fas fa-arrow-left"></i> Previous Topic
+              </button>
+              <button
+                class="topic-nav-btn"
+                id="nextTopicBtn"
+                style="display: none"
+              >
+                Next Topic <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
 
-                <!-- EXAM SELECTION SCREEN -->
-                <div id="examSelectionScreen" style="display: none;">
-                    <div class="exam-selection-header">
-                        <button class="back-btn" id="backToQuizTopicsBtn">
-                            <i class="fas fa-arrow-left"></i> Back
-                        </button>
-                        <div class="exam-selection-title">
-                            <i class="fas fa-certificate"></i>
-                            <div>
-                                <h1>Latest Police Exams</h1>
-                                <p>Choose an exam session to practice</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="exam-grid" id="examGrid"></div>
+        <!-- Q&A MODE VIEW -->
+        <div id="qaModeView" class="mode-view">
+          <!-- EXAM SELECTION SCREEN -->
+          <div id="examSelectionScreen" style="display: none">
+            <div class="exam-selection-header">
+              <button class="back-btn" id="backToQuizTopicsBtn">
+                <i class="fas fa-arrow-left"></i> Back
+              </button>
+              <div class="exam-selection-title">
+                <i class="fas fa-certificate"></i>
+                <div>
+                  <h1>Latest Police Exams</h1>
+                  <p>Choose an exam session to practice</p>
+                </div>
+              </div>
+            </div>
+            <div class="exam-grid" id="examGrid"></div>
+          </div>
+
+          <!-- QUIZ START SCREEN -->
+          <div id="quizStartScreen" class="quiz-start-screen">
+            <div class="quiz-start-icon">
+              <h1><i class="fas fa-clipboard-question"></i> Practice Quiz</h1>
+              <p>Test your knowledge with practice questions.</p>
+              <p class="quiz-instructions">
+                Select a topic from the sidebar to begin your quiz, or choose
+                from the latest exams below.
+              </p>
+            </div>
+
+            <div id="performanceSection"></div>
+            <div class="latest-exams-container">
+              <h2 class="section-title">Latest Police Exams</h2>
+
+              <div class="exam-grid" id="latestExamsGrid">
+                <div class="exam-card">
+                  <div class="exam-card-icon">
+                    <i class="fas fa-file-alt"></i>
+                  </div>
+                  <h3 class="exam-card-title">
+                    Traffic Laws &amp; General Regulations
+                  </h3>
+                  <p class="exam-card-date">
+                    <i class="fas fa-calendar-alt"></i> Saturday, June 6, 2026
+                    10:30 AM
+                  </p>
+                  <div class="exam-card-meta">
+                    <span class="exam-card-questions"
+                      ><i class="fas fa-list-ol"></i> 20 Questions</span
+                    >
+                  </div>
+                  <button class="exam-start-btn">
+                    Start Exam <i class="fas fa-arrow-right"></i>
+                  </button>
                 </div>
 
-                <!-- QUIZ START SCREEN -->
-                <div id="quizStartScreen" class="quiz-start-screen">
-                    <div class="quiz-start-icon">
-                        <i class="fas fa-clipboard-question"></i>
-                    </div>
-                    <h1>Practice Quiz</h1>
-                    <p>Test your knowledge with practice questions.</p>
-                    <p class="quiz-instructions">Select a topic from the sidebar to begin your quiz.</p>
+                <div class="exam-card" id="recentExam-Grid">
+                  <div class="exam-card-icon">
+                    <i class="fas fa-shield-halved"></i>
+                  </div>
+                  <h3 class="exam-card-title">
+                    Defensive Driving &amp; Road Signs
+                  </h3>
+                  <p class="exam-card-date">
+                    <i class="fas fa-calendar-alt"></i> Saturday, June 6, 2026
+                    12:15 PM
+                  </p>
+                  <div class="exam-card-meta">
+                    <span class="exam-card-questions"
+                      ><i class="fas fa-list-ol"></i> 15 Questions</span
+                    >
+                  </div>
+                  <button class="exam-start-btn">
+                    Start Exam <i class="fas fa-arrow-right"></i>
+                  </button>
                 </div>
 
-                <!-- QUIZ INTERFACE -->
-                <div id="quizInterface" class="quiz-interface" style="display: none;">
-                    <!-- Question Navigation Grid -->
-                    <div class="question-nav-grid" id="questionNavGrid"></div>
-
-                    <!-- Quiz Progress Bar -->
-                    <div class="quiz-progress-bar">
-                        <div class="progress-info">
-                            <span style="font-size: 7px;">Question <span id="currentQuestion">1</span> of <span id="totalQuestions">10</span></span>
-                            <span id="quizCountdownWrap" class="quiz-timer">
-                                <i class="fas fa-clock"></i>
-                                <span id="quizTimer">00:00</span>
-                            </span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progressFill" style="width: 10%;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Question Card -->
-                    <div class="question-card">
-                        <div class="question-header">
-                            <span class="question-topic-badge" id="questionTopic">Traffic Signs</span>
-                        </div>
-                        
-                        <div class="question-content">
-                            <h2 class="question-text" id="questionText">What does a red octagonal sign indicate?</h2>
-                            <div class="question-image-container" id="questionImageContainer" style="display: none;">
-                                <img id="questionImage" src="" alt="Question Image">
-                            </div>
-                        </div>
-
-                        <!-- Answer Options -->
-                        <div class="answer-options" id="answerOptions"></div>
-
-                        <!-- Navigation Buttons -->
-                        <div class="quiz-nav-buttons">
-                            <button class="quiz-btn secondary" id="prevBtn" disabled>
-                                <i class="fas fa-arrow-left"></i> Previous
-                            </button>
-                            <button class="quiz-btn primary" id="nextBtn" disabled>
-                                Next <i class="fas fa-arrow-right"></i>
-                            </button>
-                            <button class="quiz-btn success" id="submitBtn" style="display: none;">
-                                <i class="fas fa-check"></i> Submit Quiz
-                            </button>
-                        </div>
-                    </div>
+                <div class="exam-card">
+                  <div class="exam-card-icon">
+                    <i class="fas fa-car-burst"></i>
+                  </div>
+                  <h3 class="exam-card-title">
+                    Emergency Protocols &amp; Priority Rules
+                  </h3>
+                  <p class="exam-card-date">
+                    <i class="fas fa-calendar-alt"></i> Saturday, June 6, 2026
+                    02:45 PM
+                  </p>
+                  <div class="exam-card-meta">
+                    <span class="exam-card-questions"
+                      ><i class="fas fa-list-ol"></i> 25 Questions</span
+                    >
+                  </div>
+                  <button class="exam-start-btn">
+                    Start Exam <i class="fas fa-arrow-right"></i>
+                  </button>
                 </div>
+              </div>
+            </div>
+          </div>
 
-                <!-- QUIZ RESULTS SCREEN -->
-                <div id="quizResults" class="quiz-results" style="display: none;">
-                    <div class="results-header">
-                        <div class="results-icon" id="resultsIcon">
-                            <i class="fas fa-trophy"></i>
-                        </div>
-                        <h1>Quiz Complete!</h1>
-                        <p class="results-message" id="resultsMessage">Great job!</p>
-                    </div>
+          <!-- QUIZ INTERFACE -->
+          <div id="quizInterface" class="quiz-interface" style="display: none">
+            <!-- Question Navigation Grid -->
+            <div class="question-nav-grid" id="questionNavGrid"></div>
 
-                    <div class="results-score">
-                        <div class="score-circle">
-                            <!-- <svg width="200" height="200">
+            <!-- Quiz Progress Bar -->
+            <div class="quiz-progress-bar">
+              <div class="progress-info">
+                <span style="font-size: 7px"
+                  >Question <span id="currentQuestion">1</span> of
+                  <span id="totalQuestions">10</span></span
+                >
+                <span id="quizCountdownWrap" class="quiz-timer">
+                  <i class="fas fa-clock"></i>
+                  <span id="quizTimer">00:00</span>
+                </span>
+              </div>
+              <div class="progress-bar">
+                <div
+                  class="progress-fill"
+                  id="progressFill"
+                  style="width: 10%"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="question-card">
+              <div class="question-header">
+                <span class="question-topic-badge" id="questionTopic"
+                  >Traffic Signs</span
+                >
+              </div>
+
+              <div class="question-content">
+                <h2 class="question-text" id="questionText">
+                  What does a red octagonal sign indicate?
+                </h2>
+
+                <div class="quiz-layout-body">
+                  <div
+                    class="question-image-container"
+                    id="questionImageContainer"
+                    style="display: none"
+                  >
+                    <img id="questionImage" src="" alt="Question Image" />
+                  </div>
+
+                  <div class="answer-options" id="answerOptions"></div>
+                </div>
+              </div>
+
+              <div class="quiz-nav-buttons">
+                <button class="quiz-btn secondary" id="prevBtn" disabled>
+                  <i class="fas fa-arrow-left"></i> Previous
+                </button>
+                <button class="quiz-btn primary" id="nextBtn" disabled>
+                  Next <i class="fas fa-arrow-right"></i>
+                </button>
+                <button
+                  class="quiz-btn success"
+                  id="submitBtn"
+                  style="display: none"
+                >
+                  <i class="fas fa-check"></i> Submit Quiz
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- QUIZ RESULTS SCREEN -->
+          <div id="quizResults" class="quiz-results" style="display: none">
+            <div class="results-header">
+              <div class="results-icon" id="resultsIcon">
+                <i class="fas fa-trophy"></i>
+              </div>
+              <h1>Quiz Complete!</h1>
+              <p class="results-message" id="resultsMessage">Great job!</p>
+            </div>
+
+            <div class="results-score">
+              <div class="score-circle">
+                <!-- <svg width="200" height="200">
                                 <circle cx="100" cy="100" r="90" fill="none" stroke="#e5e7eb" stroke-width="12"/>
                                 <circle id="scoreCircle" cx="100" cy="100" r="90" fill="none" stroke="#0097b2" stroke-width="12" 
                                         stroke-dasharray="565.48" stroke-dashoffset="141.37" transform="rotate(-90 100 100)"/>
                             </svg> -->
-                            <svg width="120" height="120">
-                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e5e7eb" stroke-width="7.2"/>
-                            <circle id="scoreCircle" cx="60" cy="60" r="54" fill="none" stroke="#0097b2" stroke-width="7.2"
-                                    stroke-dasharray="339.29" stroke-dashoffset="84.82" transform="rotate(-90 60 60)"/>
-                            </svg>
-                            <div class="score-text">
-                                <h2 id="scorePercentage">80%</h2>
-                                <p id="scoreRatio">8/10</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="results-breakdown">
-                        <div class="breakdown-item correct">
-                            <i class="fas fa-check-circle"></i>
-                            <div>
-                                <h3 id="correctCount">8</h3>
-                                <p>Correct</p>
-                            </div>
-                        </div>
-                        <div class="breakdown-item incorrect">
-                            <i class="fas fa-times-circle"></i>
-                            <div>
-                                <h3 id="incorrectCount">2</h3>
-                                <p>Incorrect</p>
-                            </div>
-                        </div>
-                        <div class="breakdown-item time">
-                            <i class="fas fa-clock"></i>
-                            <div>
-                                <h3 id="totalTime">5:42</h3>
-                                <p>Time Taken</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="results-actions">
-                        <button class="quiz-btn secondary" id="reviewAnswersBtn">
-                            <i class="fas fa-eye"></i> Review Answers
-                        </button>
-                        <button class="quiz-btn primary" id="retakeQuizBtn">
-                            <i class="fas fa-redo"></i> Retake Quiz
-                        </button>
-                        <button class="quiz-btn" id="backToTopicsBtn">
-                            <i class="fas fa-home"></i> Back to Topics
-                        </button>
-                        <button class="quiz-btn" id="viewReportBtn">
-                            <i class="fas fa-clipboard-list"></i> View Full Report
-                        </button>
-                    </div>
+                <svg width="120" height="120">
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="54"
+                    fill="none"
+                    stroke="#e5e7eb"
+                    stroke-width="7.2"
+                  />
+                  <circle
+                    id="scoreCircle"
+                    cx="60"
+                    cy="60"
+                    r="54"
+                    fill="none"
+                    stroke="#0097b2"
+                    stroke-width="7.2"
+                    stroke-dasharray="339.29"
+                    stroke-dashoffset="84.82"
+                    transform="rotate(-90 60 60)"
+                  />
+                </svg>
+                <div class="score-text">
+                  <h2 id="scorePercentage">80%</h2>
+                  <p id="scoreRatio">8/10</p>
                 </div>
-
-                <!-- QUIZ REPORT SCREEN -->
-                <div id="quizReportScreen" style="display: none;">
-                    <!-- Populated by JS buildQuizReport() -->
-                </div>
-
+              </div>
             </div>
-        </main>
+
+            <div class="results-breakdown">
+              <div class="breakdown-item correct">
+                <i class="fas fa-check-circle"></i>
+                <div>
+                  <h3 id="correctCount">8</h3>
+                  <p>Correct</p>
+                </div>
+              </div>
+              <div class="breakdown-item incorrect">
+                <i class="fas fa-times-circle"></i>
+                <div>
+                  <h3 id="incorrectCount">2</h3>
+                  <p>Incorrect</p>
+                </div>
+              </div>
+              <div class="breakdown-item time">
+                <i class="fas fa-clock"></i>
+                <div>
+                  <h3 id="totalTime">5:42</h3>
+                  <p>Time Taken</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="results-actions">
+              <button class="quiz-btn secondary" id="reviewAnswersBtn">
+                <i class="fas fa-eye"></i> Review Answers
+              </button>
+              <button class="quiz-btn primary" id="retakeQuizBtn">
+                <i class="fas fa-redo"></i> Retake Quiz
+              </button>
+              <button class="quiz-btn" id="backToTopicsBtn">
+                <i class="fas fa-home"></i> Back to Topics
+              </button>
+              <button class="quiz-btn" id="viewReportBtn">
+                <i class="fas fa-clipboard-list"></i> View Full Report
+              </button>
+            </div>
+          </div>
+
+          <!-- QUIZ REPORT SCREEN -->
+          <div id="quizReportScreen" style="display: none">
+            <!-- Populated by JS buildQuizReport() -->
+          </div>
+        </div>
+      </main>
     </div>
 
     <script src="../js/user/user.js" type="module"></script>
-</body>
+  </body>
 </html>

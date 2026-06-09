@@ -1,0 +1,1417 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard — Kigali Road Rules</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="../css/core/token.css" />
+    <link rel="stylesheet" href="../css/admin/dashboard.css" />
+  </head>
+  <body>
+    <!-- ═══════════════════════════════════════
+         HEADER
+    ════════════════════════════════════════ -->
+    <header class="header">
+      <a class="logo-group" href="user-dashboard.html">
+        <div class="logo-mark">
+          <img
+            src="../assets/logo.png"
+            alt="logo"
+            onerror="this.style.display = 'none'"
+          />
+        </div>
+        <div class="logo-text">
+          <span class="top">Kigali</span>
+          <span class="bottom">RoadRules</span>
+        </div>
+      </a>
+
+      <div class="header-right">
+        <button class="menu-btn" id="menuBtn" aria-label="Toggle sidebar">
+          <i class="fas fa-bars"></i>
+        </button>
+
+        <div class="mode-selector-container">
+          <button class="mode-btn active" id="dashboardNavBtn">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
+          </button>
+          <button class="mode-btn" id="contentNavBtn">
+            <i class="fas fa-book-open"></i>
+            <span>Curriculum</span>
+          </button>
+        </div>
+
+        <button
+          class="avatar-btn"
+          id="avatarBtn"
+          aria-label="Account menu"
+          aria-expanded="false"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </button>
+
+        <div class="avatar-dropdown" id="avatarDropdown" role="menu">
+          <div class="dropdown-profile">
+            <div class="dropdown-avatar-circle">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+              </svg>
+            </div>
+            <div class="dropdown-profile-info">
+              <div class="dropdown-label">Signed in as</div>
+              <div class="dropdown-email" id="userEmail">admin@email.com</div>
+            </div>
+          </div>
+          <div class="dropdown-body">
+            <span class="dropdown-sep"></span>
+            <div class="mobile-only">
+              <button
+                class="dropdown-item active"
+                id="dropdown-academy-btn"
+                data-url="/dashboard"
+              >
+                <i class="fas fa-chart-line"></i>
+                Dashboard
+              </button>
+
+              <button
+                class="dropdown-item"
+                id="dropdown-control-btn"
+                data-url="/curriculum"
+              >
+                <i class="fas fa-book-open"></i>
+                Curriculum
+              </button>
+            </div>
+            <span class="dropdown-sep"></span>
+            <div class="dropdown-sep"></div>
+            <button
+              id="btn-logout"
+              class="dropdown-item logout"
+              role="menuitem"
+            >
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              Log out
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ═══════════════════════════════════════
+         MAIN CONTAINER
+    ════════════════════════════════════════ -->
+    <div class="main-container">
+      <!-- ── LEFT SIDEBAR ── -->
+      <aside class="sidebar" id="left-sidebar">
+        <div class="sidebar-header">
+          <i class="fas fa-sliders"></i>
+          <h3>Navigation</h3>
+        </div>
+        <nav class="sidebar-nav" aria-label="Admin navigation">
+          <div class="sidebar-group-label">Content</div>
+          <button class="nav-item active" data-section="overview">
+            <span class="icon"><i class="fas fa-chart-line"></i></span>
+            <span>Overview</span>
+          </button>
+          <button class="nav-item" data-section="topics">
+            <span class="icon"><i class="fas fa-book"></i></span>
+            <span>Topics</span>
+          </button>
+          <button class="nav-item" data-section="questions">
+            <span class="icon"><i class="fas fa-question-circle"></i></span>
+            <span>Questions Bank</span>
+          </button>
+          <button class="nav-item" data-section="exams">
+            <span class="icon"><i class="fas fa-file-alt"></i></span>
+            <span>Exams</span>
+          </button>
+          <button class="nav-item" data-section="content-users">
+            <span class="icon"><i class="fas fa-users"></i></span>
+            <span>Users</span>
+          </button>
+
+          <div class="sidebar-group-label sidebar-group-label--sub">
+            Subscription
+          </div>
+          <button class="nav-item" data-section="sub-plans">
+            <span class="icon"><i class="fas fa-cubes"></i></span>
+            <span>Plans</span>
+          </button>
+          <button class="nav-item" data-section="sub-requests">
+            <span class="icon"><i class="fas fa-inbox"></i></span>
+            <span>Requests</span>
+          </button>
+          <button class="nav-item" data-section="sub-subscriptions">
+            <span class="icon"><i class="fas fa-circle-check"></i></span>
+            <span>Subscriptions</span>
+          </button>
+          <button class="nav-item" data-section="sub-users">
+            <span class="icon"><i class="fas fa-user-check"></i></span>
+            <span>Sub Users</span>
+          </button>
+
+          <div class="sidebar-group-label sidebar-group-label--sub">
+            Analytics
+          </div>
+          <button class="nav-item" data-section="analytics">
+            <span class="icon"><i class="fas fa-chart-pie"></i></span>
+            <span>Analytics</span>
+          </button>
+        </nav>
+      </aside>
+
+      <!-- ── MAIN CONTENT ── -->
+      <main class="content-area" id="content-area">
+        <!-- ════════════════════
+             OVERVIEW
+        ═══════════════════════ -->
+        <section id="overview" class="admin-section active">
+          <div class="section-header">
+            <div class="section-header-text">
+              <h2>Dashboard Overview</h2>
+              <p>Welcome back! Here's what's happening with your platform.</p>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon stat-icon--blue">
+                <i class="fas fa-book"></i>
+              </div>
+              <div class="stat-info">
+                <h3>Total Topics</h3>
+                <p class="stat-number" id="totalTopics">—</p>
+                <span class="stat-change positive"
+                  ><i class="fas fa-arrow-up"></i> +3 this month</span
+                >
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon stat-icon--amber">
+                <i class="fas fa-question-circle"></i>
+              </div>
+              <div class="stat-info">
+                <h3>Total Questions</h3>
+                <p class="stat-number" id="totalQuestions">—</p>
+                <span class="stat-change positive"
+                  ><i class="fas fa-arrow-up"></i> +156 this month</span
+                >
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon stat-icon--violet">
+                <i class="fas fa-users"></i>
+              </div>
+              <div class="stat-info">
+                <h3>Active Users</h3>
+                <p class="stat-number" id="totalUsers">—</p>
+                <span class="stat-change positive"
+                  ><i class="fas fa-arrow-up"></i> +289 this month</span
+                >
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon stat-icon--green">
+                <i class="fas fa-circle-check"></i>
+              </div>
+              <div class="stat-info">
+                <h3>Active Subs</h3>
+                <p class="stat-number" id="totalActiveSubs">—</p>
+                <span class="stat-change neutral"
+                  ><i class="fas fa-circle"></i> Live count</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="charts-grid">
+            <div class="chart-card">
+              <h3><i class="fas fa-chart-pie"></i> Questions by Topic</h3>
+              <div class="chart-canvas-wrap">
+                <canvas id="questionsChart"></canvas>
+              </div>
+            </div>
+            
+            <div class="chart-card accuracy-card">
+              <h3><i class="fas fa-bullseye"></i> Average Accuracy</h3>
+
+              <div class="gauge-wrapper">
+                <div class="gauge-canvas-wrap">
+                  <canvas id="AverageChart"></canvas>
+                  <div class="gauge-center-label">
+                    <span id="gauge-value">0%</span>
+                    <small>accuracy</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="accuracy-stats">
+                <div class="accuracy-stat">
+                  <i class="fas fa-file-alt"></i>
+                  <h3 id="stat-tests">0</h3>
+                  <p>Tests Done</p>
+                </div>
+                <div class="accuracy-stat accuracy-stat--divider">
+                  <i class="fas fa-layer-group"></i>
+                  <h3 id="stat-questions">0</h3>
+                  <p>Questions</p>
+                </div>
+                <div class="accuracy-stat">
+                  <i class="fas fa-stopwatch"></i>
+                  <h3 id="stat-speed">0s</h3>
+                  <p>Avg. Speed</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ════════════════════
+             ANALYTICS SECTION
+        ═══════════════════════ -->
+        <section id="analytics" class="admin-section">
+          <div class="section-header">
+            <div class="section-header-text">
+              <h2>Analytics Overview</h2>
+              <p>Engagement, retention and platform breakdown at a glance.</p>
+            </div>
+            <div class="analytics-date-filter">
+              <label class="date-filter-label" for="analytics-date-from"
+                >From</label
+              >
+              <input type="date" id="analytics-date-from" class="date-field" />
+              <label class="date-filter-label" for="analytics-date-to"
+                >To</label
+              >
+              <input type="date" id="analytics-date-to" class="date-field" />
+              <button class="btn-primary" id="btn-apply-date-filter">
+                <i class="fas fa-filter"></i> Apply
+              </button>
+              <button class="btn-secondary" id="btn-reset-date-filter">
+                <i class="fas fa-rotate-left"></i> Reset
+              </button>
+            </div>
+          </div>
+
+          <div class="analytics-grid">
+            <!-- Retention Heatmap -->
+            <div class="analytics-card col-8">
+              <div class="analytics-card-header">
+                <h3><i class="fas fa-fire"></i> User Retention Heatmap</h3>
+                <p>
+                  Cohort analysis from <span id="startDate">—</span> to
+                  <span id="endDate">—</span>
+                </p>
+              </div>
+              <div class="table-scroll">
+                <table class="heatmap-table" id="retentionTable">
+                  <thead>
+                    <tr>
+                      <th>Cohort</th>
+                      <th>Users</th>
+                      <th>Day 1</th>
+                      <th>Day 7</th>
+                      <th>Day 14</th>
+                      <th>Day 30</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Service Adoption Donut -->
+            <div class="analytics-card col-4">
+              <div class="analytics-card-header">
+                <h3><i class="fas fa-chart-pie"></i> Service Adoption</h3>
+                <p>Share of total interactions</p>
+              </div>
+              <div class="donut-content">
+                <div class="donut-wrapper">
+                  <svg viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="transparent"
+                      stroke="var(--color-border)"
+                      stroke-width="10"
+                    />
+                    <g id="donutSegments"></g>
+                  </svg>
+                  <div class="donut-center">
+                    <span id="totalHits">—</span>
+                    <label>Total Hits</label>
+                  </div>
+                </div>
+                <div id="donutLegend" class="donut-legend"></div>
+              </div>
+            </div>
+
+            <!-- Cumulative Milestones -->
+            <div class="analytics-card col-6">
+              <div class="analytics-card-header">
+                <h3><i class="fas fa-stairs"></i> Cumulative Milestones</h3>
+                <p>Vertical jumps indicate new user activity</p>
+              </div>
+              <div class="chart-box">
+                <svg
+                  id="steppedChart"
+                  viewBox="0 0 450 220"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <defs>
+                    <linearGradient
+                      id="stepGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stop-color="var(--color-primary)"
+                        stop-opacity="0.35"
+                      />
+                      <stop
+                        offset="100%"
+                        stop-color="var(--color-primary)"
+                        stop-opacity="0"
+                      />
+                    </linearGradient>
+                  </defs>
+                  <g id="chartAxes" class="axis-style"></g>
+                  <path id="stepArea" fill="url(#stepGradient)" d=""></path>
+                  <path
+                    id="stepLine"
+                    fill="none"
+                    stroke="var(--color-primary)"
+                    stroke-width="2.5"
+                    stroke-linejoin="round"
+                    d=""
+                  ></path>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Daily Active Users -->
+            <div class="analytics-card col-6">
+              <div class="analytics-card-header">
+                <h3><i class="fas fa-chart-column"></i> Daily Active Users</h3>
+                <p>New vs. returning user distribution</p>
+              </div>
+              <div class="chart-box dau-box">
+                <svg
+                  id="dauChart"
+                  viewBox="0 0 500 250"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <g id="dauGrid"></g>
+                  <g id="dauBars"></g>
+                  <g id="dauLabels"></g>
+                </svg>
+              </div>
+              <div class="legend-row">
+                <div class="legend-item">
+                  <span class="dot dot--returning"></span> Returning
+                </div>
+                <div class="legend-item">
+                  <span class="dot dot--new"></span> New Users
+                </div>
+              </div>
+            </div>
+
+            <!-- Platform Distribution -->
+            <div class="analytics-card col-4">
+              <div class="analytics-card-header">
+                <h3><i class="fas fa-display"></i> Platform Distribution</h3>
+                <p>Active sessions by device</p>
+              </div>
+              <div class="pill-bar">
+                <div id="bar-desktop" class="segment seg-desktop"></div>
+                <div id="bar-mobile" class="segment seg-mobile"></div>
+                <div id="bar-tablet" class="segment seg-tablet"></div>
+                <div id="bar-other" class="segment seg-other"></div>
+              </div>
+              <div class="platform-legend">
+                <div class="legend-item">
+                  <span class="dot d-color"></span> Desktop
+                  <strong id="val-desktop">—</strong>
+                </div>
+                <div class="legend-item">
+                  <span class="dot m-color"></span> Mobile
+                  <strong id="val-mobile">—</strong>
+                </div>
+                <div class="legend-item">
+                  <span class="dot t-color"></span> Tablet
+                  <strong id="val-tablet">—</strong>
+                </div>
+                <div class="legend-item">
+                  <span class="dot o-color"></span> Other
+                  <strong id="val-other">—</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Learning Funnel -->
+            <div class="analytics-card col-4">
+              <div class="analytics-card-header">
+                <h3><i class="fas fa-filter"></i> Learning Funnel</h3>
+                <p>Conversion across key steps</p>
+              </div>
+              <div class="funnel-steps">
+                <div class="step">
+                  <div class="step-info">
+                    <span>1. Logins</span
+                    ><span class="step-pct" id="pct-login">—</span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill" id="fill-login"></div>
+                  </div>
+                </div>
+                <div class="step">
+                  <div class="step-info">
+                    <span>2. Service Usage</span
+                    ><span class="step-pct" id="pct-service">—</span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill" id="fill-service"></div>
+                  </div>
+                </div>
+                <div class="step">
+                  <div class="step-info">
+                    <span>3. Conversion Rate</span
+                    ><span class="step-pct" id="pct-rate">—</span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill" id="fill-rate"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Engagement Radar -->
+            <div class="analytics-card col-4">
+              <div class="analytics-card-header">
+                <h3><i class="fas fa-bullseye"></i> User Engagement DNA</h3>
+                <p>Volume, depth and type variety</p>
+              </div>
+              <div class="radar-container">
+                <svg id="engagementRadar" viewBox="0 0 200 200">
+                  <g id="radarGrid"></g>
+                  <g id="radarShapes"></g>
+                  <g id="radarLabels"></g>
+                </svg>
+              </div>
+              <div id="radarLegend" class="radar-legend"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════════════
+             TOPICS
+        ═══════════════════════ -->
+        <section id="topics" class="admin-section">
+          <div class="section-header">
+            <div class="section-header-text">
+              <h2>Topics Management</h2>
+              <p>Manage learning topics and their subtopics.</p>
+            </div>
+            <button class="btn-primary" id="btn-add-topic">
+              <i class="fas fa-plus"></i> Add Topic
+            </button>
+          </div>
+          <div class="topics-list" id="topicsList"></div>
+        </section>
+
+        <!-- ════════════════════
+             QUESTIONS
+        ═══════════════════════ -->
+        <section id="questions" class="admin-section">
+          <div class="section-header">
+            <div class="section-header-text">
+              <h2>Questions Bank</h2>
+              <p>All questions available across topics.</p>
+            </div>
+            <button class="btn-primary" id="btn-add-question">
+              <i class="fas fa-plus"></i> Add Question
+            </button>
+          </div>
+          <div class="filter-bar">
+            <select
+              id="filterTopic"
+              class="filter-select"
+              aria-label="Filter by topic"
+            >
+              <option value="">All Topics</option>
+            </select>
+            <input
+              type="text"
+              id="searchQuestion"
+              class="search-input"
+              placeholder="Search questions…"
+              aria-label="Search questions"
+            />
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="questionsTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Question</th>
+                  <th class="col-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="questionsTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ════════════════════
+             EXAMS
+        ═══════════════════════ -->
+        <section id="exams" class="admin-section">
+          <div class="section-header">
+            <div class="section-header-text">
+              <h2>Exams Management</h2>
+              <p>Create and manage exam sets.</p>
+            </div>
+            <button class="btn-primary" id="btn-add-exam">
+              <i class="fas fa-plus"></i> Add Exam
+            </button>
+          </div>
+          <div class="exams-grid" id="examsList"></div>
+        </section>
+
+        <!-- ════════════════════
+             CONTENT USERS
+        ═══════════════════════ -->
+        <section id="content-users" class="admin-section">
+          <div class="section-header">
+            <div class="section-header-text">
+              <h2>Users Management</h2>
+              <p>Manage platform users and their access.</p>
+            </div>
+            <button class="btn-primary" id="btn-add-user">
+              <i class="fas fa-plus"></i> Add User
+            </button>
+          </div>
+          <div class="filter-bar">
+            <select
+              id="filterUserRole"
+              class="filter-select"
+              aria-label="Filter by role"
+            >
+              <option value="">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="user">User</option>
+            </select>
+            <input
+              type="text"
+              id="searchUser"
+              class="search-input"
+              placeholder="Search users…"
+              aria-label="Search users"
+            />
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="usersTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th class="col-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ════════════════════
+             SUB — PLANS
+        ═══════════════════════ -->
+        <section id="sub-plans" class="admin-section">
+          <div class="section-header">
+            <div class="section-header-text">
+              <h2>Subscription Plans</h2>
+              <p>Create and manage available subscription plans.</p>
+            </div>
+            <button class="btn-primary" id="btn-new-plan">
+              <i class="fas fa-plus"></i> New Plan
+            </button>
+          </div>
+          <div class="stats-grid sub-stats-row">
+            <div class="stat-card">
+              <div class="stat-icon stat-icon--blue">
+                <i class="fas fa-cubes"></i>
+              </div>
+              <div class="stat-info">
+                <h3>Total Plans</h3>
+                <p class="stat-number" id="stat-plans">—</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon stat-icon--amber">
+                <i class="fas fa-inbox"></i>
+              </div>
+              <div class="stat-info">
+                <h3>Pending Requests</h3>
+                <p class="stat-number" id="stat-requests">—</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon stat-icon--green">
+                <i class="fas fa-circle-check"></i>
+              </div>
+              <div class="stat-info">
+                <h3>Active Subs</h3>
+                <p class="stat-number" id="stat-active">—</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon stat-icon--violet">
+                <i class="fas fa-users"></i>
+              </div>
+              <div class="stat-info">
+                <h3>Sub Users</h3>
+                <p class="stat-number" id="stat-users">—</p>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h3>All Plans</h3>
+                <p>Plans available to users.</p>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table class="table-wrap-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Duration</th>
+                    <th>Quizzes</th>
+                    <th>Templates</th>
+                    <th>Topic Quizzes</th>
+                    <th class="col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="plans-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════════════
+             SUB — REQUESTS
+        ═══════════════════════ -->
+        <section id="sub-requests" class="admin-section">
+          <div class="section-header">
+            <div class="section-header-text">
+              <h2>Subscription Requests</h2>
+              <p>Approve or reject pending requests.</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h3>All Requests</h3>
+                <p>Pending and processed subscription requests.</p>
+              </div>
+            </div>
+            <div class="toolbar">
+              <div class="search-wrap">
+                <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+                <input
+                  class="field"
+                  placeholder="Search by user or plan…"
+                  id="search-requests"
+                  aria-label="Search requests"
+                />
+              </div>
+              <select
+                class="field"
+                id="filter-status"
+                aria-label="Filter by status"
+              >
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="canceled">Canceled</option>
+              </select>
+            </div>
+            <div class="table-scroll">
+              <table class="table-wrap-table">
+                <thead>
+                  <tr>
+                    <th>Req ID</th>
+                    <th>User</th>
+                    <th>Plan</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th class="col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="requests-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════════════
+             SUB — SUBSCRIPTIONS
+        ═══════════════════════ -->
+        <section id="sub-subscriptions" class="admin-section">
+          <div class="section-header">
+            <div class="section-header-text">
+              <h2>Active Subscriptions</h2>
+              <p>All current user subscriptions.</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h3>All Subscriptions</h3>
+                <p>Active and expired subscriptions.</p>
+              </div>
+            </div>
+            <div class="toolbar">
+              <div class="search-wrap">
+                <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+                <input
+                  class="field"
+                  placeholder="Search subscriptions…"
+                  id="search-subs"
+                  aria-label="Search subscriptions"
+                />
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table class="table-wrap-table">
+                <thead>
+                  <tr>
+                    <th>Sub ID</th>
+                    <th>User</th>
+                    <th>Plan</th>
+                    <th>Start</th>
+                    <th>Expiry</th>
+                    <th>Status</th>
+                    <th>Quotas Left</th>
+                    <th class="col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="subs-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════════════
+             SUB — USERS
+        ═══════════════════════ -->
+        <section id="sub-users" class="admin-section">
+          <div class="section-header">
+            <div class="section-header-text">
+              <h2>User Subscriptions</h2>
+              <p>Users and their subscription status.</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h3>User Subscriptions</h3>
+                <p>All users and their current subscription status.</p>
+              </div>
+            </div>
+            <div class="toolbar">
+              <div class="search-wrap">
+                <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+                <input
+                  class="field"
+                  placeholder="Search users…"
+                  id="search-sub-users"
+                  aria-label="Search subscription users"
+                />
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table class="table-wrap-table">
+                <thead>
+                  <tr>
+                    <th>User ID</th>
+                    <th>Email</th>
+                    <th>Active Plan</th>
+                    <th>Status</th>
+                    <th class="col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="sub-users-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         MODALS — CONTENT
+    ════════════════════════════════════════ -->
+
+    <!-- Topic Modal -->
+    <div
+      id="topicModal"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="topicModalTitle"
+    >
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="topicModalTitle">Add New Topic</h3>
+          <button class="close-btn" data-modal="topicModal" aria-label="Close">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="topicForm" novalidate>
+            <input type="hidden" id="topicId" />
+            <div class="form-group">
+              <label for="topicName"
+                >Topic Name <span class="required">*</span></label
+              >
+              <input
+                type="text"
+                id="topicName"
+                required
+                placeholder="Enter topic name"
+              />
+            </div>
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn-secondary"
+                data-modal="topicModal"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary">Save Topic</button>
+            </div>
+          </form>
+          <div id="subtopicsSection" class="subtopics-edit-section hidden">
+            <hr class="divider" />
+            <div class="subtopics-header">
+              <h4>Subtopics</h4>
+              <button
+                type="button"
+                class="btn-small"
+                id="btn-add-subtopic-field"
+              >
+                <i class="fas fa-plus"></i> Add Subtopic
+              </button>
+            </div>
+            <div id="subtopicsList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question Modal -->
+    <div
+      id="questionModal"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="questionModalTitle"
+    >
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h3 id="questionModalTitle">Add New Question</h3>
+          <button
+            class="close-btn"
+            data-modal="questionModal"
+            aria-label="Close"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="questionForm" novalidate>
+            <input type="hidden" id="questionId" />
+            <div class="form-group">
+              <label for="questionStatement"
+                >Question Statement <span class="required">*</span></label
+              >
+              <textarea
+                id="questionStatement"
+                rows="3"
+                required
+                placeholder="Enter your question here"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="questionTopic"
+                >Topic <span class="required">*</span></label
+              >
+              <select id="questionTopic" required>
+                <option value="">Select a topic</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="questionImage"
+                >Question Image <span class="optional">(optional)</span></label
+              >
+              <input type="file" id="questionImage" accept="image/*" />
+              <div id="imagePreview" class="image-preview"></div>
+              <div id="removeImageContainer" class="hidden">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="removeImage" /> Remove existing
+                  image
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Answer Options <span class="required">*</span></label>
+              <div class="options-grid">
+                <div class="option-item">
+                  <input
+                    type="radio"
+                    name="correctAnswer"
+                    id="correctA"
+                    value="A"
+                    required
+                  />
+                  <label for="correctA" class="option-letter">A</label>
+                  <input
+                    type="text"
+                    id="optionA"
+                    required
+                    placeholder="Option A"
+                  />
+                </div>
+                <div class="option-item">
+                  <input
+                    type="radio"
+                    name="correctAnswer"
+                    id="correctB"
+                    value="B"
+                  />
+                  <label for="correctB" class="option-letter">B</label>
+                  <input
+                    type="text"
+                    id="optionB"
+                    required
+                    placeholder="Option B"
+                  />
+                </div>
+                <div class="option-item">
+                  <input
+                    type="radio"
+                    name="correctAnswer"
+                    id="correctC"
+                    value="C"
+                  />
+                  <label for="correctC" class="option-letter">C</label>
+                  <input
+                    type="text"
+                    id="optionC"
+                    required
+                    placeholder="Option C"
+                  />
+                </div>
+                <div class="option-item">
+                  <input
+                    type="radio"
+                    name="correctAnswer"
+                    id="correctD"
+                    value="D"
+                  />
+                  <label for="correctD" class="option-letter">D</label>
+                  <input
+                    type="text"
+                    id="optionD"
+                    required
+                    placeholder="Option D"
+                  />
+                </div>
+              </div>
+              <p class="help-text">
+                Select the radio button next to the correct answer
+              </p>
+            </div>
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn-secondary"
+                data-modal="questionModal"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary">Save Question</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Modal -->
+    <div
+      id="userModal"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="userModalTitle"
+    >
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="userModalTitle">Edit User</h3>
+          <button class="close-btn" data-modal="userModal" aria-label="Close">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="userForm" novalidate>
+            <input type="hidden" id="userId" />
+            <div class="form-group">
+              <label for="userPassword"
+                >Password <span class="required">*</span></label
+              >
+              <input
+                type="password"
+                id="userPassword"
+                placeholder="Enter new password"
+              />
+              <p class="help-text" id="passwordHelp">
+                Leave blank to keep current password
+              </p>
+            </div>
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn-secondary"
+                data-modal="userModal"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary">Save User</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subtopic Modal -->
+    <div
+      id="subtopicModal"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="subtopicModalTitle"
+    >
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="subtopicModalTitle">Edit Subtopic</h3>
+          <button
+            class="close-btn"
+            data-modal="subtopicModal"
+            aria-label="Close"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="subtopicForm" novalidate>
+            <input type="hidden" id="subtopicTopicId" />
+            <input type="hidden" id="subtopicId" />
+            <div class="form-group">
+              <label for="subtopicName"
+                >Subtopic Name <span class="required">*</span></label
+              >
+              <input
+                type="text"
+                id="subtopicName"
+                required
+                placeholder="Enter subtopic name"
+              />
+            </div>
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn-secondary"
+                data-modal="subtopicModal"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-save"></i> Save Subtopic
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exam Modal -->
+    <div
+      id="examModal"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="examModalTitle"
+    >
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h3 id="examModalTitle">Add New Exam</h3>
+          <button class="close-btn" data-modal="examModal" aria-label="Close">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="examForm" novalidate>
+            <input type="hidden" id="examId" />
+            <div class="form-group">
+              <label for="examName"
+                >Exam Name <span class="required">*</span></label
+              >
+              <input
+                type="text"
+                id="examName"
+                required
+                placeholder="Enter exam name"
+              />
+            </div>
+            <div class="form-group">
+              <label for="examDescription">Description</label>
+              <textarea
+                id="examDescription"
+                rows="3"
+                placeholder="Enter exam description"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label>Select Questions <span class="required">*</span></label>
+              <p class="help-text">Choose questions from the question bank</p>
+              <div class="questions-selector">
+                <div class="selector-filters">
+                  <select
+                    id="examQuestionTopicFilter"
+                    class="filter-select"
+                    aria-label="Filter questions by topic"
+                  >
+                    <option value="">All Topics</option>
+                  </select>
+                  <input
+                    type="text"
+                    id="examQuestionSearch"
+                    class="search-input"
+                    placeholder="Search questions…"
+                    aria-label="Search questions"
+                  />
+                </div>
+                <div class="available-questions" id="availableQuestions"></div>
+                <div class="selected-questions-section">
+                  <h4>
+                    Selected Questions (<span id="selectedCount">0</span>)
+                  </h4>
+                  <div class="selected-questions" id="selectedQuestions">
+                    <p class="no-selection">No questions selected yet</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn-secondary"
+                data-modal="examModal"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-save"></i> Save Exam
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         MODALS — SUBSCRIPTION
+    ════════════════════════════════════════ -->
+
+    <!-- Plan Modal -->
+    <div
+      class="modal-overlay"
+      id="modal-plan"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="plan-modal-title"
+    >
+      <div class="sub-modal">
+        <div class="modal-head">
+          <h3 id="plan-modal-title">New Subscription Plan</h3>
+          <button
+            class="modal-close"
+            data-close="modal-plan"
+            aria-label="Close"
+          >
+            <i class="fas fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="plan-id" />
+          <div class="form-grid">
+            <div class="form-group full">
+              <label for="plan-name">Plan Name</label>
+              <input class="field" id="plan-name" required />
+            </div>
+            <div class="form-group">
+              <label for="plan-price">Price (RWF)</label>
+              <input class="field" type="number" id="plan-price" required />
+            </div>
+            <div class="form-group">
+              <label for="plan-duration">Duration (Days)</label>
+              <input class="field" type="number" id="plan-duration" required />
+            </div>
+            <div class="form-group">
+              <label for="plan-quizzes">Max Quizzes</label>
+              <input class="field" type="number" id="plan-quizzes" required />
+            </div>
+            <div class="form-group">
+              <label for="plan-templates">Template Exams</label>
+              <input class="field" type="number" id="plan-templates" required />
+            </div>
+            <div class="form-group full">
+              <label for="plan-topic-quizzes">Topic Quizzes</label>
+              <input
+                class="field"
+                type="number"
+                id="plan-topic-quizzes"
+                required
+              />
+            </div>
+            <div class="form-group full">
+              <label for="plan-desc">Description</label>
+              <textarea class="field" id="plan-desc"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-outline" data-close="modal-plan">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary" id="btn-save-plan">
+            <i class="fas fa-floppy-disk"></i> Save Plan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subscription Detail Modal -->
+    <div
+      class="modal-overlay"
+      id="modal-sub-detail"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="sub-modal">
+        <div class="modal-head">
+          <h3>Subscription Detail</h3>
+          <button
+            class="modal-close"
+            data-close="modal-sub-detail"
+            aria-label="Close"
+          >
+            <i class="fas fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="sub-detail-content"></div>
+      </div>
+    </div>
+
+    <!-- User History Modal -->
+    <div
+      class="modal-overlay"
+      id="modal-user-history"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="sub-modal">
+        <div class="modal-head">
+          <h3 id="history-modal-title">User Subscription History</h3>
+          <button
+            class="modal-close"
+            data-close="modal-user-history"
+            aria-label="Close"
+          >
+            <i class="fas fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="user-history-content"></div>
+      </div>
+    </div>
+
+    <!-- Notification toast -->
+    <div class="notif" id="notif" role="status" aria-live="polite">Saved</div>
+
+    <script src="../js/admin/dashboard.js" type="module"></script>
+  </body>
+</html>

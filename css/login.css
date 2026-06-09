@@ -1,235 +1,254 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap");
+/* ============================================================
+   KIGALI ROAD RULES — login.css
+   Auth page (Login + Sign Up)
+   ============================================================
+   Imports global tokens. ZERO raw values here.
+   ============================================================ */
 
-:root {
-  --primary-dark: #0097b2;
-  --primary: #00bcd4;
-  --green: #00d26a;
-  --green-dark: #00a854;
-  --bg-light: #f8fafc;
-  --off-white: #f5feff;
-  --black: #0f172a;
-  --gray: #64748b;
-  --gray-dark: #334155;
-  --gray-light: #f1f5f9;
-  --white:  #f5feff;
-  --border: #e2e8f0;
-  --radius: 6px;
-  --radius-lg: 20px;
-  --radius-full: 100px;
-  --shadow: 0 0 32px rgba(0,0,0,0.10);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
-  --speed: 0.3s;
-}
+@import '../css/core/token.css';
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Plus Jakarta Sans", sans-serif;
-}
-
+/* ── Page layout ── */
 body {
-  background-color: var(--off-white);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   min-height: 100vh;
-  min-height: 100dvh; /* fixes mobile browser chrome offset */
-  padding: 20px;
+  min-height: 100dvh;
+  padding: var(--space-5);
   overflow-x: hidden;
 }
 
+/* ── Auth card ── */
 .auth-container {
-  background: var(--white);
   width: 100%;
-  max-width: 440px;
-  padding: 40px;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border);
+  max-width: 420px;
+  background: var(--glass-bg-opaque);
+  backdrop-filter: var(--glass-blur-lg);
+  -webkit-backdrop-filter: var(--glass-blur-lg);
+  border: var(--border-glass);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl), var(--glass-inset);
+  padding: var(--space-10) var(--space-8);
   text-align: center;
 }
 
-@media (max-width: 480px) {
-  .auth-container {
-    padding: 28px 20px;
-  }
-}
-
+/* ── Brand heading ── */
 .heading-line {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--primary);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-black);
+  color: var(--color-primary);
   cursor: pointer;
-  margin-bottom: 32px;
-  transition: 0.3s;
+  margin-bottom: var(--space-8);
+  transition: color var(--speed) var(--ease-in-out);
+  display: block;
+  text-decoration: none;
 }
+.heading-line:hover { color: var(--color-primary-deep); }
 
-/* Tabs */
+/* ── Tabs ── */
 .auth-tabs {
   display: flex;
-  background: var(--bg-light);
-  padding: 6px;
-  border-radius: var(--radius);
-  margin-bottom: 32px;
-  gap: 4px;
+  gap: var(--space-1);
+  background: var(--glass-bg-subtle);
+  border: var(--border-sm);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-8);
 }
 
 .tab {
   flex: 1;
-  padding: 12px;
+  padding: var(--space-3) var(--space-4);
   border: none;
   background: transparent;
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--gray);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
   cursor: pointer;
-  border-radius: var(--radius);
-  transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  border-radius: var(--radius-sm);
+  transition:
+    background var(--speed) var(--ease-in-out),
+    color      var(--speed) var(--ease-in-out),
+    box-shadow var(--speed) var(--ease-out);
 }
 
-.tab:hover {
-  background: var(--white);
-  color: var(--primary-dark);
-}
+.tab:hover { background: var(--glass-bg-mid); color: var(--color-primary); }
 
 .tab.active {
-  background: var(--white);
-  color: var(--primary);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  background: var(--gradient-primary);
+  color: var(--clr-white);
+  box-shadow: var(--shadow-primary);
 }
 
-/* Forms */
-.auth-form {
-  text-align: left;
-}
+/* ── Form ── */
+.auth-form { text-align: left; }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
   overflow: hidden;
   max-height: 120px;
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.3s ease, transform 0.3s ease, max-height 0.35s ease, margin 0.3s ease;
+  transition:
+    opacity    var(--speed) var(--ease-in-out),
+    transform  var(--speed) var(--ease-in-out),
+    max-height 0.35s       var(--ease-in-out),
+    margin     var(--speed) var(--ease-in-out);
 }
 
 .forgot-link {
   text-align: right;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
   overflow: hidden;
   max-height: 40px;
   opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.3s ease, transform 0.3s ease, max-height 0.35s ease, margin 0.3s ease;
+  transition:
+    opacity    var(--speed) var(--ease-in-out),
+    transform  var(--speed) var(--ease-in-out),
+    max-height 0.35s       var(--ease-in-out),
+    margin     var(--speed) var(--ease-in-out);
 }
 
-/* hidden state — no display:none so transitions work */
+/* Hidden state — no display:none so transitions still run */
 .form-group.hidden,
 .forgot-link.hidden {
   display: block !important;
   max-height: 0 !important;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-6px);
+  transform: translateY(calc(-1 * var(--space-2)));
   margin: 0 !important;
 }
 
 .form-group label {
   display: block;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--black);
-  margin-bottom: 8px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
 }
 
-.password-wrapper {
-  position: relative;
-}
+/* Password wrapper */
+.password-wrapper { position: relative; }
 
-.form-group input {
+/* Inputs */
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group input[type="text"] {
   width: 100%;
-  padding: 14px 16px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 15px;
+  padding: var(--space-3) var(--space-4);
+  padding-right: var(--space-10);   /* room for eye toggle */
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--glass-bg-subtle);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--color-text);
   outline: none;
-  transition: 0.3s;
+  transition:
+    border-color var(--speed) var(--ease-in-out),
+    box-shadow   var(--speed) var(--ease-in-out),
+    background   var(--speed) var(--ease-in-out);
+  -webkit-appearance: none;
+  appearance: none;
 }
+
+.form-group input::placeholder { color: var(--color-text-faint); }
 
 .form-group input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus);
+  background: var(--glass-bg-opaque);
 }
 
+.form-group input.err { border-color: var(--color-danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 15%, transparent); }
+.form-group input.ok  { border-color: var(--color-success); }
+
+/* Eye toggle */
 .toggle-password {
   position: absolute;
-  right: 12px;
+  right: var(--space-3);
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--gray);
+  color: var(--color-text-faint);
   cursor: pointer;
   display: flex;
   align-items: center;
-  padding: 4px;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  transition: color var(--speed) var(--ease-in-out);
 }
+.toggle-password:hover { color: var(--color-primary); }
+.toggle-password svg { width: 18px; height: 18px; stroke: currentColor; }
 
-.toggle-password svg {
-  width: 20px;
-  height: 20px;
-}
-
+/* Forgot link */
 .forgot-link a {
-  font-size: 12px;
-  color: var(--primary);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
   text-decoration: none;
-  font-weight: 600;
+  transition: color var(--speed) var(--ease-in-out);
 }
+.forgot-link a:hover { color: var(--color-primary-deep); }
 
+/* Submit button */
 .primary-button {
   width: 100%;
-  background:var(--primary);
-  color: var(--white);
-  padding: 16px;
+  background: var(--gradient-primary);
+  color: var(--clr-white);
+  padding: var(--space-4);
   border: none;
-  border-radius: var(--radius);
-  font-size: 16px;
-  font-weight: 700;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
   cursor: pointer;
-  transition: 0.3s;
-  margin-top: 10px;
+  margin-top: var(--space-3);
+  box-shadow: var(--shadow-primary);
+  transition:
+    transform  var(--speed) var(--ease-out),
+    box-shadow var(--speed) var(--ease-out);
 }
+.primary-button:hover { transform: translateY(-2px); box-shadow: var(--shadow-primary-lg); }
+.primary-button:active { transform: scale(0.985); }
 
-.primary-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 188, 212, 0.3);
-}
-
-/* Message box */
+/* ── Message box ── */
 #message-box {
   display: none;
   align-items: center;
   justify-content: center;
   text-align: center;
-  border-radius: 0.2rem;
-  padding: 10px;
-  margin-bottom: 24px;
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
 }
 
 .error {
-  background-color: #ffebee;
-  color: #c62828;
-  border: 1px solid #ef9a9a;
+  background: var(--quiz-incorrect-bg);
+  color: var(--quiz-incorrect);
+  border: 1px solid var(--quiz-incorrect-border);
 }
 
 .success {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #a5d6a7;
+  background: var(--quiz-correct-bg);
+  color: var(--quiz-correct);
+  border: 1px solid var(--quiz-correct-border);
 }
 
-.eye-icon,
-.eye-off-icon {
-  stroke: currentColor;
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .auth-container {
+    padding: var(--space-8) var(--space-6);
+    border-radius: var(--radius-lg);
+  }
+  .heading-line { font-size: var(--text-xl); margin-bottom: var(--space-6); }
 }

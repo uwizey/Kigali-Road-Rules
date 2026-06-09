@@ -125,7 +125,7 @@ document
         window.location.href =
           role === "client"
             ? "../user/user.html"
-            : "../admin/admin-dashboard.html";
+            : "../admin/dashboard.html";
       } else {
         // userMessage is always safe copy from crud.js — never raw backend text
         showMessage(response.userMessage, "error");

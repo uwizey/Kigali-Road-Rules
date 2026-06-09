@@ -3,7 +3,7 @@ import base64
 import logging
 from flask import Blueprint, request
 from core.models import db, Question, AnswerOption
-from core.utils.decorators import role_required, rate_limit, APIResponse
+from core.utils.decorators import role_required, rate_limit, APIResponse,question_hash
 
 questions_bp = Blueprint("questions", __name__)
 
@@ -55,18 +55,54 @@ def _serialize_question(question):
 @rate_limit(capacity=20, refill_rate=1)
 def create_question():
     try:
+        print("\n--- CREATE QUESTION DEBUG START ---")
+
         statement = request.form.get("statement")
         topic_id = request.form.get("topicId")
         correct_answer = request.form.get("correctAnswer")
         raw_options = request.form.get("options")
 
-        if not statement:
-            return APIResponse.bad_request("Statement is missing")
-        if topic_id is None:
-            return APIResponse.bad_request("topicId is missing")
-        if not raw_options:
-            return APIResponse.bad_request("Options JSON string is missing")
+        print("Statement:", statement)
+        print("Topic ID:", topic_id)
+        print("Raw options:", raw_options)
 
+        # 1. Parse options
+        try:
+            options = (
+                json.loads(raw_options) if isinstance(raw_options, str) else raw_options
+            )
+        except Exception as e:
+            print("❌ Options JSON decode failed:", e)
+            return APIResponse.bad_request(f"Invalid options format: {str(e)}")
+
+        print("Parsed options:", options)
+
+        # 2. Build temp question for hashing
+        temp_q = Question(content=statement)
+        temp_q.answer_options = [
+            AnswerOption(option_text=text) for text in options.values() if text
+        ]
+
+        print("Temp question options count:", len(temp_q.answer_options))
+
+        # 3. Compute hash
+        new_hash = question_hash(temp_q)
+        print("Generated cleaned_hash:", new_hash)
+
+        # 4. Check duplicates
+        existing = Question.query.filter_by(cleaned_hash=new_hash).first()
+        print("Duplicate found:", existing.question_id if existing else None)
+
+        if existing:
+            print("❌ DUPLICATE BLOCKED")
+            return APIResponse.conflict(
+                message="Duplicate question detected",
+                data={"duplicate_of": existing.question_id},
+            )
+
+        print("✔ No duplicate detected, creating question...")
+
+        # 5. Create real question
         image_data, mimetype = None, None
         if "image" in request.files:
             file = request.files["image"]
@@ -76,20 +112,16 @@ def create_question():
         new_question = Question(
             content=statement,
             topic_id=int(topic_id),
-            correct_answer_id=None,
+            cleaned_hash=new_hash,
             image_data=image_data,
             mimetype=mimetype,
         )
         db.session.add(new_question)
         db.session.flush()
 
-        try:
-            options = (
-                json.loads(raw_options) if isinstance(raw_options, str) else raw_options
-            )
-        except (json.JSONDecodeError, TypeError) as e:
-            return APIResponse.bad_request(f"Invalid options format: {str(e)}")
+        print("New question ID:", new_question.question_id)
 
+        # 6. Insert options
         options_map = {}
         for key, text in options.items():
             if not text:
@@ -99,10 +131,17 @@ def create_question():
             db.session.flush()
             options_map[key] = opt.answer_id
 
+        print("Options saved:", options_map)
+
+        # 7. Set correct answer
         if correct_answer:
+            print("Correct answer key:", correct_answer)
             _map_correct_answer(new_question, correct_answer, options_map)
 
         db.session.commit()
+        print("✔ Question committed successfully")
+        print("--- CREATE QUESTION DEBUG END ---\n")
+
         return APIResponse.created(
             data={"question_id": new_question.question_id},
             message="Question created successfully",
@@ -110,8 +149,10 @@ def create_question():
 
     except Exception as e:
         db.session.rollback()
-        logging.error(f"Error creating question: {str(e)}")
-        return APIResponse.server_error(f"Server error: {str(e)}")
+        print("❌ SERVER ERROR:", e)
+        return APIResponse.conflict(
+    message=f"Duplicate question detected. Existing question_id={existing.question_id}"
+)
 
 
 @questions_bp.route("/questions", methods=["GET"])

@@ -2,8 +2,9 @@ import logging
 from flask import Blueprint, request
 from sqlalchemy import func
 from datetime import datetime, date, time, timedelta
-from core.models import db, User, AnalyticsEvent
+from core.models import db, User, AnalyticsEvent,UserTestStats
 from core.utils.decorators import role_required, rate_limit, APIResponse
+from flask_jwt_extended import get_jwt_identity
 
 analytics_bp = Blueprint("analytics", __name__)
 
@@ -432,16 +433,15 @@ def conversion_rate():
         except ValueError as ve:
             return APIResponse.bad_request(str(ve))
 
-        login_users = (
-            db.session.query(func.count(func.distinct(AnalyticsEvent.user_id)))
-            .filter(
-                AnalyticsEvent.created_at >= start_date,
-                AnalyticsEvent.created_at <= end_date,
-                AnalyticsEvent.event_type == "login_attempt",
-            )
+        # All users registered up to end_date (they're the top of the funnel)
+        total_registered = (
+            db.session.query(func.count(User.id))
+            .filter(User.created_at <= end_date)
             .scalar()
+            or 0
         )
 
+        # Users who performed at least one meaningful action in the window
         service_users = (
             db.session.query(func.count(func.distinct(AnalyticsEvent.user_id)))
             .filter(
@@ -456,16 +456,17 @@ def conversion_rate():
                 ),
             )
             .scalar()
+            or 0
         )
 
         return APIResponse.success(
             data={
                 "conversion": {
-                    "login_users": login_users,
-                    "service_users": service_users,
+                    "total_registered_users": total_registered,
+                    "active_service_users": service_users,
                     "conversion_rate": (
-                        round((service_users / login_users) * 100, 2)
-                        if login_users
+                        round((service_users / total_registered) * 100, 2)
+                        if total_registered
                         else 0
                     ),
                 }
@@ -477,3 +478,85 @@ def conversion_rate():
         db.session.rollback()
         logging.error(f"Error computing conversion rate: {e}", exc_info=True)
         return APIResponse.server_error("Error computing conversion rate")
+
+
+@analytics_bp.route("/my-test-stats", methods=["GET"])
+@role_required("client")
+@rate_limit(capacity=5, refill_rate=1)
+def get_my_test_stats():
+    try:
+        user_id = get_jwt_identity()
+
+        stats = UserTestStats.query.filter_by(user_id=user_id).first()
+
+        if not stats:
+            # User has no stats yet → return zeros
+            return APIResponse.success(
+                message="Stats fetched successfully",
+                data={
+                    "total_tests": 0,
+                    "total_correct": 0,
+                    "total_wrong": 0,
+                    "total_seconds_spent": 0,
+                },
+            )
+
+        return APIResponse.success(
+            message="Stats fetched successfully",
+            data={
+                "total_tests": stats.total_tests,
+                "total_correct": stats.total_correct,
+                "total_wrong": stats.total_wrong,
+                "total_seconds_spent": stats.total_seconds_spent,
+            },
+        )
+
+    except Exception as e:
+        logging.error(f"Error fetching user stats: {e}")
+        return APIResponse.server_error("Server error while fetching stats")
+
+
+@analytics_bp.route("/global-quiz-stats", methods=["GET"])
+@role_required("admin")
+@rate_limit(capacity=5, refill_rate=0.5)
+def global_quiz_stats():
+    try:
+        stats = UserTestStats.query.all()
+
+        if not stats:
+            return APIResponse.success(
+                message="Global stats fetched successfully",
+                data={
+                    "avg_time_per_question": 0,
+                    "avg_accuracy": 0,
+                    "total_questions_answered": 0,
+                    "total_tests_taken": 0,
+                },
+            )
+
+        total_seconds = sum(s.total_seconds_spent for s in stats)
+        total_correct = sum(s.total_correct for s in stats)
+        total_wrong = sum(s.total_wrong for s in stats)
+        total_tests = sum(s.total_tests for s in stats)
+
+        total_questions = total_correct + total_wrong
+
+        avg_time_per_question = (
+            total_seconds / total_questions if total_questions > 0 else 0
+        )
+
+        avg_accuracy = total_correct / total_questions if total_questions > 0 else 0
+
+        return APIResponse.success(
+            message="Global stats fetched successfully",
+            data={
+                "avg_time_per_question": round(avg_time_per_question, 2),
+                "avg_accuracy": round(avg_accuracy, 4),
+                "total_questions_answered": total_questions,
+                "total_tests_taken": total_tests,
+            },
+        )
+
+    except Exception as e:
+        logging.error(f"Error fetching global stats: {e}")
+        return APIResponse.server_error("Server error while fetching global stats")

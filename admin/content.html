@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Content Builder — Kigali Road Rules</title>
+    <link rel="icon" href="../assets/logo.png" type="image/png" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link rel="stylesheet" href="../css/admin/content.css" />
+  </head>
+  <body>
+
+    <!-- ═══ HEADER ══════════════════════════════════════════════ -->
+    <header class="header">
+      <a class="logo-group" href="user-dashboard.html">
+        <div class="logo-mark">
+          <img src="../assets/logo.png" alt="Kigali Road Rules logo" />
+        </div>
+        <div class="logo-text">
+          <span class="top">Kigali</span>
+          <span class="bottom">RoadRules</span>
+        </div>
+      </a>
+
+      <div id="headerBreadcrumb" class="header-breadcrumb"></div>
+
+      <span class="save-indicator" id="saveIndicator">
+        <i class="fas fa-check-circle"></i> Saved
+      </span>
+
+      <div class="header-right">
+        <button class="menu-btn" id="menuBtn" aria-label="Toggle sidebar">
+          <i class="fas fa-bars"></i>
+        </button>
+
+        <div class="mode-selector-container">
+          <button class="mode-btn" id="dashboardNavBtn">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
+          </button>
+          <button class="mode-btn active" id="contentNavBtn">
+            <i class="fas fa-book-open"></i>
+            <span>Curriculum</span>
+          </button>
+        </div>
+
+        <button
+          class="avatar-btn"
+          id="avatarBtn"
+          aria-label="Account menu"
+          aria-expanded="false"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </button>
+
+        <div class="avatar-dropdown" id="avatarDropdown" role="menu">
+          <div class="dropdown-profile">
+            <div class="dropdown-avatar-circle">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+              </svg>
+            </div>
+            <div class="dropdown-profile-info">
+              <div class="dropdown-label">Signed in as</div>
+              <div class="dropdown-email" id="userEmail">admin@email.com</div>
+            </div>
+          </div>
+          <div class="dropdown-body">
+            
+            <div class="mobile-only">
+              <button
+                class="dropdown-item "
+                id="dropdown-academy-btn"
+                data-url="dashboard"
+              >
+                <i class="fas fa-chart-line"></i>
+                Dashboard
+              </button>
+
+              <button
+                class="dropdown-item active"
+                id="dropdown-control-btn"
+                data-url="curriculum"
+              >
+                <i class="fas fa-book-open"></i>
+                Curriculum
+              </button>
+            </div>
+            <div class="dropdown-sep"></div>
+            <button id="btn-logout" class="dropdown-item logout" role="menuitem">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              Log out
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══ MOBILE OVERLAY (closes drawers) ══════════════════════ -->
+    <div class="panel-overlay" id="panelOverlay"></div>
+
+    <!-- ═══ THREE-PANEL WORKSPACE ════════════════════════════════ -->
+    <div class="workspace">
+
+      <!-- LEFT — Topics tree -->
+      <aside class="panel-left" id="panelLeft">
+        <div class="panel-head">
+          <h3>Topics</h3>
+        </div>
+        <div class="panel-scroll">
+          <div id="topicsTree"></div>
+        </div>
+      </aside>
+
+      <!-- MIDDLE — Sections -->
+      <aside class="panel-mid" id="panelMid">
+        <div class="panel-head">
+          <div id="sectionsTopic" class="mid-topic-label">—</div>
+        </div>
+        <button class="btn-add-section" id="btnAddSection">
+          <i class="fas fa-plus"></i> New Section
+        </button>
+        <div class="sections-scroll">
+          <div id="sectionsList"></div>
+        </div>
+      </aside>
+
+      <!-- RIGHT — Builder -->
+      <main class="panel-right">
+        <div class="builder-header" id="builderHeader">
+          <span class="builder-section-name" id="builderSectionName">Section</span>
+          <div class="builder-header-actions">
+            <button class="btn-icon" id="btnCollapseAll">
+              <i class="fas fa-compress-alt"></i> Collapse all
+            </button>
+          </div>
+        </div>
+
+        <div id="builderBody">
+          <div class="empty-state">
+            <div class="es-icon">🏗️</div>
+            <h3>Section Builder</h3>
+            <p>Select a subtopic on the left, then pick a section to start building.</p>
+          </div>
+        </div>
+
+        <div class="builder-footer" id="builderFooter">
+          <button class="btn-add-comp" id="btnOpenCompModal">
+            <i class="fas fa-plus"></i> Add Component
+          </button>
+        </div>
+      </main>
+    </div>
+
+    <!-- ═══ CONFIRM MODAL ════════════════════════════════════════ -->
+    <div id="modalConfirm" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="modal-box">
+        <div class="modal-head">
+          <h3 id="confirmTitle">Confirm</h3>
+          <button class="modal-close" data-close="modalConfirm" aria-label="Close">&#215;</button>
+        </div>
+        <div class="modal-body">
+          <p id="confirmMsg"></p>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel-modal" data-close="modalConfirm">Cancel</button>
+          <button class="btn-confirm-modal" id="confirmBtn">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../js/admin/content.js" type="module"></script>
+  </body>
+</html>

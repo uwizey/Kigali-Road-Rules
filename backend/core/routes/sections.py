@@ -10,7 +10,7 @@ sections_bp = Blueprint("sections", __name__)
 
 @sections_bp.route("/sections/<int:topic_id>", methods=["GET"])
 @role_required(["admin", "client"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 @track_event("sections_reading")
 def get_sections_by_topic(topic_id):
     try:
@@ -61,7 +61,7 @@ def get_sections_by_topic(topic_id):
 
 @sections_bp.route("/section", methods=["POST"])
 @role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def create_section():
     try:
         data = request.get_json()
@@ -96,7 +96,7 @@ def create_section():
 
 @sections_bp.route("/sections/<int:section_id>", methods=["PUT"])
 @role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def update_section(section_id):
     try:
         data = request.get_json()

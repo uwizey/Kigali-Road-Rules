@@ -8,6 +8,29 @@ from flask_jwt_extended import get_jwt_identity
 
 subscription_bp = Blueprint("subscription", __name__)
 
+def give_free_package(user_id):
+    now = datetime.utcnow()
+
+    # Find the free plan (make sure you have one in DB)
+    free_plan = SubscriptionPlan.query.filter_by(plan_name="Agaseke").first()
+    if not free_plan:
+        return None
+
+    new_sub = Subscription(
+        user_id=user_id,
+        plan_id=free_plan.id,
+        req_id=None,  # no request needed
+        start_date=now,
+        expiry_date=now + timedelta(days=free_plan.duration_days),
+        active=True,
+        remaining_quizzes=free_plan.no_quizzes,
+        remaining_template_exams=free_plan.no_template_exams,
+        remaining_topic_quizzes=free_plan.no_topic_quizzes,
+    )
+    db.session.add(new_sub)
+    db.session.commit()
+    return new_sub
+
 
 # ─── Serializer helpers ───────────────────────────────────────────────────────
 
@@ -93,7 +116,7 @@ def get_all_subscription_plans():
 
 @subscription_bp.route("/plans/<int:id>", methods=["GET"])
 @role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def get_subscription_plan(id):
     try:
         plan = SubscriptionPlan.query.get(id)
@@ -109,7 +132,7 @@ def get_subscription_plan(id):
 
 @subscription_bp.route("/plans", methods=["POST"])
 @role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def create_subscription_plan():
     try:
         data = request.get_json()
@@ -141,7 +164,7 @@ def create_subscription_plan():
 
 @subscription_bp.route("/plans/<int:plan_id>", methods=["PUT"])
 @role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def update_subscription_plan(plan_id):
     try:
         data = request.get_json()
@@ -194,7 +217,7 @@ def get_all_requests():
 
 @subscription_bp.route("/myrequests", methods=["GET"])
 @role_required(["client"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def get_user_requests():
     try:
         user_id = get_jwt_identity()
@@ -217,7 +240,7 @@ def get_user_requests():
 
 @subscription_bp.route("/request", methods=["POST"])
 @role_required(["client"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def create_request():
     try:
         data = request.get_json()
@@ -257,7 +280,7 @@ def create_request():
 
 @subscription_bp.route("/request/<int:req_id>/cancel", methods=["PUT"])
 @role_required(["client"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def cancel_request(req_id):
     try:
         user_id = get_jwt_identity()
@@ -286,7 +309,7 @@ def cancel_request(req_id):
 
 @subscription_bp.route("/request/<int:req_id>/reject", methods=["PUT"])
 @role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def reject_request(req_id):
     try:
         req = Request.query.get(req_id)
@@ -311,7 +334,7 @@ def reject_request(req_id):
 
 @subscription_bp.route("/request/<int:req_id>/approve", methods=["PUT"])
 @role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def approve_request(req_id):
     try:
         req = Request.query.get(req_id)
@@ -379,7 +402,7 @@ def approve_request(req_id):
 
 @subscription_bp.route("/my-subscription", methods=["GET"])
 @role_required(["client"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def get_latest_subscription():
     try:
         user_id = get_jwt_identity()
@@ -411,7 +434,7 @@ def get_latest_subscription():
 
 @subscription_bp.route("/all-subscriptions", methods=["GET"])
 @role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def get_all_subscriptions():
     try:
         subscriptions = Subscription.query.order_by(Subscription.expiry_date.desc()).all()
@@ -431,7 +454,7 @@ def get_all_subscriptions():
 
 @subscription_bp.route("/subscription/<int:sub_id>", methods=["GET"])
 @role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def get_subscription(sub_id):
     try:
         sub = Subscription.query.get(sub_id)
@@ -448,7 +471,7 @@ def get_subscription(sub_id):
 
 @subscription_bp.route("/subscription/<int:sub_id>/status", methods=["PUT"])
 @role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def toggle_subscription_status(sub_id):
     try:
         data = request.get_json()
@@ -491,7 +514,7 @@ def toggle_subscription_status(sub_id):
 
 @subscription_bp.route("/user/<int:user_id>/history", methods=["GET"])
 @role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def get_user_history(user_id):
     try:
         reqs = Request.query.filter_by(user_id=user_id).order_by(Request.request_date.desc()).all()
@@ -519,7 +542,7 @@ def get_user_history(user_id):
 
 @subscription_bp.route("/users-subscriptions", methods=["GET"])
 @role_required(["admin"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=5, refill_rate=0.5)
 def get_users_subscriptions():
     try:
         subscriptions = Subscription.query.order_by(Subscription.expiry_date.desc()).all()

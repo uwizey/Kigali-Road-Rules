@@ -1,0 +1,587 @@
+/* ============================================================
+   KIGALI ROAD RULES — Global Design Tokens
+   ============================================================
+   SINGLE SOURCE OF TRUTH for the entire platform.
+   Every CSS file on every page imports this file.
+
+   TO CHANGE THE PALETTE:
+     Edit ONLY the 5 hex values in "BRAND PALETTE" below.
+     Every color, gradient, shadow, glass tint, border —
+     on every page — updates automatically. Nothing else
+     needs to be touched.
+
+   TO USE IN A NEW PAGE:
+     @import '../css/tokens.css';
+     Then write only page-specific layout below.
+
+   File map:
+     css/tokens.css      ← you are here  (global, never page-specific)
+     css/index.css       ← landing page
+     css/dashboard.css   ← dashboard
+     css/settings.css    ← settings
+     css/marketplace.css ← marketplace
+     ... each imports this file and nothing else globally
+   ============================================================ */
+
+:root {
+
+  /* ══════════════════════════════════════════════════════
+     1. BRAND PALETTE
+     ══════════════════════════════════════════════════════
+     These 5 are the ONLY raw hex values in the project.
+     Everything else derives from them.
+  ══════════════════════════════════════════════════════ */
+
+  --clr-dark:       #F2B508;   /* Amber Gold — footer, CTAs, deep tones     */
+  --clr-primary:    #EFD30B;   /* Bright Yellow — primary actions, buttons  */
+  --clr-light:      #fdf8d8;   /* Yellow White — glass tints, panel fills   */
+  --clr-off-white:  #F9F8F4;   /* Warm Off-White — page background          */
+  --clr-accent:     #ffffff;   /* White — surfaces, cards, badges           */
+
+  /* Fixed neutrals — do not need rebranding */
+  --clr-white:      #ffffff;
+  --clr-black:      #0a0a0a;
+
+  /* ══════════════════════════════════════════════════════
+     2. DERIVED PALETTE
+     ══════════════════════════════════════════════════════
+     Computed from the brand palette above.
+     Change the 5 hexes and these auto-follow.
+  ══════════════════════════════════════════════════════ */
+
+  /* Darkened variants (used for hover/active states) */
+  --clr-dark-hover:    color-mix(in srgb, var(--clr-dark)    80%, black);
+  --clr-primary-hover: color-mix(in srgb, var(--clr-primary) 80%, black);
+  --clr-accent-hover:  color-mix(in srgb, var(--clr-accent)  80%, black);
+
+  /* ══════════════════════════════════════════════════════
+     3. SEMANTIC COLOR ALIASES
+     ══════════════════════════════════════════════════════
+     Use ONLY these in component/page CSS.
+     Never reference --clr-* directly in component rules.
+     This layer is what makes palette-swapping instant.
+  ══════════════════════════════════════════════════════ */
+
+  /* Roles */
+  --color-primary:        var(--clr-primary);
+  --color-primary-deep:   var(--clr-dark);
+  --color-primary-light:  var(--clr-light);
+  --color-accent:         var(--clr-accent);       /* white — card/surface accent  */
+  --color-accent-hover:   var(--clr-accent-hover);
+
+  /* Surfaces */
+  --color-bg:             var(--clr-off-white);    /* #F9F8F4 Warm Off-White       */
+  --color-surface:        var(--clr-white);
+  --color-surface-raised: rgba(255, 255, 255, 0.92);
+
+  /* Text — dark neutral so body copy is readable on light bg */
+  --color-text:           #1a1a1a;                 /* near-black — headings/body   */
+  --color-text-muted:     #5c5c5c;                 /* mid-gray — subtitles, labels */
+  --color-text-faint:     #9a9a9a;                 /* light gray — captions        */
+  --color-text-on-dark:   rgba(255, 255, 255, 0.96);
+  --color-text-on-accent: #1a1a1a;                 /* dark text on yellow surface  */
+
+  /* Borders — yellow-tinted at low opacity */
+  --color-border:         color-mix(in srgb, var(--clr-primary) 14%, transparent);
+  --color-border-strong:  color-mix(in srgb, var(--clr-primary) 28%, transparent);
+  --color-border-accent:  color-mix(in srgb, var(--clr-dark)    25%, transparent);
+
+  /* UI states */
+  --color-focus:    color-mix(in srgb, var(--clr-primary) 40%, transparent);
+  --color-danger:   #e03131;
+  --color-success:  #2f9e44;
+  --color-warning:  var(--clr-dark);
+
+  /* ══════════════════════════════════════════════════════
+     4. FOOTER & DARK SURFACE TOKENS
+     Used wherever the dark (footer/CTA) background appears.
+  ══════════════════════════════════════════════════════ */
+
+  --footer-bg-start:       var(--clr-dark);
+  --footer-bg-end:         color-mix(in srgb, var(--clr-dark) 85%, black);
+  --footer-text:           color-mix(in srgb, var(--clr-light) 70%, transparent);
+  --footer-link-bg:        rgba(255, 255, 255, 0.07);
+  --footer-link-border:    rgba(255, 255, 255, 0.10);
+  --footer-link-hover-bg:  color-mix(in srgb, var(--clr-primary) 30%, transparent);
+  --footer-link-hover-bdr: color-mix(in srgb, var(--clr-primary) 55%, transparent);
+
+  /* ══════════════════════════════════════════════════════
+     5. BACKGROUND MESH
+     Body radial gradient tints — derived from palette.
+  ══════════════════════════════════════════════════════ */
+
+  --mesh-tl:  color-mix(in srgb, var(--clr-light)   16%, transparent);
+  --mesh-br:  color-mix(in srgb, var(--clr-primary) 10%, transparent);
+  --mesh-mid: color-mix(in srgb, var(--clr-accent)   5%, transparent);
+
+  /* ══════════════════════════════════════════════════════
+     6. GLASS LAYERS  (Light Mode Glassmorphism)
+     Three tiers: subtle / mid / opaque.
+     Glass tints are intentionally white-dominant so they
+     read cleanly over the coloured body mesh.
+  ══════════════════════════════════════════════════════ */
+
+  --glass-bg-subtle:      rgba(255, 255, 255, 0.50);
+  --glass-bg-mid:         rgba(255, 255, 255, 0.70);
+  --glass-bg-opaque:      rgba(255, 255, 255, 0.88);
+  --glass-border:         rgba(255, 255, 255, 0.68);
+  --glass-border-tinted:  color-mix(in srgb, var(--clr-primary) 18%, transparent);
+  --glass-inset:          inset 0 1px 0 rgba(255, 255, 255, 0.90);
+
+  /* Tinted glass surfaces */
+  --glass-primary-bg:  color-mix(in srgb, var(--clr-primary)  8%, transparent);
+  --glass-dark-bg:     color-mix(in srgb, var(--clr-dark)     85%, transparent);
+  --glass-dark-border: color-mix(in srgb, var(--clr-light)    18%, transparent);
+
+  /* Blur strengths */
+  --glass-blur-sm:  blur(8px);
+  --glass-blur:     blur(18px);
+  --glass-blur-lg:  blur(28px);
+
+  /* ══════════════════════════════════════════════════════
+     7. GRADIENTS
+     All reusable gradients in one place.
+     Reference these in component CSS — never write
+     linear-gradient(...hex...) anywhere else.
+  ══════════════════════════════════════════════════════ */
+
+  /* Primary button / logo-mark */
+  --gradient-primary:  linear-gradient(135deg, var(--clr-primary), var(--clr-dark));
+
+  /* Footer / CTA dark panel */
+  --gradient-dark:     linear-gradient(135deg, var(--footer-bg-start) 0%, var(--footer-bg-end) 100%);
+
+  /* CTA banner (slightly richer) */
+  --gradient-cta:      linear-gradient(135deg,
+                         var(--clr-dark)    0%,
+                         color-mix(in srgb, var(--clr-dark) 60%, var(--clr-primary)) 60%,
+                         color-mix(in srgb, var(--clr-primary) 90%, transparent)     100%);
+
+  /* Login / accent button — uses the two yellows, not white */
+  --gradient-accent:   linear-gradient(135deg, var(--clr-dark), var(--clr-primary));
+
+  /* Hero image panel */
+  --gradient-hero-panel: linear-gradient(135deg,
+                           color-mix(in srgb, var(--clr-light)   60%, transparent) 0%,
+                           color-mix(in srgb, var(--clr-primary) 10%, transparent) 100%);
+
+  /* Sign pole (metallic feel) */
+  --gradient-pole:     linear-gradient(90deg,
+                         color-mix(in srgb, var(--clr-dark)    30%, transparent) 0%,
+                         color-mix(in srgb, var(--clr-primary) 50%, transparent) 50%,
+                         color-mix(in srgb, var(--clr-dark)    22%, transparent) 100%);
+
+  /* Decorative orbs on hero panel */
+  --gradient-orb-1:    color-mix(in srgb, var(--clr-primary) 14%, transparent);
+  --gradient-orb-2:    color-mix(in srgb, var(--clr-dark)    10%, transparent);
+
+  /* CTA pseudo glows */
+  --gradient-cta-glow-accent:  color-mix(in srgb, var(--clr-light)   30%, transparent);
+  --gradient-cta-glow-light:   color-mix(in srgb, var(--clr-primary) 15%, transparent);
+
+  /* Coloured glow shadows — use primary yellow, not white */
+  --shadow-accent:     0 8px  24px color-mix(in srgb, var(--clr-dark)    30%, transparent);
+  --shadow-accent-lg:  0 14px 32px color-mix(in srgb, var(--clr-dark)    40%, transparent);
+
+  /* ══════════════════════════════════════════════════════
+     8. SHADOWS  (brand-tinted for cohesion)
+  ══════════════════════════════════════════════════════ */
+
+  /* Neutral depth shadows */
+  --shadow-xs:      0 1px  3px  color-mix(in srgb, var(--clr-dark)    6%, transparent);
+  --shadow-sm:      0 4px  12px color-mix(in srgb, var(--clr-dark)    8%, transparent);
+  --shadow-md:      0 8px  24px color-mix(in srgb, var(--clr-dark)    10%, transparent);
+  --shadow-lg:      0 16px 40px color-mix(in srgb, var(--clr-dark)    12%, transparent);
+  --shadow-xl:      0 24px 60px color-mix(in srgb, var(--clr-dark)    16%, transparent);
+  --shadow-curtain: 0 -20px 40px color-mix(in srgb, var(--clr-dark)   14%, transparent);
+
+  /* Coloured glow shadows */
+  --shadow-primary:    0 8px  24px color-mix(in srgb, var(--clr-primary) 30%, transparent);
+  --shadow-primary-lg: 0 16px 40px color-mix(in srgb, var(--clr-primary) 36%, transparent);
+
+  /* Sign-specific drop shadow (neutral black-tinted) */
+  --shadow-sign:    0 10px 25px rgba(0, 0, 0, 0.14);
+  --shadow-btn-white: 0 4px 14px rgba(0, 0, 0, 0.12);
+  --shadow-btn-white-lg: 0 12px 28px rgba(0, 0, 0, 0.18);
+  --shadow-pole:    4px 5px 12px rgba(0, 0, 0, 0.06);
+
+  /* ══════════════════════════════════════════════════════
+     9. BORDERS
+     Reusable border shorthand tokens.
+  ══════════════════════════════════════════════════════ */
+
+  --border-sm:       1px solid var(--color-border);
+  --border-strong:   1px solid var(--color-border-strong);
+  --border-glass:    1px solid var(--glass-border);
+  --border-accent:   1px solid var(--color-border-accent);
+  --border-btn:      1.5px solid var(--color-border-strong);
+  --border-sign:     5px solid var(--clr-dark);
+
+  /* ══════════════════════════════════════════════════════
+     10. SPACING SCALE  (4 px base unit)
+  ══════════════════════════════════════════════════════ */
+
+  --space-1:    4px;
+  --space-2:    8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-16:  64px;
+  --space-20:  80px;
+
+  /* Component-specific spacing tokens */
+  --padding-btn-primary:    14px var(--space-8);
+  --padding-btn-secondary:  13px var(--space-6);
+  --padding-btn-login:      10px var(--space-6);
+  --padding-badge:          10px var(--space-5);
+  --padding-tag:            5px  var(--space-3);
+  --padding-nav-underline:  3px; /* bottom offset for nav underline */
+  --padding-sign-margin-top: 30px;
+
+  /* ══════════════════════════════════════════════════════
+     11. BORDER RADIUS
+  ══════════════════════════════════════════════════════ */
+
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-2xl:  32px;
+  --radius-full: 100px;
+
+  /* ══════════════════════════════════════════════════════
+     12. COMPONENT SIZES
+     Explicit size tokens for all fixed-dimension elements.
+  ══════════════════════════════════════════════════════ */
+
+  --size-logo-mark:     44px;
+  --size-card-icon:     44px;
+  --size-badge-icon:    18px;
+  --size-card-icon-svg: 22px;
+  --logo-font-size:     18px;
+  --logo-gap:           11px;
+
+  /* Hero art */
+  --size-hero-panel-h:    420px;
+  --size-hero-panel-h-sm: 320px;
+  --size-sign:            130px;
+  --size-sign-border:     5px;
+  --size-orb-1:           280px;
+  --size-orb-2:           200px;
+  --size-pole-w:          12px;
+  --size-pole-h:          180px;
+
+  /* Stat strip */
+  --size-stat-val:        1.8rem;
+  --size-stat-min:        120px;
+
+  /* Content max-widths */
+  --max-footer-content:  760px;
+  --max-section-desc:    560px;
+  --max-cta-desc:        440px;
+  --max-hero-desc:       500px;
+  --max-grid-col:        240px;
+
+  /* ══════════════════════════════════════════════════════
+     13. TYPOGRAPHY
+  ══════════════════════════════════════════════════════ */
+
+  --font-sans:  'Plus Jakarta Sans', sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', monospace;
+  --font-sign:  'Impact', 'Arial Black', sans-serif;
+
+  --text-xs:    11px;
+  --text-sm:    13px;
+  --text-base:  14px;   /* nav, buttons, small copy */
+  --text-md:    15px;   /* card text, body */
+  --text-body:  16px;   /* hero paragraph */
+  --text-lg:    18px;
+  --text-xl:    20px;
+  --text-2xl:   24px;
+  --text-3xl:   32px;
+
+  --text-sign-main: 26px;
+  --text-sign-sub:  13px;
+  --text-stat-val:  var(--size-stat-val);
+
+  /* Hero heading — fluid */
+  --text-hero: clamp(30px, 4.5vw, 52px);
+  --text-hero-mobile: 28px;
+
+  /* Section heading — fluid */
+  --text-section-h2: clamp(22px, 3vw, 32px);
+
+  /* CTA heading — fluid */
+  --text-cta-h2: clamp(20px, 2.5vw, 28px);
+
+  --weight-regular: 400;
+  --weight-medium:  600;
+  --weight-bold:    700;
+  --weight-black:   800;
+  --weight-sign:    900;
+
+  --leading-tight:  1.12;
+  --leading-snug:   1.40;
+  --leading-normal: 1.65;
+  --leading-loose:  1.80;
+  --leading-logo:   1.1;
+
+  --tracking-logo:    0.15em;
+  --tracking-tag:     0.10em;
+  --tracking-sign-main: 1px;
+  --tracking-sign-sub:  2px;
+
+  /* ══════════════════════════════════════════════════════
+     14. MOTION
+  ══════════════════════════════════════════════════════ */
+
+  --ease-out:    cubic-bezier(0.22, 0.68, 0, 1.2);
+  --ease-in-out: cubic-bezier(0.40, 0.00, 0.20, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --speed-fast:  0.15s;
+  --speed:       0.26s;
+  --speed-slow:  0.55s;
+
+  /* Header hide/show transition */
+  --speed-header: 0.35s;
+
+  /* Decoration hover transition */
+  --speed-deco: 0.35s;
+
+  /* Badge pulse */
+  --duration-badge: 2.4s;
+
+  /* Scroll hint */
+  --speed-hint: 0.4s;
+
+  /* ══════════════════════════════════════════════════════
+     15. LAYOUT
+  ══════════════════════════════════════════════════════ */
+
+  --footer-h:          240px;
+  --footer-h-mobile:   300px;
+  --header-h:          68px;
+  --page-padding:      8%;
+  --page-padding-sm:   6%;
+  --page-padding-xs:   5%;
+  --max-content:       1200px;
+  --sidebar-w:         260px;
+
+  /* Scroll hint position */
+  --scroll-hint-right:  20px;
+  --scroll-hint-offset: 18px;  /* gap above footer */
+
+  /* CTA pseudo orb offsets */
+  --cta-orb-size-lg: 250px;
+  --cta-orb-size-sm: 200px;
+  --cta-orb-offset:  -60px;
+  --cta-orb-offset-sm: -40px;
+
+  /* Nav underline height */
+  --nav-underline-h: 2px;
+
+  /* ══════════════════════════════════════════════════════
+     16. DASHBOARD / INNER APP TOKENS
+  ══════════════════════════════════════════════════════ */
+
+  --dash-header-h:      66px;
+  --dash-topbar-h:      52px;
+  --dash-sidebar-w:     320px;
+  --dash-sidebar-top:   calc(var(--dash-header-h) + var(--dash-topbar-h));
+
+  --topbar-bg:                  var(--glass-bg-opaque);
+  --topbar-border:              var(--color-border);
+  --sidebar-bg:                 var(--glass-bg-opaque);
+  --sidebar-border:             var(--color-border);
+  --sidebar-item-hover-bg:      color-mix(in srgb, var(--clr-light) 40%, transparent);
+  --sidebar-item-active-bg:     var(--glass-primary-bg);
+  --sidebar-item-active-color:  var(--color-primary-deep);
+  --sidebar-item-active-border: var(--color-primary-deep);
+
+  --mode-btn-bg:            var(--glass-primary-bg);
+  --mode-btn-border:        var(--color-border-strong);
+  --mode-btn-color:         var(--color-primary-deep);
+
+  --card-bg:                var(--glass-bg-mid);
+  --card-radius:            var(--radius-lg);
+
+  --quiz-correct:           #2f9e44;
+  --quiz-correct-bg:        #d3f9d8;
+  --quiz-correct-border:    #8ce99a;
+  --quiz-incorrect:         #e03131;
+  --quiz-incorrect-bg:      #ffe3e3;
+  --quiz-incorrect-border:  #ffa8a8;
+  --quiz-warning-bg:        #fff3bf;
+  --quiz-warning-border:    #ffe066;
+  --quiz-warning-color:     #e67700;
+
+  --progress-track-color:   var(--color-border);
+  --overlay-bg:             rgba(0, 0, 0, 0.45);
+
+  /* ══════════════════════════════════════════════════════
+     17. Z-INDEX SCALE  (named layers)
+  ══════════════════════════════════════════════════════ */
+
+  --z-base:     0;
+  --z-raised:   1;
+  --z-dropdown: 40;
+  --z-sticky:   50;
+  --z-header:   100;
+  --z-overlay:  200;
+  --z-modal:    300;
+  --z-toast:    400;
+
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   GLOBAL RESET
+   Loaded once via tokens.css — applies everywhere.
+════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: var(--leading-normal);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 10% 15%, var(--mesh-tl)  0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 88% 80%, var(--mesh-br)  0%, transparent 55%),
+    radial-gradient(ellipse 40% 60% at 50% 45%, var(--mesh-mid) 0%, transparent 70%);
+  background-attachment: fixed;
+}
+
+a       { text-decoration: none; color: inherit; }
+img,
+svg     { display: block; }
+button  { font-family: var(--font-sans); cursor: pointer; border: none; background: none; }
+input,
+textarea,
+select  { font-family: var(--font-sans); }
+
+
+/* ════════════════════════════════════════════════════════════
+   GLOBAL GLASS UTILITIES
+   Compose on any element across any page.
+════════════════════════════════════════════════════════════ */
+
+.glass {
+  background: var(--glass-bg-subtle);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--border-glass);
+  box-shadow: var(--shadow-sm), var(--glass-inset);
+}
+
+.glass-mid {
+  background: var(--glass-bg-mid);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--border-glass);
+  box-shadow: var(--shadow-md), var(--glass-inset);
+}
+
+.glass-opaque {
+  background: var(--glass-bg-opaque);
+  backdrop-filter: var(--glass-blur-lg);
+  -webkit-backdrop-filter: var(--glass-blur-lg);
+  border: var(--border-glass);
+  box-shadow: var(--shadow-sm), var(--glass-inset);
+}
+
+.glass-primary {
+  background: var(--glass-primary-bg);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  border: var(--border-glass);
+}
+
+.glass-dark {
+  background: var(--glass-dark-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-dark-border);
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   GLOBAL SCROLL REVEAL ANIMATIONS
+   Works on every page — requires the IntersectionObserver
+   script to add body.js-ready and .revealed classes.
+════════════════════════════════════════════════════════════ */
+
+body.js-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(36px);
+  transition:
+    opacity   var(--speed-slow) var(--ease-out),
+    transform var(--speed-slow) var(--ease-out);
+}
+body.js-ready [data-reveal="left"]  { transform: translateX(-40px); }
+body.js-ready [data-reveal="right"] { transform: translateX(40px); }
+body.js-ready [data-reveal="scale"] { transform: scale(0.88); opacity: 0; }
+
+[data-reveal].revealed {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+body.js-ready [data-stagger] > * {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity   var(--speed-slow) var(--ease-out),
+    transform var(--speed-slow) var(--ease-out);
+}
+
+[data-stagger].revealed > *:nth-child(1) { transition-delay: 0.05s; }
+[data-stagger].revealed > *:nth-child(2) { transition-delay: 0.13s; }
+[data-stagger].revealed > *:nth-child(3) { transition-delay: 0.21s; }
+[data-stagger].revealed > *:nth-child(4) { transition-delay: 0.29s; }
+[data-stagger].revealed > *:nth-child(5) { transition-delay: 0.37s; }
+[data-stagger].revealed > *:nth-child(6) { transition-delay: 0.45s; }
+[data-stagger].revealed > *:nth-child(7) { transition-delay: 0.53s; }
+[data-stagger].revealed > *:nth-child(8) { transition-delay: 0.61s; }
+
+[data-stagger].revealed > * {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.js-ready [data-reveal],
+  body.js-ready [data-stagger] > * {
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   GLOBAL FOCUS RING  (accessibility)
+════════════════════════════════════════════════════════════ */
+
+:focus-visible {
+  outline: 2.5px solid var(--color-focus);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}

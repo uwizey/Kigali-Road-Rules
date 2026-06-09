@@ -10,6 +10,7 @@ from flask_jwt_extended import (
     get_jwt,
 )
 from core.utils.decorators import APIResponse, role_required, track_event, rate_limit
+from core.routes.subscription import give_free_package
 from core.models import db, User
 from core import jwt, blacklist_token
 from datetime import timedelta, datetime
@@ -75,6 +76,22 @@ def register():
             User(email=email, password=generate_password_hash(password), role="client")
         )
         db.session.commit()
+
+        new_user = User.query.filter_by(email=email).first()
+        sub = give_free_package(new_user.id)
+        print(f"🎉 New user registered: {email} (ID: {new_user})")
+        if sub:
+            print(f"✅ Free subscription {sub.id} created for user {user.id}")
+
+        return {
+            "status": "success",
+            "message": "Registration successful with free package",
+            "_event_type": "register_success",
+            "_event_metadata": {
+                "email": email,
+                "subscription_id": sub.id if sub else None,
+            },
+        }, 201
 
         return {
             "status": "success",

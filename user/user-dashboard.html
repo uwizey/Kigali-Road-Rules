@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KigaliRoadRules Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/user/user-dashboard.css" />
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<header class="header">
+  <a class="logo-group" href="user-dashboard.html" id="logo-link">
+    <div class="logo-mark">
+      <img id="logo-img" src="../assets/logo.png" alt="logo" height="45px" onerror="this.style.display='none'" />
+    </div>
+    <div class="logo-text">
+      <span class="top">Kigali</span>
+      <span class="bottom">RoadRules</span>
+    </div>
+  </a>
+
+  <div class="header-right">
+    <!-- Hamburger — hidden on desktop, visible on mobile -->
+    <button class="menu-btn" id="hamburgerBtn" aria-label="Open menu">
+      <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Page switcher -->
+    <div class="mode-selector-container">
+      <button class="mode-btn active" id="hlink-market">
+        <i class="fas fa-store"></i>
+        <span>Market Place</span>
+      </button>
+      <button class="mode-btn" id="hlink-settings">
+        <i class="fas fa-cog"></i>
+        <span>Settings</span>
+      </button>
+    </div>
+
+    <!-- Avatar -->
+    <button class="avatar-btn" id="avatarBtn" aria-label="Account menu" aria-expanded="false">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+      </svg>
+    </button>
+
+    <div class="avatar-dropdown" id="avatarDropdown">
+      <div class="dropdown-profile">
+        <div class="dropdown-avatar-circle">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </div>
+        <div class="dropdown-profile-info">
+          <div class="dropdown-label">Signed in as</div>
+          <div class="dropdown-email" id="userEmail">user@email.com</div>
+        </div>
+      </div>
+      <div class="dropdown-body">
+        <button class="dropdown-item" id="dropdown-academy-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+            <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
+          </svg>
+          Academy
+        </button>
+        <button class="dropdown-item active" id="dropdown-control-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9" />
+            <rect x="14" y="3" width="7" height="5" />
+            <rect x="14" y="12" width="7" height="9" />
+            <rect x="3" y="16" width="7" height="5" />
+          </svg>
+          Control Center
+        </button>
+        <div class="dropdown-sep"></div>
+        <button id="btn-logout" class="dropdown-item logout">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Log out
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile sidebar overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ==================== SHELL ==================== -->
+<div class="shell">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar" id="sidebar">
+
+    <!-- Market Place sidebar panel -->
+    <div class="sidebar-panel active" id="sidebar-market">
+      <div class="sidebar-header">
+        <i class="fas fa-store"></i>
+        <h3>Market Place</h3>
+      </div>
+      <div class="nav-item active" data-action="switch-tab" data-tab="current" data-page="market">
+        <i class="fas fa-credit-card nav-icon"></i>
+        Current Subscription
+      </div>
+      <div class="nav-item" data-action="switch-tab" data-tab="upgrade" data-page="market">
+        <i class="fas fa-bolt nav-icon"></i>
+        Upgrade / Renew
+      </div>
+    </div>
+
+    <!-- Settings sidebar panel -->
+    <div class="sidebar-panel" id="sidebar-settings">
+      <div class="sidebar-header">
+        <i class="fas fa-cog"></i>
+        <h3>Settings</h3>
+      </div>
+      <div class="nav-item active" data-action="switch-stab" data-stab="email">
+        <i class="fas fa-envelope nav-icon"></i>
+        Email Address
+      </div>
+      <div class="nav-item" data-action="switch-stab" data-stab="password">
+        <i class="fas fa-lock nav-icon"></i>
+        Password
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ==================== CONTENT ==================== -->
+  <main class="content">
+
+    <!-- ===== PAGE: Market Place ===== -->
+    <div class="page active" id="page-market">
+      <div class="main">
+
+        <!-- <div class="tabs-wrap">
+          <div class="tabs" role="tablist">
+            <button class="tab active" data-tab="current">
+              <i class="fa-regular fa-credit-card"></i>
+              <span>Current Subscription</span>
+            </button>
+            <button class="tab" data-tab="upgrade">
+              <i class="fa-solid fa-bolt"></i>
+              <span>Upgrade or Renew</span>
+            </button>
+          </div>
+        </div> -->
+
+        <!-- Current Subscription panel -->
+        <section class="panel" id="panel-current">
+          <div id="pending-alert-box"></div>
+          <div class="current-grid">
+            <div id="active-sub-container">
+              <div class="spinner-wrap"><div class="spinner"></div> Loading subscription…</div>
+            </div>
+            <aside class="card features-card" id="features-card" hidden>
+              <h3>Plan Features</h3>
+              <ul id="features-list"></ul>
+            </aside>
+          </div>
+          <div class="history-section">
+            <div class="history-section-head">
+              <div>
+                <h3>Request History</h3>
+                <p>All your subscription requests in one place.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Reference</th>
+                    <th>Date</th>
+                    <th>Plan</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="history-list">
+                  <tr><td colspan="5"><div class="spinner-wrap"><div class="spinner"></div> Loading…</div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Upgrade / Renew panel -->
+        <section class="panel" id="panel-upgrade" hidden>
+          <div class="plans-grid" id="plans-container">
+            <div class="spinner-wrap span-full"><div class="spinner"></div> Loading plans…</div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- ===== PAGE: Settings ===== -->
+    <div class="page" id="page-settings">
+      <div class="main">
+        <!-- <nav class="settings-topnav" role="tablist" aria-label="Settings sections">
+          <button class="settings-tab active" data-stab="email">
+            <i class="fa-solid fa-envelope"></i>
+            <span>Email Address</span>
+          </button>
+          <button class="settings-tab" data-stab="password">
+            <i class="fa-solid fa-lock"></i>
+            <span>Password</span>
+          </button>
+        </nav> -->
+
+        <!-- Email panel -->
+        <div class="settings-panel active" id="spanel-email">
+          <div class="scard">
+            <div class="scard-header">
+              <div class="scard-icon"><i class="fa-solid fa-envelope"></i></div>
+              <div>
+                <div class="scard-title">Email Address</div>
+                <div class="scard-subtitle">Enter your new email and confirm it</div>
+              </div>
+            </div>
+            <div class="scard-body">
+              <div class="form-group">
+                <label for="new-email">New Email</label>
+                <input type="email" id="new-email" placeholder="you@email.com" autocomplete="off" />
+                <span class="field-msg" id="msg-new-email"></span>
+              </div>
+              <div class="form-group">
+                <label for="confirm-email">Confirm Email</label>
+                <input type="email" id="confirm-email" placeholder="Repeat new email" autocomplete="off" />
+                <span class="field-msg" id="msg-confirm-email"></span>
+              </div>
+              <div class="form-group">
+                <label for="email-password">Current Password</label>
+                <div class="input-wrap">
+                  <input type="password" id="email-password" placeholder="Enter your current password" autocomplete="current-password" />
+                  <button type="button" class="toggle-pw" data-target="email-password" aria-label="Show password">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+                <span class="field-msg" id="msg-email-password"></span>
+              </div>
+              <button type="button" id="btn-email" class="btn btn-primary" disabled>
+                <span class="btn-label"><i class="fa-solid fa-check"></i> Update Email</span>
+                <span class="spinner-btn"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Password panel -->
+        <div class="settings-panel" id="spanel-password">
+          <div class="scard">
+            <div class="scard-header">
+              <div class="scard-icon"><i class="fa-solid fa-lock"></i></div>
+              <div>
+                <div class="scard-title">Password</div>
+                <div class="scard-subtitle">Enter current password, then choose a new one</div>
+              </div>
+            </div>
+            <div class="scard-body">
+              <div class="form-group">
+                <label for="current-pw">Current Password</label>
+                <div class="input-wrap">
+                  <input type="password" id="current-pw" placeholder="Enter your current password" autocomplete="current-password" />
+                  <button type="button" class="toggle-pw" data-target="current-pw" aria-label="Show password">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+                <span class="field-msg" id="msg-current-pw"></span>
+              </div>
+              <div class="form-group">
+                <label for="new-pw">New Password</label>
+                <div class="input-wrap">
+                  <input type="password" id="new-pw" placeholder="Choose a strong password" autocomplete="new-password" />
+                  <button type="button" class="toggle-pw" data-target="new-pw" aria-label="Show password">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="strength-row">
+                  <span class="seg" id="s1"></span>
+                  <span class="seg" id="s2"></span>
+                  <span class="seg" id="s3"></span>
+                  <span class="seg" id="s4"></span>
+                </div>
+                <span class="field-msg" id="msg-new-pw"></span>
+              </div>
+              <div class="form-group">
+                <label for="confirm-pw">Confirm New Password</label>
+                <div class="input-wrap">
+                  <input type="password" id="confirm-pw" placeholder="Repeat new password" autocomplete="new-password" />
+                  <button type="button" class="toggle-pw" data-target="confirm-pw" aria-label="Show password">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+                <span class="field-msg" id="msg-confirm-pw"></span>
+              </div>
+              <button type="button" id="btn-pw" class="btn btn-primary" disabled>
+                <span class="btn-label"><i class="fa-solid fa-shield-halved"></i> Update Password</span>
+                <span class="spinner-btn"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
+
+<script type="module" src="../js/user/dashboard.js"></script>
+</body>
+</html>

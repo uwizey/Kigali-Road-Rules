@@ -12,7 +12,10 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
   </head>
   <body>
     <!-- FIXED FOOTER -->
@@ -83,7 +86,6 @@
         <nav class="header-links">
           <a href="#lessons" class="nav-link">Lessons</a>
           <a href="#why" class="nav-link">Why Us</a>
-          <!-- <a href="#plans" class="nav-link">Plans</a> -->
           <a href="auth/login.html" class="login-btn">Injira</a>
         </nav>
       </header>
@@ -95,16 +97,12 @@
             Learn to Drive <span class="hl">Online</span>,<br />Pass Your Test
             <span class="hl">First Time</span>
           </h1>
-          <p data-reveal="left" style="transition-delay: 0.12s">
+          <p data-reveal="left">
             Kigali Road Rules is Rwanda's easiest way to master driving theory.
             Clear lessons, road signs, past papers, and practice tests — all
             free, all at your pace.
           </p>
-          <div
-            class="hero-actions"
-            data-reveal="left"
-            style="transition-delay: 0.22s"
-          >
+          <div class="hero-actions" data-reveal="left">
             <a href="auth/login.html" class="btn-primary">
               <svg
                 width="16"
@@ -142,16 +140,16 @@
             </svg>
             100% FREE
           </div>
-          <div class="bg-decoration decoration-1"></div>
-          <div class="bg-decoration decoration-2"></div>
-          <div class="road-sign-wrapper">
-            <div class="road-sign">
-              <div class="sign-inner">
-                <span>PASS</span>
-                <span class="sub-text">AHEAD</span>
-              </div>
+          <div class="canvas">
+            <div class="geo-card geo-card-top stage-1">
+              <div class="geo-card-content">Concept</div>
             </div>
-            <div class="sign-pole"></div>
+            <div class="geo-card geo-card-mid stage-1">
+              <div class="geo-card-content">Motion</div>
+            </div>
+            <div class="geo-card geo-card-base stage-1">
+              <div class="geo-card-content">Design</div>
+            </div>
           </div>
         </section>
       </section>
@@ -295,7 +293,6 @@
               Rwandan roads.
             </p>
           </div>
-
           <div class="card">
             <h3>
               <i class="fa-solid fa-triangle-exclamation"></i> Warning Signs
@@ -305,7 +302,6 @@
               to ahead.
             </p>
           </div>
-
           <div class="card">
             <h3><i class="fa-solid fa-ban"></i> Prohibitory Signs</h3>
             <p>
@@ -313,7 +309,6 @@
               and more.
             </p>
           </div>
-
           <div class="card">
             <h3>
               <i class="fa-solid fa-circle-arrow-right"></i> Mandatory Signs
@@ -323,7 +318,6 @@
               and roundabouts.
             </p>
           </div>
-
           <div class="card">
             <h3><i class="fa-solid fa-road"></i> Road Markings</h3>
             <p>
@@ -331,7 +325,6 @@
               one means.
             </p>
           </div>
-
           <div class="card">
             <h3><i class="fa-solid fa-book-open"></i> Rules of the Road</h3>
             <p>
@@ -351,13 +344,14 @@
             exam-style questions in minutes.
           </p>
         </div>
-        <a href="auth/login.html" class="btn-white"> Create Free Account → </a>
+        <a href="auth/login.html" class="btn-white">Create Free Account →</a>
       </div>
     </div>
     <!-- /.page -->
 
-    <div class="scroll-hint" id="hint">↓ Scroll to reveal footer</div>
+    <div class="scroll-hint" id="hint" hidden>↓ Scroll to reveal footer</div>
 
     <script src="/js/index.js"></script>
+    
   </body>
 </html>

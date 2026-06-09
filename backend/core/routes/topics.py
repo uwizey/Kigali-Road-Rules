@@ -204,7 +204,7 @@ def get_topic_stats():
             b = min(255, int(b + (255 - b) * factor))
             return f"#{r:02x}{g:02x}{b:02x}"
 
-        base_color = "#0097b2"
+        base_color = "#FF8500"
         top_topics = Topic.query.filter_by(parent_topic=None).all()
 
         labels, data, colors = [], [], []

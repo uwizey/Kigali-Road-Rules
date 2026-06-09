@@ -4,13 +4,14 @@ import heapq
 from collections import defaultdict, deque
 from datetime import datetime
 from flask import Blueprint, request, g
-from core.models import db, Quiz, QuizQuestion, Question, Topic
+from core.models import db, Quiz, QuizQuestion, Question, Topic, UserTestStats
 from core.utils.decorators import (
     role_required,
     subscription_required,
     rate_limit,
     track_event,
     APIResponse,
+    question_hash
 )
 from flask_jwt_extended import get_jwt_identity
 
@@ -297,10 +298,10 @@ def create_quiz():
 
 @quizzes_bp.route("/quizzes", methods=["GET"])
 @role_required(["admin", "client"])
-@rate_limit(capacity=5, refill_rate=1)
+@rate_limit(capacity=15, refill_rate=0.1)
 def get_all_quizzes():
     try:
-        quizzes = Quiz.query.all()
+        quizzes = Quiz.query.order_by(Quiz.publish_date.desc()).all()
         data = [
             {
                 "quiz_id": quiz.quiz_id,
@@ -516,3 +517,58 @@ def random_quiz():
         db.session.rollback()
         logging.error(f"Error generating quiz: {e}")
         return APIResponse.server_error("Server error generating quiz")
+
+
+@quizzes_bp.route("/submit-quiz-result", methods=["PUT"])
+@role_required("client")
+@rate_limit(capacity=5, refill_rate=1)
+def submit_quiz_result():
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+
+        correct = data.get("correct", 0)
+        incorrect = data.get("incorrect", 0)
+        seconds_spent = data.get("total_seconds_spent", 0)
+
+        if correct is None or incorrect is None or seconds_spent is None:
+            return APIResponse.bad_request("Missing required fields")
+
+        # Fetch or create stats row
+        stats = UserTestStats.query.filter_by(user_id=user_id).first()
+
+        if not stats:
+            # Create new stats row
+            stats = UserTestStats(
+                user_id=user_id,
+                total_tests=1,
+                total_correct=correct,
+                total_wrong=incorrect,
+                total_seconds_spent=seconds_spent,
+            )
+            db.session.add(stats)
+        else:
+            # Update existing stats
+            stats.total_tests += 1
+            stats.total_correct += correct
+            stats.total_wrong += incorrect
+            stats.total_seconds_spent += seconds_spent
+
+        db.session.commit()
+
+        return APIResponse.success(
+            message="Quiz results submitted successfully",
+            data={
+                "total_tests": stats.total_tests,
+                "total_correct": stats.total_correct,
+                "total_wrong": stats.total_wrong,
+                "total_seconds_spent": stats.total_seconds_spent,
+            },
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error submitting quiz result: {e}")
+        return APIResponse.server_error("Server error while submitting quiz result")
+
+

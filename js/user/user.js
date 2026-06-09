@@ -1,4 +1,4 @@
-import { FetchData } from "../api/crud.js";
+import { FetchData,UpdateData } from "../api/crud.js";
 
 // ============================================
 // STATE
@@ -22,20 +22,93 @@ let _allSubtopics = [];
 let _currentExercise = null;
 
 // ============================================
+// QUIZ-IN-PROGRESS GUARD
+// Central helper — every navigation that could
+// abandon an active quiz must call this.
+// ============================================
+
+/**
+ * Returns true when a quiz is currently active
+ * (started, not yet submitted, not in review mode).
+ */
+function _isQuizInProgress() {
+  const interfaceVisible =
+    document.getElementById("quizInterface")?.style.display !== "none";
+  return !!(currentQuiz && interfaceVisible && currentQuiz.reviewMode !== true);
+}
+
+/**
+ * If a quiz is in progress, show the warning popup and call onConfirm
+ * only if the user chooses to leave. Otherwise call onConfirm immediately.
+ */
+function confirmQuizNavigation(onConfirm) {
+  if (!_isQuizInProgress()) {
+    onConfirm();
+    return;
+  }
+
+  const answered = userAnswers.filter((a) => a !== null).length;
+  createBasePopup({
+    title: "Quiz in progress!",
+    message: `You have answered <strong>${answered}</strong> of <strong>${currentQuiz.questions.length}</strong> questions.<br>Leaving now will lose all your progress.`,
+    icon: "fas fa-exclamation-triangle",
+    confirmText: "Yes, leave",
+    cancelText: "Keep going",
+    onConfirm: () => {
+      clearInterval(timerInterval);
+      onConfirm();
+    },
+  });
+}
+
+// ============================================
 // INITIALIZATION
 // ============================================
 
 document.addEventListener("DOMContentLoaded", () => {
+  // ── Inter-page navigation buttons ─────────────────────────
+  // Both must go through the quiz guard before navigating away.
+  document
+    .getElementById("dropdown-control-btn")
+    ?.addEventListener("click", () => {
+      confirmQuizNavigation(() => {
+        window.location.href = "user-dashboard.html";
+      });
+    });
+
+  document
+    .getElementById("dropdown-academy-btn")
+    ?.addEventListener("click", () => {
+      confirmQuizNavigation(() => {
+        window.location.href = "user.html";
+      });
+    });
+
   initializeApp();
 });
+const apiData = {
+  total_tests: 12,
+  total_correct: 87,
+  total_wrong: 13,
+  total_seconds_spent: 1540,
+};
+async function fetchAndRenderPerformanceStats() { 
+  const res = await FetchData("/my-test-stats", true);
+  console.log("Fetched performance stats:", res);
+  renderPerformanceStats(res.success ? res.data?.data : null);
+}
+
+
+
 
 async function initializeApp() {
-  injectExamSelectionStyles();
   loadContentSidebar();
+  fetchAndRenderPerformanceStats();
   loadQuizSidebar();
   setupEventListeners();
   setupAvatarDropdown();
   setupScrollBehaviour();
+  quizStartScreen(); // only populates #latestExamsGrid — never touches welcomeScreen
 
   if (useremail) {
     const res = await FetchData("/user/profile", true);
@@ -46,171 +119,15 @@ async function initializeApp() {
 }
 
 // ============================================
-// INJECTED STYLES
-// ============================================
-
-function injectExamSelectionStyles() {
-  const style = document.createElement("style");
-  style.textContent = `
-    #examSelectionScreen {
-      padding: 24px;
-      max-width: 960px;
-      margin: 0 auto;
-    }
-    .exam-selection-header {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      margin-bottom: 32px;
-    }
-    .exam-selection-title {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .exam-selection-title i { font-size: 2.2rem; color: #0097b2; }
-    .exam-selection-title h1 { font-size: 1.6rem; font-weight: 700; color: #111827; margin: 0 0 4px; }
-    .exam-selection-title p { color: #6b7280; margin: 0; font-size: 0.9rem; }
-    .exam-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 20px;
-    }
-    .exam-card {
-      position: relative; background: #ffffff;
-      border: 1.5px solid #e5e7eb; border-radius: 16px;
-      padding: 24px 20px 20px; cursor: pointer;
-      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-      display: flex; flex-direction: column; gap: 10px;
-    }
-    .exam-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,151,178,0.15); border-color: #0097b2; }
-    .exam-tag {
-      position: absolute; top: 14px; right: 14px;
-      background: #0097b2; color: #fff;
-      font-size: 0.68rem; font-weight: 700;
-      padding: 3px 9px; border-radius: 999px;
-      text-transform: uppercase; letter-spacing: 0.04em;
-    }
-    .exam-card-icon {
-      width: 48px; height: 48px; border-radius: 12px;
-      background: #e0f7fa; display: flex; align-items: center;
-      justify-content: center; color: #0097b2; font-size: 1.3rem; margin-bottom: 4px;
-    }
-    .exam-card-title { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0; }
-    .exam-card-date { font-size: 0.82rem; color: #9ca3af; margin: 0; display: flex; align-items: center; gap: 6px; }
-    .exam-card-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
-    .exam-card-questions { font-size: 0.82rem; color: #6b7280; display: flex; align-items: center; gap: 5px; }
-    .exam-card-difficulty { font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
-    .exam-start-btn {
-      margin-top: 6px; width: 100%; padding: 10px;
-      background: #0097b2; color: #fff; border: none; border-radius: 10px;
-      font-size: 0.88rem; font-weight: 600; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: background 0.15s ease;
-    }
-    .exam-start-btn:hover { background: #007a91; }
-    @media (max-width: 600px) {
-      .exam-grid { grid-template-columns: 1fr; }
-      #examSelectionScreen { padding: 16px; }
-      .exam-selection-header { flex-direction: column; align-items: flex-start; }
-    }
-    .exam-loading {
-      grid-column: 1 / -1; display: flex; flex-direction: column;
-      align-items: center; gap: 12px; padding: 48px; color: #9ca3af; font-size: 1rem;
-    }
-    .exam-loading i { font-size: 2rem; color: #0097b2; }
-    .exam-empty { grid-column: 1 / -1; text-align: center; padding: 48px; color: #9ca3af; }
-    .exam-card.loading { pointer-events: none; opacity: 0.7; }
-    .question-nav-divider {
-      grid-column: 1 / -1; font-size: 0.68rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.06em;
-      color: #0097b2; padding: 8px 2px 2px;
-      border-top: 1px solid #e5e7eb;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .question-nav-divider:first-child { border-top: none; padding-top: 2px; }
-    #questionSubtopicBadge {
-      display: none; align-items: center; gap: 5px;
-      font-size: 0.72rem; font-weight: 700; color: #0097b2;
-      background: #e0f7fa; border-radius: 999px; padding: 3px 10px;
-      margin-left: 8px; text-transform: uppercase; letter-spacing: 0.05em;
-      vertical-align: middle;
-    }
-    #progressWarningOverlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-      z-index: 9999; display: flex; align-items: center; justify-content: center;
-      animation: fadeInOverlay 0.18s ease;
-    }
-    @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
-    #progressWarningBox {
-      background: #fff; border-radius: 18px; padding: 36px 32px 28px;
-      max-width: 420px; width: 90%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-      text-align: center; animation: slideUpBox 0.2s ease;
-    }
-    @keyframes slideUpBox { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    #progressWarningBox .pw-icon { font-size: 2.4rem; color: #f59e0b; margin-bottom: 12px; }
-    #progressWarningBox h3 { font-size: 1.2rem; font-weight: 700; color: #111827; margin: 0 0 10px; }
-    #progressWarningBox p { font-size: 0.9rem; color: #6b7280; margin: 0 0 24px; line-height: 1.55; }
-    .pw-actions { display: flex; gap: 12px; justify-content: center; }
-    .pw-btn { padding: 10px 24px; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
-    .pw-btn:hover { opacity: 0.85; }
-    .pw-btn-cancel  { background: #f3f4f6; color: #374151; }
-    .pw-btn-confirm { background: #dc2626; color: #fff; }
-    #quizCountdownWrap { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; }
-    #quizCountdownWrap.warning { color: #dc2626; }
-    #quizCountdownWrap.caution { color: #f59e0b; }
-    .answer-option.review-mode { pointer-events: none; cursor: default; }
-    .answer-option.review-correct { background: #dcfce7 !important; border-color: #16a34a !important; }
-    .answer-option.review-correct .option-letter { background: #16a34a !important; color: #fff !important; }
-    .answer-option.review-wrong { background: #fee2e2 !important; border-color: #dc2626 !important; }
-    .answer-option.review-wrong .option-letter { background: #dc2626 !important; color: #fff !important; }
-    #quizReportScreen { display: none; padding: 24px; max-width: 820px; margin: 0 auto; }
-    .report-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
-    .report-header h2 { font-size: 1.4rem; font-weight: 700; color: #111827; margin: 0; }
-    .report-summary { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
-    .report-stat { flex: 1; min-width: 100px; background: #f9fafb; border-radius: 12px; padding: 14px 18px; text-align: center; border: 1.5px solid #e5e7eb; }
-    .report-stat .rs-val { font-size: 1.5rem; font-weight: 700; color: #111827; }
-    .report-stat .rs-lbl { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
-    .report-question-block { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
-    .report-question-block.rq-correct { border-color: #86efac; background: #f0fdf4; }
-    .report-question-block.rq-wrong   { border-color: #fca5a5; background: #fff5f5; }
-    .rq-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-    .rq-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; flex-shrink: 0; }
-    .rq-correct .rq-num { background: #16a34a; color: #fff; }
-    .rq-wrong   .rq-num { background: #dc2626; color: #fff; }
-    .rq-status-icon { font-size: 1rem; }
-    .rq-correct .rq-status-icon { color: #16a34a; }
-    .rq-wrong   .rq-status-icon { color: #dc2626; }
-    .rq-question-text { font-size: 0.92rem; font-weight: 600; color: #111827; margin-bottom: 10px; line-height: 1.5; }
-    .rq-options { display: flex; flex-direction: column; gap: 6px; }
-    .rq-option { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; border: 1.5px solid transparent; }
-    .rq-option-letter { width: 24px; height: 24px; border-radius: 50%; background: #e5e7eb; color: #374151; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
-    .rq-option.rq-opt-correct { background: #dcfce7; border-color: #86efac; }
-    .rq-option.rq-opt-correct .rq-option-letter { background: #16a34a; color: #fff; }
-    .rq-option.rq-opt-user-wrong { background: #fee2e2; border-color: #fca5a5; }
-    .rq-option.rq-opt-user-wrong .rq-option-letter { background: #dc2626; color: #fff; }
-    .rq-image { max-width: 100%; border-radius: 8px; margin-bottom: 10px; }
-    .report-close-btn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: #0097b2; color: #fff; border: none; border-radius: 10px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
-    .report-close-btn:hover { background: #007a91; }
-    @media (max-width: 600px) { #quizReportScreen { padding: 12px; } .report-summary { gap: 10px; } }
-  `;
-  document.head.appendChild(style);
-}
-
-// ============================================
 // ERROR HELPER
 // ============================================
 
-// Single place to turn a failed crud.js result into a user-facing popup.
-// Pass is403:true to use the "Access Restricted" title/icon variant.
 function _showApiError(res) {
   const is403 = res?.status === 403;
   showInfoPopup(
     is403 ? "Access Restricted" : "Oops!",
     res?.userMessage ?? "An unexpected error occurred. Please try again.",
     is403 ? "fas fa-lock" : "fas fa-exclamation-circle",
-    is403 ? "#f39c12" : "#e74c3c",
   );
 }
 
@@ -219,19 +136,23 @@ function _showApiError(res) {
 // ============================================
 
 function setupEventListeners() {
+  // Logout — guard against losing quiz progress
   ["btn-logout", "logoBtn"].forEach((id) => {
-    document.getElementById(id)?.addEventListener("click", handleLogout);
+    document.getElementById(id)?.addEventListener("click", () => {
+      confirmQuizNavigation(handleLogout);
+    });
   });
 
   document.getElementById("menuBtn").addEventListener("click", toggleSidebar);
   document.getElementById("overlay").addEventListener("click", closeSidebar);
 
-  document
-    .getElementById("contentModeBtn")
-    ?.addEventListener("click", () => switchMode("content"));
-  document
-    .getElementById("qaModeBtn")
-    ?.addEventListener("click", () => switchMode("qa"));
+  // Mode buttons — guard: switching mode abandons an active quiz
+  document.getElementById("contentModeBtn")?.addEventListener("click", () => {
+    confirmQuizNavigation(() => switchMode("content"));
+  });
+  document.getElementById("qaModeBtn")?.addEventListener("click", () => {
+    confirmQuizNavigation(() => switchMode("qa"));
+  });
 
   document.getElementById("backBtn").addEventListener("click", backToWelcome);
   document
@@ -295,15 +216,14 @@ function setupAvatarDropdown() {
 }
 
 function setupScrollBehaviour() {
-  const header = document.querySelector(".dash-topbar");
-  if (!header) return;
+  const topbar = document.querySelector(".dash-topbar");
+  if (!topbar) return;
   let lastScrollY = window.scrollY;
   window.addEventListener("scroll", () => {
     const currentScrollY = window.scrollY;
     if (currentScrollY > lastScrollY && currentScrollY > 80)
-      header.classList.add("hide");
-    else header.classList.remove("hide");
-    header.classList.toggle("scrolled", currentScrollY > 20);
+      topbar.classList.add("hide");
+    else topbar.classList.remove("hide");
     lastScrollY = currentScrollY;
   });
 }
@@ -314,18 +234,18 @@ function setupScrollBehaviour() {
 
 async function loadContentSidebar() {
   const topicsNav = document.getElementById("topicsNav");
-  topicsNav.innerHTML = `<div style="padding:20px;color:#9ca3af;font-size:13px;"><i class="fas fa-spinner fa-spin"></i> Loading topics...</div>`;
+  topicsNav.innerHTML = `<div class="sidebar-loading"><i class="fas fa-spinner fa-spin"></i> Loading topics...</div>`;
 
   const res = await FetchData("/topic", true);
   if (!res.success) {
-    topicsNav.innerHTML = `<div style="padding:20px;color:#9ca3af;font-size:13px;">Failed to load topics.</div>`;
+    topicsNav.innerHTML = `<div class="sidebar-loading">Failed to load topics.</div>`;
     _showApiError(res);
     return;
   }
 
   const topics = res.data?.data ?? [];
   if (!topics.length) {
-    topicsNav.innerHTML = `<div style="padding:20px;color:#9ca3af;font-size:13px;">No topics available yet.</div>`;
+    topicsNav.innerHTML = `<div class="sidebar-loading">No topics available yet.</div>`;
     return;
   }
 
@@ -343,7 +263,6 @@ async function loadContentSidebar() {
     const subtopics = topic.subtopics ?? [];
     const topicDiv = document.createElement("div");
     topicDiv.className = "topic";
-
     topicDiv.innerHTML = `
       <div class="topic-header">
         <span>${topic.name}</span>
@@ -363,7 +282,6 @@ async function loadContentSidebar() {
           )
           .join("")}
       </div>`;
-
     topicsNav.appendChild(topicDiv);
   });
 
@@ -374,11 +292,14 @@ async function loadContentSidebar() {
   topicsNav.querySelectorAll(".subtopic-link").forEach((link) => {
     link.addEventListener("click", (e) => {
       e.preventDefault();
-      loadContent(e, {
-        topicId: link.dataset.topicId,
-        topicName: link.dataset.topicName,
-        subtopicId: link.dataset.subtopicId,
-        subtopicName: link.dataset.subtopicName,
+      // Clicking a content topic while a quiz is active should warn too
+      confirmQuizNavigation(() => {
+        loadContent(e, {
+          topicId: link.dataset.topicId,
+          topicName: link.dataset.topicName,
+          subtopicId: link.dataset.subtopicId,
+          subtopicName: link.dataset.subtopicName,
+        });
       });
     });
   });
@@ -426,10 +347,7 @@ async function loadContent(event, dataset) {
   document.getElementById("contentTitle").textContent = subtopicName;
 
   const container = document.getElementById("contentContainer");
-  container.innerHTML = `<div style="padding:40px;text-align:center;color:#9ca3af;">
-    <i class="fas fa-spinner fa-spin" style="font-size:28px;"></i>
-    <p style="margin-top:12px;">Loading content...</p></div>`;
-
+  container.innerHTML = `<div class="content-loading"><i class="fas fa-spinner fa-spin"></i><p>Loading content...</p></div>`;
   document.getElementById("exerciseSection").style.display = "none";
   _currentExercise = null;
 
@@ -451,10 +369,6 @@ async function loadContent(event, dataset) {
           `/sections/${sec.section_id}/components`,
           true,
         );
-        console.log(
-          `[components] section ${sec.section_id}:`,
-          JSON.stringify(res.data?.data),
-        );
         _contentCache.components[sec.section_id] = res.success
           ? (res.data?.data ?? []).map(_normalizeComponent)
           : [];
@@ -473,9 +387,7 @@ async function loadContent(event, dataset) {
     await _loadExerciseForSubtopic(subtopicName);
     _updateTopicNavFromAPI(subtopicId);
   } catch {
-    container.innerHTML = `<div style="padding:40px;text-align:center;color:#dc2626;">
-      <i class="fas fa-exclamation-triangle"></i>
-      <p style="margin-top:8px;">Failed to load content. Please try again.</p></div>`;
+    container.innerHTML = `<div class="content-error"><i class="fas fa-exclamation-triangle"></i><p>Failed to load content. Please try again.</p></div>`;
   }
 
   closeSidebar();
@@ -500,7 +412,7 @@ function _normalizeComponent(c) {
 function _renderComponentContent(components, container) {
   const display = components.filter((c) => c.format_type !== "exercise");
   if (!display.length) {
-    container.innerHTML = `<div style="padding:40px;text-align:center;color:#9ca3af;">No content has been added for this topic yet.</div>`;
+    container.innerHTML = `<div class="content-empty">No content has been added for this topic yet.</div>`;
     return;
   }
   container.innerHTML = display
@@ -508,7 +420,7 @@ function _renderComponentContent(components, container) {
       const titleHTML = comp.title
         ? `<h3 class="heading">${comp.component_id}. ${comp.title}</h3>`
         : "";
-      return `<div class="component-block" style="margin-bottom:40px;">${titleHTML}${_renderOneComponent(comp)}</div>`;
+      return `<div class="component-block">${titleHTML}${_renderOneComponent(comp)}</div>`;
     })
     .join("");
   initializeFormatInteractions();
@@ -517,7 +429,6 @@ function _renderComponentContent(components, container) {
 function _renderOneComponent(comp) {
   const items = comp.items ?? [];
   const mapItems = (fn) => items.map(fn);
-
   switch (comp.format_type) {
     case "flipcards":
       return renderFlipCards(
@@ -572,9 +483,9 @@ function _renderOneComponent(comp) {
     case "imageblock": {
       const img = items[0]?.image ?? null;
       const caption = items[0]?.caption ?? "";
-      return `<div style="text-align:center;margin-bottom:30px;">
-        ${img ? `<img src="${img}" alt="${_escAttr(caption)}" style="max-width:100%;border-radius:var(--radius);box-shadow:var(--shadow);">` : ""}
-        ${caption ? `<p style="margin-top:8px;font-size:13px;color:#6b7280;font-style:italic;">${caption}</p>` : ""}
+      return `<div class="imageblock-wrap">
+        ${img ? `<img src="${img}" alt="${_escAttr(caption)}" class="imageblock-img">` : ""}
+        ${caption ? `<p class="imageblock-caption">${caption}</p>` : ""}
       </div>`;
     }
     default:
@@ -587,30 +498,21 @@ async function _loadExerciseForSubtopic(subtopicName) {
     `/exercise?topic=${encodeURIComponent(subtopicName)}`,
     true,
   );
-  console.log("[exercise]", JSON.stringify(res.data?.data));
   if (!res.success) return;
-
   const questionIds = res.data?.data?.questions ?? [];
   if (!questionIds.length) return;
 
   const results = await Promise.allSettled(
     questionIds.map((id) => FetchData(`/question/${id}`, true)),
   );
-  console.log("[exercise questions]", JSON.stringify(results));
   const questions = results
     .filter((r) => r.status === "fulfilled" && r.value?.success === true)
     .map((r) => {
-      console.log(
-        "[question/:id] data.data:",
-        JSON.stringify(r.value.data?.data),
-      );
       const payload = r.value.data?.data;
-      // Backend may return the question object directly, or wrapped as { question: {...} }
       return _normalizeQuestion(payload?.question ?? payload);
     });
 
   if (!questions.length) return;
-
   _currentExercise = { questions };
   renderExercise(_currentExercise);
 }
@@ -619,8 +521,6 @@ function _updateTopicNavFromAPI(subtopicId) {
   const idx = _allSubtopics.findIndex(
     (s) => String(s.subtopicId) === String(subtopicId),
   );
-
-  // Clone buttons to drop any stale listeners
   const prevBtn = document.getElementById("prevTopicBtn");
   const nextBtn = document.getElementById("nextTopicBtn");
   const newPrev = prevBtn.cloneNode(true);
@@ -657,14 +557,10 @@ function renderFlipCards(cards) {
   return `<div class="format-flip-cards">${cards
     .map(
       (card) => `
-    <div class="flip-card">
-      <div class="flip-card-inner">
-        <div class="flip-card-front">
-          <img src="${card.image}" alt="${card.title}"><h4>${card.title}</h4>
-        </div>
-        <div class="flip-card-back"><p>${card.description}</p></div>
-      </div>
-    </div>`,
+    <div class="flip-card"><div class="flip-card-inner">
+      <div class="flip-card-front"><img src="${card.image}" alt="${card.title}"><h4>${card.title}</h4></div>
+      <div class="flip-card-back"><p>${card.description}</p></div>
+    </div></div>`,
     )
     .join("")}</div>`;
 }
@@ -695,16 +591,11 @@ function renderAccordion(sections) {
     .map(
       (section, index) => `
     <div class="accordion-item ${index === 0 ? "active" : ""}">
-      <div class="accordion-header">
-        <h4>${section.title}</h4>
-        <i class="fas fa-chevron-down accordion-icon"></i>
-      </div>
-      <div class="accordion-content">
-        <div class="accordion-body">
-          <p>${section.text}</p>
-          ${section.image ? `<img src="${section.image}" alt="${section.title}">` : ""}
-        </div>
-      </div>
+      <div class="accordion-header"><h4>${section.title}</h4><i class="fas fa-chevron-down accordion-icon"></i></div>
+      <div class="accordion-content"><div class="accordion-body">
+        <p>${section.text}</p>
+        ${section.image ? `<img src="${section.image}" alt="${section.title}">` : ""}
+      </div></div>
     </div>`,
     )
     .join("")}</div>`;
@@ -717,11 +608,9 @@ function renderTabs(tabs) {
       .map(
         (tab, i) => `
       <div class="tab-content ${i === 0 ? "active" : ""}" id="tab-${i}">
-        <div class="tab-body">
-          <h4>${tab.title}</h4><p>${tab.content}</p>
+        <div class="tab-body"><h4>${tab.title}</h4><p>${tab.content}</p>
           ${tab.image ? `<img src="${tab.image}" alt="${tab.title}">` : ""}
-        </div>
-      </div>`,
+        </div></div>`,
       )
       .join("")}
   </div>`;
@@ -733,8 +622,7 @@ function renderTimeline(steps) {
       (step, i) => `
     <div class="timeline-item">
       <div class="timeline-number">${i + 1}</div>
-      <div class="timeline-content">
-        <h4>${step.title}</h4><p>${step.description}</p>
+      <div class="timeline-content"><h4>${step.title}</h4>
         ${step.image ? `<img src="${step.image}" alt="${step.title}">` : ""}
       </div>
     </div>`,
@@ -781,29 +669,34 @@ function initializeFormatInteractions() {
 // EXERCISE
 // ============================================
 
+/* ── Updated JS Render Function ── */
+
 function renderExercise(exercise) {
-  const exerciseQuestions = document.getElementById("exerciseQuestions");
-  exerciseQuestions.innerHTML = exercise.questions
+  document.getElementById("exerciseQuestions").innerHTML = exercise.questions
     .map(
       (q, index) => `
     <div class="exercise-question">
       <div class="exercise-question-text">${index + 1}. ${q.question}</div>
-      ${
-        q.image
-          ? `<div class="question-image-container" style="text-align:center;margin:10px 0;">
-        <img src="${q.image}" alt="Question image" style="max-width:100%;max-height:260px;border-radius:var(--radius);box-shadow:var(--shadow);">
-      </div>`
-          : ""
-      }
-      <div class="exercise-options">${q.options
-        .map(
-          (option, optIndex) => `
-        <div class="exercise-option">
-          <input type="radio" name="exercise-${index}" id="exercise-${index}-${optIndex}" value="${optIndex}">
-          <label for="exercise-${index}-${optIndex}">${option}</label>
-        </div>`,
-        )
-        .join("")}
+      <div class="exercise-question-body">
+        ${
+          q.image
+            ? `
+        <div class="question-image-container">
+          <img src="${q.image}" alt="Question image">
+        </div>`
+            : ""
+        }
+        <div class="exercise-options">
+          ${q.options
+            .map(
+              (option, optIndex) => `
+            <div class="exercise-option">
+              <input type="radio" name="exercise-${index}" id="exercise-${index}-${optIndex}" value="${optIndex}">
+              <label for="exercise-${index}-${optIndex}">${option}</label>
+            </div>`,
+            )
+            .join("")}
+        </div>
       </div>
     </div>`,
     )
@@ -850,11 +743,9 @@ function submitExercise() {
     <h4>Exercise Results</h4>
     <div class="exercise-score">${percentage}%</div>
     <p>You got ${correctCount} out of ${exercise.questions.length} questions correct!</p>
-    ${
-      percentage >= 80
-        ? '<p style="color:var(--success);font-weight:600;">Great job! You\'ve mastered this topic.</p>'
-        : '<p style="color:var(--warning);font-weight:600;">Keep practicing to improve your understanding.</p>'
-    }`;
+    <p class="${percentage >= 80 ? "result-good" : "result-fair"}">
+      ${percentage >= 80 ? "Great job! You've mastered this topic." : "Keep practicing to improve your understanding."}
+    </p>`;
   resultsDiv.style.display = "block";
   resultsDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
@@ -893,14 +784,14 @@ async function loadQuizSidebar() {
     icon: "fas fa-map",
     title: "Overview",
     subLabel: "Mixed questions — all topics",
+    // already wrapped in confirmQuizNavigation inside _appendQuizNavItem
     onClick: () => confirmQuizNavigation(() => fetchAndStartOverviewQuiz()),
   });
-
   _appendQuizNavItem(quizNav, {
     icon: "fas fa-certificate",
     title: "Latest Police Exam",
     subLabel: "Official exam sessions",
-    onClick: () => showExamSelectionScreen(),
+    onClick: () => confirmQuizNavigation(() => showExamSelectionScreen()),
   });
 
   const res = await FetchData("/topic", true);
@@ -938,29 +829,19 @@ function _appendQuizNavItem(container, { icon, title, subLabel, onClick }) {
 
 async function fetchAndStartOverviewQuiz() {
   const res = await FetchData("/quiz/random", true);
-  console.log("[quiz/random overview] request made" ,res);
-  console.log(
-    "[quiz/random overview] data.data:",
-    JSON.stringify(res.data?.data),
-  );
   if (!res.success) {
     _showApiError(res);
     return;
-  } 
-  console.log("[overview quiz] question IDs:", res.data?.data?.questions ?? []);
-
+  }
   const questions = await _fetchQuestionsById(res.data?.data?.questions ?? []);
-  console.log("[overview quiz] fetched questions:", questions);
   if (!questions.length) {
     showInfoPopup(
       "No questions available",
       "The overview quiz has no questions right now.",
       "fas fa-inbox",
-      "#f59e0b",
     );
     return;
   }
-
   currentSessionMeta = {
     quiz_id: "overview",
     title: "Overview Quiz",
@@ -978,18 +859,15 @@ async function fetchAndStartTopicQuiz(topicName) {
     _showApiError(res);
     return;
   }
-
   const questions = await _fetchQuestionsById(res.data?.data?.questions ?? []);
   if (!questions.length) {
     showInfoPopup(
       "No questions available",
-      `There are no questions for <strong>${topicName}</strong> right now.`,
+      `No questions for <strong>${topicName}</strong> right now.`,
       "fas fa-inbox",
-      "#f59e0b",
     );
     return;
   }
-
   currentSessionMeta = {
     quiz_id: `topic-${topicName}`,
     title: `${topicName} Quiz`,
@@ -999,24 +877,11 @@ async function fetchAndStartTopicQuiz(topicName) {
 }
 
 async function _fetchQuestionsById(ids) {
-
-  console.log(
-    "[questions/batch] fetching questions for ids:",
-    ids,"....",
-    !ids?.length,
-  );
   if (!ids?.length) return [];
-
   const res = await FetchData(`/questions/batch?ids=${ids.join(",")}`, true);
-  console.log("[questions/batch] request ids:", ids);
-  console.log("[questions/batch] data.data:", JSON.stringify(res.data?.data));
   if (!res.success) return [];
-
   const raw = res.data?.data;
-  // Backend may return array directly, or wrapped as { questions: [...] }
   const questionsArray = Array.isArray(raw) ? raw : (raw?.questions ?? []);
-  if (!questionsArray.length) return [];
-
   return questionsArray
     .map((q) => {
       try {
@@ -1032,13 +897,6 @@ async function _fetchQuestionsById(ids) {
 // QUESTION NORMALIZATION
 // ============================================
 
-// Single normalizer used by both quiz questions and exercise questions.
-// Handles two option shapes:
-//   Object shape: options: { A: { id, text }, B: ... }
-//   String shape: options: { A: "text", B: "text" }
-// and two correct-answer shapes:
-//   correctAnswerId (matches an option's id)
-//   correctAnswer   (letter "A"–"D" or numeric index)
 function _normalizeQuestion(raw) {
   const optionKeys = ["A", "B", "C", "D"];
   const letterMap = { A: 0, B: 1, C: 2, D: 3 };
@@ -1073,10 +931,8 @@ function _normalizeQuestion(raw) {
       : (raw.image ?? null);
 
   return {
-    // quiz fields
     topic: raw.topic ?? raw.topicName ?? raw.topic_name ?? "Quiz",
     subtopic: raw.subtopic ?? raw.subtopicName ?? raw.subtopic_name ?? null,
-    // shared fields
     question: raw.statement ?? raw.question ?? "",
     options,
     correctAnswer,
@@ -1085,53 +941,16 @@ function _normalizeQuestion(raw) {
 }
 
 // ============================================
-// EXAM SELECTION SCREEN
+// SHARED QUIZ CARD RENDERER
 // ============================================
 
-async function showExamSelectionScreen() {
-  document.getElementById("quizStartScreen").style.display = "none";
-  document.getElementById("quizInterface").style.display = "none";
-  document.getElementById("quizResults").style.display = "none";
-
-  const screen = document.getElementById("examSelectionScreen");
-  screen.style.display = "block";
-  screen.innerHTML = `
-    <div style="padding:24px;max-width:960px;margin:0 auto;">
-      <div class="exam-selection-header">
-        <button id="backToQuizTopicsBtn" class="exam-start-btn" style="width:auto;padding:8px 16px;">
-          <i class="fas fa-arrow-left"></i> Back
-        </button>
-        <div class="exam-selection-title">
-          <i class="fas fa-certificate"></i>
-          <div><h1>Police Exams</h1><p>Select an exam session to begin</p></div>
-        </div>
-      </div>
-      <div class="exam-grid" id="examGrid">
-        <div class="exam-loading"><i class="fas fa-spinner fa-spin"></i><p>Loading exams...</p></div>
-      </div>
-    </div>`;
-
-  screen
-    .querySelector("#backToQuizTopicsBtn")
-    .addEventListener("click", hideExamSelectionScreen);
-
-  const grid = screen.querySelector("#examGrid");
-  const res = await FetchData("/quizzes", true);
-  console.log("[/quizzes] data.data:", JSON.stringify(res.data?.data));
-
-  if (!res.success) {
-    _showApiError(res);
+async function renderQuizzes(array, grid) {
+  if (!array.length) {
+    grid.innerHTML = `<p class="exam-empty">No exams available yet.</p>`;
     return;
   }
 
-  const sessions = res.data?.data ?? [];
-  if (!sessions.length) {
-    grid.innerHTML = `<p class="exam-empty">No exams available yet. Check back later.</p>`;
-    return;
-  }
-
-  grid.innerHTML = "";
-  sessions.forEach((session) => {
+  array.forEach((session) => {
     const card = document.createElement("div");
     card.className = "exam-card";
     card.innerHTML = `
@@ -1147,15 +966,13 @@ async function showExamSelectionScreen() {
       if (card.classList.contains("loading")) return;
       const btn = card.querySelector(".exam-start-btn");
 
+      // Fetch first, then guard — avoids a round-trip after the user
+      // decides to stay. If they cancel, we just discard the result.
       card.classList.add("loading");
       btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Loading...`;
       btn.disabled = true;
 
       const res = await FetchData(`/quiz/${session.quiz_id}`, true);
-      console.log(
-        `[/quiz/${session.quiz_id}] data.data:`,
-        JSON.stringify(res.data?.data),
-      );
 
       if (!res.success) {
         _showApiError(res);
@@ -1165,21 +982,118 @@ async function showExamSelectionScreen() {
         return;
       }
 
+      // Guard here: warn if a quiz is already running before launching
       confirmQuizNavigation(async () => {
         await loadAndStartQuiz(
           session.quiz_id,
           session.title,
           res.data?.data ?? [],
         );
-        // Re-enable button if loadAndStartQuiz bails early (no questions)
         card.classList.remove("loading");
         btn.innerHTML = `Start Exam <i class="fas fa-arrow-right"></i>`;
         btn.disabled = false;
       });
+
+      // If user picks "Keep going", restore the card state
+      // (confirmQuizNavigation calls onCancel via popup dismiss — nothing to do,
+      //  but we need to reset the card if they cancel)
+      // We reset inside a small helper attached to the cancel path:
+      const overlay = document.getElementById("progressWarningOverlay");
+      if (overlay) {
+        const cancelBtn = overlay.querySelector(".pw-btn-cancel");
+        cancelBtn?.addEventListener(
+          "click",
+          () => {
+            card.classList.remove("loading");
+            btn.innerHTML = `Start Exam <i class="fas fa-arrow-right"></i>`;
+            btn.disabled = false;
+          },
+          { once: true },
+        );
+      }
     });
 
     grid.appendChild(card);
   });
+}
+
+// ============================================
+// QUIZ START SCREEN  (Q&A mode landing)
+// ============================================
+
+/**
+ * Populates #latestExamsGrid on the Q&A start screen.
+ * Does NOT touch welcomeScreen — that element belongs
+ * exclusively to Content Mode.
+ */
+async function quizStartScreen() {
+  const grid = document.getElementById("latestExamsGrid");
+  if (!grid) return;
+
+  grid.innerHTML = `<div class="exam-loading"><i class="fas fa-spinner fa-spin"></i><p>Loading exams...</p></div>`;
+
+  const res = await FetchData("/quizzes", true);
+
+  if (!res.success) {
+    _showApiError(res);
+    grid.innerHTML = `<p class="exam-empty">Failed to load exams.</p>`;
+    return;
+  }
+
+  const sessions = res.data?.data ?? [];
+
+  if (!sessions.length) {
+    grid.innerHTML = `<p class="exam-empty">No latest exams available yet.</p>`;
+    return;
+  }
+
+  grid.innerHTML = "";
+  renderQuizzes(sessions, grid);
+}
+
+// ============================================
+// EXAM SELECTION SCREEN
+// ============================================
+
+async function showExamSelectionScreen() {
+  document.getElementById("quizStartScreen").style.display = "none";
+  document.getElementById("quizInterface").style.display = "none";
+  document.getElementById("quizResults").style.display = "none";
+
+  const screen = document.getElementById("examSelectionScreen");
+  screen.style.display = "block";
+  screen.innerHTML = `
+    <div class="exam-selection-header">
+      <button id="backToQuizTopicsBtn" class="back-btn"><i class="fas fa-arrow-left"></i> Back</button>
+      <div class="exam-selection-title">
+        <i class="fas fa-certificate"></i>
+        <div><h1>Police Exams</h1><p>Select an exam session to begin</p></div>
+      </div>
+    </div>
+    <div class="exam-grid" id="examGrid">
+      <div class="exam-loading"><i class="fas fa-spinner fa-spin"></i><p>Loading exams...</p></div>
+    </div>`;
+
+  screen
+    .querySelector("#backToQuizTopicsBtn")
+    .addEventListener("click", hideExamSelectionScreen);
+
+  const grid = screen.querySelector("#examGrid");
+  const res = await FetchData("/quizzes", true);
+  if (!res.success) {
+    _showApiError(res);
+    grid.innerHTML = `<p class="exam-empty">Failed to load exams.</p>`;
+    return;
+  }
+
+  const sessions = res.data?.data ?? [];
+  if (!sessions.length) {
+    grid.innerHTML = `<p class="exam-empty">No exams available yet.</p>`;
+    return;
+  }
+
+  grid.innerHTML = "";
+  renderQuizzes(sessions, grid);
 
   closeSidebar();
 }
@@ -1204,15 +1118,12 @@ function formatUserDate(isoString) {
 }
 
 async function loadAndStartQuiz(quizId, quizTitle, questionArray) {
-  console.log(`[loadAndStartQuiz] Loading quiz "${quizTitle}" with question IDs:`, questionArray);
   const questions = await _fetchQuestionsById(questionArray.questions ?? []);
-  console.log("[loadAndStartQuiz] loaded questions:", questions);
   if (!questions.length) {
     showInfoPopup(
       "No questions available",
-      "This exam has no questions that could be loaded. Please try another session.",
+      "This exam has no questions that could be loaded.",
       "fas fa-inbox",
-      "#f59e0b",
     );
     return;
   }
@@ -1228,32 +1139,25 @@ function createBasePopup({
   title = "",
   message = "",
   icon = "fas fa-info-circle",
-  iconColor = "",
   confirmText = "Yes",
   cancelText = "No",
   showCancel = true,
   showConfirm = true,
   onConfirm = () => {},
   onCancel = () => {},
-  confirmBtnStyle = "",
-  cancelBtnStyle = "",
 }) {
   document.getElementById("progressWarningOverlay")?.remove();
   const overlay = document.createElement("div");
   overlay.id = "progressWarningOverlay";
-  const iconStyle = iconColor ? `style="color:${iconColor}"` : "";
-
   overlay.innerHTML = `
     <div id="progressWarningBox">
-      <div class="pw-icon" ${iconStyle}><i class="${icon}"></i></div>
-      <h3>${title}</h3>
-      <p>${message}</p>
+      <div class="pw-icon"><i class="${icon}"></i></div>
+      <h3>${title}</h3><p>${message}</p>
       <div class="pw-actions">
-        ${showCancel ? `<button class="pw-btn pw-btn-cancel"  style="${cancelBtnStyle}">${cancelText}</button>` : ""}
-        ${showConfirm ? `<button class="pw-btn pw-btn-confirm" style="${confirmBtnStyle}">${confirmText}</button>` : ""}
+        ${showCancel ? `<button class="pw-btn pw-btn-cancel">${cancelText}</button>` : ""}
+        ${showConfirm ? `<button class="pw-btn pw-btn-confirm">${confirmText}</button>` : ""}
       </div>
     </div>`;
-
   document.body.appendChild(overlay);
   const close = () => overlay.remove();
 
@@ -1272,47 +1176,13 @@ function createBasePopup({
   });
 }
 
-function confirmQuizNavigation(onConfirm) {
-  const quizInterfaceVisible =
-    document.getElementById("quizInterface")?.style.display !== "none";
-  const inProgress =
-    currentQuiz && quizInterfaceVisible && currentQuiz.reviewMode !== true;
-
-  if (!inProgress) {
-    onConfirm();
-    return;
-  }
-
-  const answered = userAnswers.filter((a) => a !== null).length;
-  const total = currentQuiz.questions.length;
-
-  createBasePopup({
-    title: "Quiz in progress!",
-    message: `You have answered <strong>${answered}</strong> of <strong>${total}</strong> questions.<br>Leaving now will lose all your progress.`,
-    icon: "fas fa-exclamation-triangle",
-    confirmText: "Yes, leave",
-    cancelText: "Keep going",
-    onConfirm: () => {
-      clearInterval(timerInterval);
-      onConfirm();
-    },
-  });
-}
-
-function showInfoPopup(
-  title,
-  message,
-  icon = "fas fa-info-circle",
-  iconColor = "#0097b2",
-) {
+function showInfoPopup(title, message, icon = "fas fa-info-circle") {
   createBasePopup({
     title,
     message,
     icon,
-    iconColor,
     showConfirm: false,
     cancelText: "OK",
-    cancelBtnStyle: "background:#0097b2;color:#fff;",
   });
 }
 
@@ -1346,23 +1216,18 @@ function renderQuestionNavGrid() {
 
   for (let i = 0; i < currentQuiz.questions.length; i++) {
     const q = currentQuiz.questions[i];
-    const subtopicLabel = q.subtopic ?? null;
-
-    if (subtopicLabel && subtopicLabel !== lastSubtopic) {
+    if (q.subtopic && q.subtopic !== lastSubtopic) {
       const divider = document.createElement("div");
       divider.className = "question-nav-divider";
-      divider.textContent = subtopicLabel;
-      divider.title = subtopicLabel;
+      divider.textContent = q.subtopic;
+      divider.title = q.subtopic;
       grid.appendChild(divider);
-      lastSubtopic = subtopicLabel;
+      lastSubtopic = q.subtopic;
     }
-
     const btn = document.createElement("button");
     btn.className = "question-nav-btn";
     btn.textContent = i + 1;
-    btn.title = subtopicLabel
-      ? `${subtopicLabel} — Q${i + 1}`
-      : `Question ${i + 1}`;
+    btn.title = q.subtopic ? `${q.subtopic} — Q${i + 1}` : `Question ${i + 1}`;
     if (i === 0) btn.classList.add("current");
     btn.addEventListener("click", () => loadQuestion(i));
     grid.appendChild(btn);
@@ -1379,9 +1244,9 @@ function loadQuestion(index) {
   document.getElementById("progressFill").style.width =
     `${((index + 1) / currentQuiz.questions.length) * 100}%`;
 
-  document.querySelectorAll(".question-nav-btn").forEach((btn, i) => {
-    btn.classList.toggle("current", i === index);
-  });
+  document
+    .querySelectorAll(".question-nav-btn")
+    .forEach((btn, i) => btn.classList.toggle("current", i === index));
 
   document.getElementById("questionTopic").textContent = question.topic;
 
@@ -1407,11 +1272,10 @@ function loadQuestion(index) {
     imageContainer.style.display = "none";
   }
 
-  const optionsContainer = document.getElementById("answerOptions");
   const letters = ["A", "B", "C", "D"];
   const isReview = currentQuiz.reviewMode === true;
 
-  optionsContainer.innerHTML = question.options
+  document.getElementById("answerOptions").innerHTML = question.options
     .map((option, i) => {
       const isCorrect = i === question.correctAnswer;
       const isUserAnswer = userAnswers[index] === i;
@@ -1422,8 +1286,7 @@ function loadQuestion(index) {
       }
       return `
       <div class="answer-option${isReview ? " review-mode" : ""}${reviewClass}" data-option-index="${i}">
-        <input type="radio" name="answer" id="answer${i}" value="${i}"
-          ${isUserAnswer ? "checked" : ""} ${isReview ? "disabled" : ""}>
+        <input type="radio" name="answer" id="answer${i}" value="${i}" ${isUserAnswer ? "checked" : ""} ${isReview ? "disabled" : ""}>
         <label for="answer${i}">
           <span class="option-letter">${letters[i]}</span>
           <span class="option-text">${option}</span>
@@ -1433,7 +1296,7 @@ function loadQuestion(index) {
     .join("");
 
   if (!isReview) {
-    optionsContainer.querySelectorAll(".answer-option").forEach((optionEl) => {
+    document.querySelectorAll(".answer-option").forEach((optionEl) => {
       optionEl.addEventListener("click", () =>
         selectAnswer(parseInt(optionEl.dataset.optionIndex)),
       );
@@ -1465,7 +1328,6 @@ function updateNavigationButtons() {
 function previousQuestion() {
   if (currentQuestionIndex > 0) loadQuestion(currentQuestionIndex - 1);
 }
-
 function nextQuestion() {
   if (currentQuestionIndex < currentQuiz.questions.length - 1)
     loadQuestion(currentQuestionIndex + 1);
@@ -1474,18 +1336,15 @@ function nextQuestion() {
 function startQuizTimer() {
   clearInterval(timerInterval);
   const timerEl = document.getElementById("quizTimer");
-
   timerInterval = setInterval(() => {
     const elapsed = Date.now() - quizStartTime;
     const remaining = Math.max(0, quizTimeLimitMs - elapsed);
     const minutes = Math.floor(remaining / 60000);
     const seconds = Math.floor((remaining % 60000) / 1000);
     timerEl.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-
-    const wrap = timerEl.closest("#quizCountdownWrap") ?? timerEl;
-    wrap.classList.toggle("warning", remaining <= 60000);
-    wrap.classList.toggle("caution", remaining > 60000 && remaining <= 180000);
-
+    const wrap = document.getElementById("quizCountdownWrap");
+    wrap?.classList.toggle("warning", remaining <= 60000);
+    wrap?.classList.toggle("caution", remaining > 60000 && remaining <= 180000);
     if (remaining === 0) {
       clearInterval(timerInterval);
       submitQuiz();
@@ -1493,7 +1352,7 @@ function startQuizTimer() {
   }, 1000);
 }
 
-function submitQuiz() {
+async function submitQuiz() {
   clearInterval(timerInterval);
   const totalTime = Date.now() - quizStartTime;
   const minutes = Math.floor(totalTime / 60000);
@@ -1535,7 +1394,7 @@ function submitQuiz() {
 
   const icon = document.getElementById("resultsIcon");
   const message = document.getElementById("resultsMessage");
-  icon.classList.add("results-icon");
+  icon.className = "results-icon";
 
   const tiers = [
     {
@@ -1568,6 +1427,23 @@ function submitQuiz() {
   icon.innerHTML = tier.html;
   message.textContent = tier.msg;
 
+  console.log(
+    "Quiz submitted. Score:",
+    percentage,
+    "%",
+    `(${correctCount}/${currentQuiz.questions.length})`,
+    `Time: ${minutes}:${String(seconds).padStart(2, "0")}`,
+  );
+  console.log("correct questions:", correctCount, "incorrect questions:", incorrectCount, "seconds taken:", minutes * 60 + seconds); 
+  const payload = {
+    correct:correctCount,
+    incorrect:incorrectCount,
+    total_seconds_spent: minutes * 60 + seconds
+  };
+  const res = await UpdateData(`/submit-quiz-result`, payload, true);
+  if (!res.success) {
+    _showApiError(res);
+  }
   buildQuizReport(correctCount, incorrectCount, percentage, minutes, seconds);
 }
 
@@ -1583,17 +1459,14 @@ async function retakeQuiz() {
     await fetchAndStartTopicQuiz(currentSessionMeta.topicName);
     return;
   }
-  // Fallback: re-use the already-loaded question list
   launchQuiz(currentQuiz.id, currentQuiz.title, currentQuiz.questions);
 }
 
 function backToQuizSelection() {
   document.getElementById("quizResults").style.display = "none";
-  if (!currentSessionMeta || currentSessionMeta.topicName) {
+  if (!currentSessionMeta || currentSessionMeta.topicName)
     document.getElementById("quizStartScreen").style.display = "block";
-  } else {
-    showExamSelectionScreen();
-  }
+  else showExamSelectionScreen();
 }
 
 // ============================================
@@ -1616,10 +1489,6 @@ function buildQuizReport(
     .map((q, idx) => {
       const userAnswer = userAnswers[idx];
       const isCorrect = userAnswer === q.correctAnswer;
-      const blockClass = isCorrect ? "rq-correct" : "rq-wrong";
-      const icon = isCorrect
-        ? `<i class="fas fa-check-circle rq-status-icon"></i>`
-        : `<i class="fas fa-times-circle rq-status-icon"></i>`;
 
       const optionsHTML = q.options
         .map((opt, oi) => {
@@ -1630,19 +1499,19 @@ function buildQuizReport(
           else if (isUserWrong) optClass = " rq-opt-user-wrong";
           return `
         <div class="rq-option${optClass}">
-          <span class="rq-option-letter">${letters[oi]}</span>
-          <span>${opt}</span>
-          ${isCorrectOpt ? '<span style="margin-left:auto;font-size:0.75rem;color:#16a34a;font-weight:700;">✓ Correct</span>' : ""}
-          ${isUserWrong ? '<span style="margin-left:auto;font-size:0.75rem;color:#dc2626;font-weight:700;">✗ Your answer</span>' : ""}
+          <span class="rq-option-letter">${letters[oi]}</span><span>${opt}</span>
+          ${isCorrectOpt ? '<span class="rq-label-correct">✓ Correct</span>' : ""}
+          ${isUserWrong ? '<span class="rq-label-wrong">✗ Your answer</span>' : ""}
         </div>`;
         })
         .join("");
 
       return `
-      <div class="report-question-block ${blockClass}">
+      <div class="report-question-block ${isCorrect ? "rq-correct" : "rq-wrong"}">
         <div class="rq-meta">
-          <div class="rq-num">${idx + 1}</div>${icon}
-          <span style="font-size:0.78rem;color:#6b7280;">${q.topic ?? ""}</span>
+          <div class="rq-num">${idx + 1}</div>
+          <i class="fas ${isCorrect ? "fa-check-circle" : "fa-times-circle"} rq-status-icon"></i>
+          <span class="rq-topic-label">${q.topic ?? ""}</span>
         </div>
         ${q.image ? `<img class="rq-image" src="${q.image}" alt="question image">` : ""}
         <div class="rq-question-text">${q.question}</div>
@@ -1653,18 +1522,18 @@ function buildQuizReport(
 
   reportScreen.innerHTML = `
     <div class="report-header">
-      <h2><i class="fas fa-clipboard-list" style="color:#0097b2;margin-right:8px;"></i>Quiz Report — ${currentQuiz.title}</h2>
+      <h2><i class="fas fa-clipboard-list report-icon"></i> Quiz Report — ${currentQuiz.title}</h2>
       <button class="report-close-btn" id="closeReportBtn"><i class="fas fa-arrow-left"></i> Back to Results</button>
     </div>
     <div class="report-summary">
-      <div class="report-stat"><div class="rs-val" style="color:#0097b2;">${percentage}%</div><div class="rs-lbl">Score</div></div>
-      <div class="report-stat"><div class="rs-val" style="color:#16a34a;">${correctCount}</div><div class="rs-lbl">Correct</div></div>
-      <div class="report-stat"><div class="rs-val" style="color:#dc2626;">${incorrectCount}</div><div class="rs-lbl">Wrong</div></div>
+      <div class="report-stat"><div class="rs-val rs-score">${percentage}%</div><div class="rs-lbl">Score</div></div>
+      <div class="report-stat"><div class="rs-val rs-correct">${correctCount}</div><div class="rs-lbl">Correct</div></div>
+      <div class="report-stat"><div class="rs-val rs-wrong">${incorrectCount}</div><div class="rs-lbl">Wrong</div></div>
       <div class="report-stat"><div class="rs-val">${totalQ}</div><div class="rs-lbl">Total</div></div>
       <div class="report-stat"><div class="rs-val">${minutes}:${String(seconds).padStart(2, "0")}</div><div class="rs-lbl">Time taken</div></div>
     </div>
     ${questionsHTML}
-    <div style="text-align:center;margin-top:24px;">
+    <div class="report-footer">
       <button class="report-close-btn" id="closeReportBtn2"><i class="fas fa-arrow-left"></i> Back to Results</button>
     </div>`;
 
@@ -1689,20 +1558,21 @@ function showQuizReport() {
 // MODE SWITCHING & UI HELPERS
 // ============================================
 
+/**
+ * switchMode is now always called through confirmQuizNavigation
+ * (wired in setupEventListeners), so no guard needed here.
+ */
 function switchMode(mode) {
   currentMode = mode;
   document
     .querySelectorAll(".mode-btn")
     .forEach((btn) => btn.classList.remove("active"));
-
   const isContent = mode === "content";
   document
     .getElementById("contentModeBtn")
     .classList.toggle("active", isContent);
   document.getElementById("qaModeBtn").classList.toggle("active", !isContent);
-  document.getElementById("dashTitle").textContent = isContent
-    ? "Dashboard - Content Mode"
-    : "Dashboard - Q&A Mode";
+
   document
     .getElementById("contentSidebar")
     .classList.toggle("active", isContent);
@@ -1737,6 +1607,72 @@ function bookmarkContent() {
     "Coming Soon",
     "Bookmarks will be available in a future update.",
     "fas fa-bookmark",
-    "#0097b2",
   );
 }
+
+// JavaScript Function
+function renderPerformanceStats(data) {
+  const container = document.getElementById('performanceSection');
+  if (!container) return;
+
+  const totalQuestions = data.total_correct + data.total_wrong;
+  const correctPercent = totalQuestions > 0 ? Math.round((data.total_correct / totalQuestions) * 100) : 0;
+  const incorrectPercent = totalQuestions > 0 ? 100 - correctPercent : 0;
+
+  const minutes = Math.floor(data.total_seconds_spent / 60);
+  const seconds = data.total_seconds_spent % 60;
+  const timeFormatted = `${minutes}m ${seconds}s`;
+
+  container.innerHTML = `
+    <div class="stats-overview-container">
+      <h2 class="section-title">Performance Overview</h2>
+      
+      <div class="stats-layout">
+        
+        <div class="chart-wrapper">
+          <div class="donut-chart" style="background: conic-gradient(var(--clr-dark) 0% ${correctPercent}%, var(--clr-primary) ${correctPercent}% 100%);">
+            <div class="donut-center">
+              <span class="donut-center-value">${correctPercent}%</span>
+              <span class="donut-center-label">Accuracy</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-info">
+          
+          <div class="primary-metrics-row">
+            <div class="metric-group">
+              <p class="metric-label">Total Tests</p>
+              <h3 class="metric-value">${data.total_tests}</h3>
+            </div>
+            <div class="metric-group">
+              <p class="metric-label">Time Spent</p>
+              <h3 class="metric-value">${timeFormatted}</h3>
+            </div>
+          </div>
+
+          <div class="breakdown-legend">
+            <div class="legend-item">
+              <div class="legend-indicator-group">
+                <div class="legend-indicator correct"></div>
+                <span class="legend-label">Correct Answers</span>
+              </div>
+              <span class="legend-value">${data.total_correct} <span class="legend-percentage-correct">(${correctPercent}%)</span></span>
+            </div>
+
+            <div class="legend-item">
+              <div class="legend-indicator-group">
+                <div class="legend-indicator incorrect"></div>
+                <span class="legend-label">Incorrect Answers</span>
+              </div>
+              <span class="legend-value">${data.total_wrong} <span class="legend-percentage-incorrect">(${incorrectPercent}%)</span></span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Execution Call Example

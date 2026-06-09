@@ -10,7 +10,7 @@ from flask_jwt_extended import verify_jwt_in_request, get_jwt, get_jwt_identity
 import logging
 import time
 import threading
-
+import re, hashlib, unicodedata
 
 class APIResponse:
     """Standardized API Response wrapper for Flask."""
@@ -306,3 +306,33 @@ def track_event(default_event_type):
         return wrapper
 
     return decorator
+
+
+def normalize(text):
+    text = text.lower().strip()
+    text = unicodedata.normalize("NFKD", text)
+    text = re.sub(r"[^\w\s]", "", text)
+    text = re.sub(r"\s+", " ", text)
+    return text
+
+
+def build_question_fingerprint(question):
+    parts = []
+
+    # 1. Question text
+    parts.append(normalize(question.content))
+
+    # 2. Answer options (sorted so order doesn't matter)
+    options = sorted([normalize(opt.option_text) for opt in question.answer_options])
+    parts.extend(options)
+
+    # 3. Correct answer
+    if question.correct_answer:
+        parts.append(normalize(question.correct_answer.option_text))
+
+    return "||".join(parts)
+
+
+def question_hash(question):
+    fp = build_question_fingerprint(question)
+    return hashlib.sha256(fp.encode()).hexdigest()

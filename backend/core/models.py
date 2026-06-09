@@ -7,11 +7,10 @@ from collections import defaultdict, deque
 from datetime import datetime
 
 
-
 class Role(enum.Enum):
     Admin='admin'
     User='client'
-    
+
 class User(db.Model):
     __tablename__ = "users"
     
@@ -60,6 +59,7 @@ class Question(db.Model):
 
     image_data = db.Column(db.LargeBinary, nullable=True)
     mimetype = db.Column(db.String(50), nullable=True)
+    cleaned_hash = db.Column(db.String(64), unique=True, index=True)
 
     topic_id = db.Column(db.Integer, db.ForeignKey("topic.topic_id", ondelete="CASCADE"))
     correct_answer_id = db.Column(
@@ -109,7 +109,7 @@ class AnswerOption(db.Model):
 
     def __repr__(self):
         return f"<AnswerOption {self.answer_id}>"
-   
+
 class Quiz(db.Model):
     __tablename__ = "quiz" 
     quiz_id = db.Column(db.Integer, primary_key=True, autoincrement=True) 
@@ -121,7 +121,7 @@ class Quiz(db.Model):
     questions = db.relationship("QuizQuestion", back_populates="quiz") 
     
     def __repr__(self): return f"<Quiz {self.title}>" 
-    
+
 class QuizQuestion(db.Model): 
     __tablename__ = "quiz_question" 
     quiz_id = db.Column(db.Integer, db.ForeignKey("quiz.quiz_id"), primary_key=True) 
@@ -133,7 +133,6 @@ class QuizQuestion(db.Model):
     
     def __repr__(self): 
         return f"<QuizQuestion quiz={self.quiz_id}, question={self.question_id}>"
-
 
 
 class Section(db.Model):
@@ -201,7 +200,6 @@ class ComponentItem(db.Model):
         return f"<ComponentItem {self.title}>"
 
 
-
 class SubscriptionPlan(db.Model):
     __tablename__ = "subscription_plans"
 
@@ -242,7 +240,7 @@ class Subscription(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     plan_id = db.Column(db.Integer, db.ForeignKey("subscription_plans.id"), nullable=False)
-    req_id = db.Column(db.Integer, db.ForeignKey("requests.id"), nullable=False)
+    req_id = db.Column(db.Integer, db.ForeignKey("requests.id"), nullable=True)
 
     start_date = db.Column(db.DateTime, default=db.func.now())
     expiry_date = db.Column(db.DateTime, nullable=False)
@@ -279,3 +277,17 @@ class AnalyticsEvent(db.Model):
     browser = db.Column(db.String(100))
     ip_address = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class UserTestStats(db.Model):
+    __tablename__ = "user_test_stats"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    total_tests = db.Column(db.Integer, default=0)
+    total_correct = db.Column(db.Integer, default=0)
+    total_wrong = db.Column(db.Integer, default=0)
+    total_seconds_spent = db.Column(db.Integer, default=0)
+    last_updated = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
